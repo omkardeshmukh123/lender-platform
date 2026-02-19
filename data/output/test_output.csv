@@ -1,0 +1,2 @@
+company_name,company_type,website,aum_crores,product_types,primary_product,hq_location,hq_state,operating_states,pan_india,established_year,employee_count,ticket_size_min,ticket_size_max,has_subsidiaries,phone,email,data_source,extraction_status,error
+Test Bank,Private Bank,https://testbank.com,50000,"[""Home Loan"",""Personal Loan""]",Home Loan,"Mumbai, Maharashtra",Maharashtra,"[""Maharashtra"",""Gujarat""]",False,2000,5000,10,5000,True,+91-22-12345678,info@testbank.com,gemini,success,
