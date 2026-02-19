@@ -1,0 +1,136 @@
+row_number,company_name,cin,category,state,aum_cr,raw_url,search_source,outcome,score,evidence,validated_url,reject_reason,timestamp
+9001,Wheelsemi Private Limited (Formerly Varadnarayan Savings & Investment Co.Pvt.Ltd.),,,,N/A,https://wheelsemi.in/,direct_domain,FALSE_MATCH,25,"Ownership signals: ['contact us', 'privacy policy', 'terms of service'] | Industry keyword: 'emi'",,Insufficient evidence (score 25/100),2026-02-15T11:07:28.828024
+9002,Wheelseye Finance Private Limited,,,,N/A,https://wheelseye.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,80,"Company name on page (100% match) | Corporate email @wheelseye.com | Ownership signals: ['contact us', 'our team', 'privacy policy'] | Industry keyword: 'emi' | LinkedIn company page linked",https://wheelseye.com/,,2026-02-15T11:07:31.784256
+9003,Whispering Properties Pvt. Ltd,,,,N/A,https://www.whisperingheights.co.in/,serper,REVIEW_REQUIRED,57,"Company name on page (67% match) | Partial ownership signals: ['about us', 'grievance'] | Industry keyword: 'credit' | Company name in title (58%)",,,2026-02-15T11:07:33.171347
+9004,White Paper Capital Limited,,,,N/A,https://whitepaper.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (100% match) | Registered office address found | Corporate email @whitepaper.com | Ownership signals: ['contact us', 'head office', 'login'] | Industry keyword: 'emi' | LinkedIn company page linked",https://whitepaper.com/,,2026-02-15T11:07:43.431518
+9005,White-Elehphant Finance Limited (Formerly known as Akshar Finance Limited),,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:08:08.632985
+9006,Whiteline Barter Limited,,,,N/A,https://whitelinebarter.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:08:16.918941
+9007,Whitestone Consultants (P) Ltd,,,,N/A,https://white-stone.co.in/,serper,REVIEW_REQUIRED,55,"Company name on page (100% match) | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'loan'",,,2026-02-15T11:08:21.976681
+9008,Whitestone Sales Pvt Ltd,,,,N/A,http://www.whitestoneindia.com/,serper,REVIEW_REQUIRED,67,"Company name on page (100% match) | Partial ownership signals: ['our team', 'login'] | Industry keyword: 'emi' | LinkedIn company page linked | Company name in title (73%)",,,2026-02-15T11:08:48.400570
+9009,Whitestone Suppliers (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:08:59.114430
+9010,White-Up Commodities Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:09:07.478658
+9011,Whizdm Finance Private Limited,,,,N/A,https://www.whizdm.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:09:16.781094
+9012,Wideangle Financial  Services  Ltd.,,,,N/A,https://wideangle.co.in/,direct_domain,REVIEW_REQUIRED,40,Company name on page (100% match) | Company name in title (55%),,,2026-02-15T11:09:29.636234
+9013,Widescope Trading Co.Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:09:44.471006
+9014,Williamson Financial Services Limited,,,,N/A,https://www.williamson.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:09:52.509960
+9015,Wind Power Vinimoy (P) Ltd,,,,N/A,https://www.windpower.in/,direct_domain,FALSE_MATCH,30,Company name on page (67% match),,Insufficient evidence (score 30/100),2026-02-15T11:09:54.369893
+9016,Windia Infrastructure Finance Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:10:08.488066
+9017,Windy Investments Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:10:16.979502
+9018,Winro Commercial (India) Ltd.,,,,N/A,https://www.winrocommercial.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (100% match) | Registered office address found | Regulatory text: 'reserve bank of india' | Ownership signals: ['about us', 'contact us', 'board of directors'] | Industry keyword: 'non-banking' | Company name in title (100%)",https://www.winrocommercial.com/,,2026-02-15T11:10:24.186905
+9019,Winsher Commercial (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:10:26.238828
+9020,Winshire Agencies (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:10:35.779449
+9021,Winsome Finance (P) Ltd,,,,N/A,https://www.winsome.co.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:10:44.497552
+9022,Winsome Holdings & Investments Ltd,,,,N/A,https://winsomeholdings.com/,direct_domain,FALSE_MATCH,37,Company name on page (100% match) | Partial ownership signals: ['login'],,Insufficient evidence (score 37/100),2026-02-15T11:10:49.481985
+9023,Wintech Tel-Com Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:10:56.987120
+9024,Winy Commercial  &  Fiscal   Services   Ltd.,,,,N/A,https://www.winycomm.co.in/,serper,OFFICIAL_WEBSITE_FOUND,70,"Company name on page (100% match) | Corporate email @winycomm.co.in | Ownership signals: ['about us', 'contact us', 'board of directors'] | Company name in title (94%)",https://www.winycomm.co.in/,,2026-02-15T11:11:04.738069
+9025,Wipro Suppliers (P) Ltd,,,,N/A,https://www.wipro.com/content/dam/nexus/en/investor/corporate-governance/policies-and-guidelines/ethical-guidelines/12774-supplier-code-of-conduct.pdf,serper,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'loan' | LinkedIn company page linked",,,2026-02-15T11:11:16.119539
+9026,Wisdom Finvest & Consultancy (P) Ltd,,,,N/A,http://www.wisdomfinservative.in/,serper,REVIEW_REQUIRED,52,"Registered office address found | Corporate email @wisdomfinservative.in | Partial ownership signals: ['about us', 'contact us'] | Industry keyword: 'nbfc'",,,2026-02-15T11:11:28.769938
+9027,Wise Investment (P) Ltd,,,,N/A,https://wise.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (100% match) | Registered office address found | Regulatory text: 'reserve bank of india' | Corporate email @wise.com | Ownership signals: ['contact us', 'our team', 'privacy policy'] | Industry keyword: 'rbi' | LinkedIn company page linked",https://wise.com/,,2026-02-15T11:11:54.895009
+9028,Wiz Fin Private Limited,,,,N/A,https://www.wizfin.com/,direct_domain,REVIEW_REQUIRED,40,Company name on page (100% match) | Company name in title (71%),,,2026-02-15T11:11:58.713813
+9029,Wizard Traders Private Limited,,,,N/A,https://wizardtraders.com/,direct_domain,REVIEW_REQUIRED,50,Company name on page (100% match) | Industry keyword: 'emi' | Company name in title (100%),,,2026-02-15T11:12:02.426387
+9030,Wonder Finvest Pvt. Ltd.,,,,N/A,https://www.wonderhfl.com/,serper,REVIEW_REQUIRED,50,"Corporate email @wonderhfl.com | Ownership signals: ['about us', 'contact us', 'management team'] | Industry keyword: 'loan' | LinkedIn company page linked",,,2026-02-15T11:12:04.916524
+9031,Wondermax Marketing (P) Ltd,,,,N/A,http://www.wondermax-mpl.cc/,serper,FALSE_MATCH,0,,,DNS resolution failed,2026-02-15T11:12:16.306819
+9032,Wondermax Tracon (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:12:20.725711
+9033,Wood Capital Finance Limited,,,,N/A,https://wood.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,80,"Company name on page (100% match) | Corporate email @wood.com | Ownership signals: ['about us', 'contact us', 'board of directors'] | Industry keyword: 'loan' | LinkedIn company page linked",https://wood.com/,,2026-02-15T11:12:29.806104
+9034,Woodhat Distributors Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:12:35.845981
+9035,Woodland Securities Private Limited,,,,N/A,https://www.woodlandsecurities.co.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:12:44.914382
+9036,Woodstock Exports Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:12:50.159064
+9037,Woolvest Merchandise (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:12:58.956053
+9038,Woolworth  Merchandise  Pvt.  Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:13:07.482024
+9039,Worldwide Holdings Limited,,,,N/A,https://worldwide.com.my/,serper,OFFICIAL_WEBSITE_FOUND,75,"Company name on page (100% match) | Ownership signals: ['about us', 'contact us', 'careers'] | Industry keyword: 'rbi' | LinkedIn company page linked | Company name in title (84%)",https://worldwide.com.my/,,2026-02-15T11:13:15.672612
+9040,Wortgage Finance Private Limited,,,,N/A,https://www.wortgage.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:13:31.525985
+9041,Worth Capital Finance (P) Ltd.,,,,N/A,https://worth.com/,direct_domain,REVIEW_REQUIRED,57,Company name on page (100% match) | Partial ownership signals: ['about us'] | Industry keyword: 'rbi' | LinkedIn company page linked,,,2026-02-15T11:13:34.807611
+9042,Worth Investment & Trading Co.Ltd.,,,,N/A,https://www.worthtrading.com/,direct_domain,FALSE_MATCH,30,Company name on page (100% match),,Insufficient evidence (score 30/100),2026-02-15T11:13:39.313238
+9043,Worthwhile Portfolios Pvt.Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:13:43.326941
+9044,Wrinkle Marketing (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:13:52.870561
+9045,Wular Capital Private Limited,,,,N/A,https://www.wular.com/,direct_domain,FALSE_MATCH,30,Company name on page (100% match),,Insufficient evidence (score 30/100),2026-02-15T11:14:01.514874
+9046,Xenix Servis (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:14:03.965478
+9047,Xeraphin Finvest Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:14:12.430926
+9048,Xerxes Traders (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:14:21.442959
+9049,Xylophone Commercial Pvt.Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:14:31.664411
+9050,Y And H Patel Finance Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:14:39.813019
+9051,Yachika Synthetics Private Limited(Formerly Yachika Synthetics Limited),,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:14:48.910006
+9052,Yacht Trade And Finance Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:14:57.458586
+9053,Yadu (India) Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:15:29.747888
+9054,Yaduka Financial Services Limited ( Formerly P R Vyapaar Pvt Ltd),,,,N/A,https://www.cayaduka.com/,serper,REVIEW_REQUIRED,42,"Regulatory text: 'reserve bank of india' | Partial ownership signals: ['careers', 'login'] | Industry keyword: 'nbfc'",,,2026-02-15T11:16:52.085480
+9055,Yaksh Infinlease Pvt.Ltd,,,,N/A,https://www.yakshinfinlease.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,80,"Company name on page (100% match) | Corporate email @yakshinfinlease.com | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'nbfc' | Company name in title (89%)",https://www.yakshinfinlease.com/,,2026-02-15T11:17:50.447557
+9056,Yama Finance Ltd.,,,,N/A,https://yama.com/,direct_domain,REVIEW_REQUIRED,40,Company name on page (100% match) | Industry keyword: 'emi',,,2026-02-15T11:17:55.198983
+9057,Yamini Agencies (P) Ltd,,,,N/A,https://www.yaminiinvestments.co.in/pdf/Shareholding%20Pattern%20for%2030092022.pdf,serper,FALSE_MATCH,0,,,PDF file URL,2026-02-15T11:17:58.474400
+9058,Yamnotri Vinimay  (P)  Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:18:06.425674
+9059,Yash Fincap Limited,,,,N/A,https://yashinvestment.in/,serper,REVIEW_REQUIRED,60,"Registered office address found | Corporate email @yashfinance.com | Ownership signals: ['about us', 'contact us', 'head office'] | Industry keyword: 'nbfc'",,,2026-02-15T11:18:13.735321
+9060,Yash Finvest,,,,N/A,https://yash-finvest-private-limited.charteredone.com/U74899DL1995PTC069273,serper,OFFICIAL_WEBSITE_FOUND,77,"Company name on page (100% match) | Registered office address found | Partial ownership signals: ['registered office', 'login'] | Industry keyword: 'rbi' | Company name in title (60%)",https://yash-finvest-private-limited.charteredone.com/U74899DL1995PTC069273,,2026-02-15T11:18:38.499506
+9061,Yash Marbles Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:18:45.717814
+9062,Yash Vardhan Securities Ltd,,,,N/A,https://www.yashvardhan.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:18:53.009973
+9063,Yashashvi Securities Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:18:54.092563
+9064,Yashdeep Trexim (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:19:01.711875
+9065,Yashik Finlease Pvt.Ltd,,,,N/A,https://yashikfinlease.com/,direct_domain,REVIEW_REQUIRED,40,Company name on page (86% match) | Company name in title (86%),,,2026-02-15T11:19:09.541623
+9066,Yashila Investment and Finance Company Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:19:12.024313
+9067,Yashita Finance Pvt. Ltd.,,,,N/A,https://www.yashita.in/,direct_domain,FALSE_MATCH,10,Industry keyword: 'investment',,Insufficient evidence (score 10/100),2026-02-15T11:19:19.461971
+9068,Yashman Deepak Ltd.,,,,N/A,https://yashmandeepak.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,90,"Company name on page (100% match) | Regulatory text: 'non banking financial company' | Ownership signals: ['about us', 'contact us', 'grievance'] | Industry keyword: 'nbfc' | Company name in title (53%)",https://yashmandeepak.com/,,2026-02-15T11:19:25.930172
+9069,Yashman Vyapaar(P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:19:32.705845
+9070,Yashodham Merchants Pvt Ltd,,,,N/A,https://www.yashodham.com/,serper,REVIEW_REQUIRED,57,"Company name on page (100% match) | Partial ownership signals: ['contact us', 'privacy policy'] | Industry keyword: 'loan' | Company name in title (100%)",,,2026-02-15T11:19:40.899833
+9071,Yashovardhan Investment & Trading Co Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:19:52.527346
+9072,Yashvardhan Marketing (P) Ltd,,,,N/A,https://yashvardhan-marketing.com/,serper,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:20:00.135535
+9073,Yashwi Financial Services Pvt. Ltd.,,,,N/A,https://yashwi.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,85,"Company name on page (100% match) | Registered office address found | Ownership signals: ['about us', 'contact us', 'registered office'] | Industry keyword: 'rbi' | Company name in title (85%)",https://yashwi.com/,,2026-02-15T11:20:10.098506
+9074,Yasya Investments Private Limited,,,,N/A,https://www.yasyainvestments.com/services.html,serper,FALSE_MATCH,0,,,HTTP 404,2026-02-15T11:20:16.195358
+9075,Yatish Trading Co. Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:20:26.381654
+9076,Yatrik Distributors (P) Ltd,,,,N/A,http://yatrik-distributors.com/,serper,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:20:53.705342
+9077,Yes Capital (India) Private Limited (Cic),,,,N/A,https://www.yes.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:21:06.225204
+9078,Yg Capital Limited (Formerly Wellworth Securities Ltd.),,,,N/A,https://bfsi.economictimes.indiatimes.com/articles/rbi-cancels-4-nbfcs-registration-4-others-surrender-certificates/125925142,serper,FALSE_MATCH,0,,,No company token in domain: tokens ['capital'] not found in 'bfsieconomictimesindiatimes',2026-02-15T11:21:10.593239
+9079,Yield Investment Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:21:14.601787
+9080,YMS Finance Private Limited,,,,N/A,https://www.yms.com/yms-shopping-service/index.html,direct_domain,REVIEW_REQUIRED,40,Company name on page (100% match) | Company name in title (100%),,,2026-02-15T11:22:04.467018
+9081,Yogakshemam  Loans Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:22:10.263014
+9082,Yogeshwar Savings & Hire Purchase (I) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:23:14.042567
+9083,Yograj Barter  Pvt.  Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:23:29.065964
+9084,Yoke Commercial (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:23:43.014179
+9085,York Financial Services P Ltd,,,,N/A,https://www.york.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:23:59.695848
+9086,York Holdings (P) Ltd,,,,N/A,https://yorkhd.co.jp/,serper,REVIEW_REQUIRED,40,Company name on page (100% match) | Industry keyword: 'emi',,,2026-02-15T11:24:03.621100
+9087,Yugveri Marketing (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:24:19.796809
+9088,Yuken Merchandise (P) Ltd,,,,N/A,https://www.yukenindia.com/,serper,REVIEW_REQUIRED,55,"Registered office address found | Ownership signals: ['about us', 'contact us', 'head office'] | Industry keyword: 'invest' | Company name in title (54%)",,,2026-02-15T11:24:37.900856
+9089,Yukti Securities Pvt. Ltd.,,,,N/A,https://yukti.in/,serper,REVIEW_REQUIRED,65,Company name on page (67% match) | Corporate email @yukti.in | Industry keyword: 'investment' | Company name in title (61%),,,2026-02-15T11:24:54.835071
+9090,Yulan Marketing Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:25:08.903085
+9091,Yuma Securities Pvt Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:25:43.151280
+9092,Yusmarg Investment & Trading Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:25:55.754551
+9093,Yuvaraj Agrofin (P) Ltd,,,,N/A,https://yuvarajfinance.in/,serper,REVIEW_REQUIRED,60,"Regulatory text: 'nbfc registered' | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'nbfc' | Company name in title (53%)",,,2026-02-15T11:26:08.774276
+9094,Yuvaraj Finance (Pvt) Ltd.,,,,N/A,https://yuvarajfinance.in/,serper,REVIEW_REQUIRED,60,"Regulatory text: 'nbfc registered' | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'nbfc' | Company name in title (56%)",,,2026-02-15T11:26:27.523121
+9095,Yuwan Financiers Pvt. Ltd.(Old Name Kusum Nidhi & Niryat Private Limited),,,,N/A,https://www.yuwanfinanciers.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:26:44.059916
+9096,YVU Financial Services Pvt.Ltd. (Formerly known as Chand Fairdeal Financiers Pvt.Ltd.),,,,N/A,https://www.yvumf.com/,serper,REVIEW_REQUIRED,42,"Regulatory text: 'reserve bank of india' | Partial ownership signals: ['contact us', 'login'] | Industry keyword: 'nbfc'",,,2026-02-15T11:26:47.620970
+9097,Zafonic Finlease & Investments Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:28:01.691059
+9098,Zatco Vyapar Pvt. Ltd.,,,,N/A,https://www.zatcovyapar.com/,direct_domain,FALSE_MATCH,10,Company name in title (54%),,Insufficient evidence (score 10/100),2026-02-15T11:28:14.111697
+9099,Zeal Holdings Private Limited,,,,N/A,https://www.zealholdings.in/,direct_domain,OFFICIAL_WEBSITE_FOUND,90,"Company name on page (100% match) | Registered office address found | Corporate email @zealholdings.in | Ownership signals: ['privacy policy', 'terms and conditions', 'grievance'] | Industry keyword: 'nbfc'",https://www.zealholdings.in/,,2026-02-15T11:28:21.159423
+9100,Zealous Financial Services (P) Ltd.,,,,N/A,https://www.zealous.com/,direct_domain,REVIEW_REQUIRED,47,Company name on page (100% match) | Partial ownership signals: ['login'] | Company name in title (53%),,,2026-02-15T11:28:30.884591
+9101,Zed Leafin Pvt. Ltd.,,,,N/A,https://www.zedleafin.com/,direct_domain,FALSE_MATCH,30,Company name on page (67% match),,Insufficient evidence (score 30/100),2026-02-15T11:28:37.348203
+9102,Zelant Securities and Financial Services Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:28:44.987122
+9103,Zen Credit & Capital Services Private Limited,,,,N/A,https://www.zen.com/,direct_domain,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['about us', 'careers', 'login'] | Industry keyword: 'rbi' | LinkedIn company page linked",,,2026-02-15T11:28:56.678664
+9104,Zen Fincorp Private Limited,,,,N/A,https://www.zenfincorp.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:40:32.762622
+9105,Zen Stock & Share Broking (P) Ltd,,,,N/A,https://zenstock.com/,direct_domain,FALSE_MATCH,17,"Partial ownership signals: ['privacy policy', 'terms of service'] | Industry keyword: 'investment'",,Insufficient evidence (score 17/100),2026-02-15T11:40:35.087187
+9106,Zenco Advisory  Services  Pvt.  Ltd.,,,,N/A,https://www.zenco.com/,direct_domain,REVIEW_REQUIRED,60,"Registered office address found | Corporate email @zenco.com | Ownership signals: ['about us', 'contact us', 'our team'] | LinkedIn company page linked",,,2026-02-15T11:40:36.973983
+9107,Zenith Credit Ltd,,,,N/A,https://zenith.com/,direct_domain,REVIEW_REQUIRED,62,Company name on page (100% match) | Corporate email @zenith.com | Partial ownership signals: ['login'] | Company name in title (56%),,,2026-02-15T11:40:41.150261
+9108,Zenith Distributors & Agents Ltd,,,,N/A,https://www.zenithdistributors.in/,direct_domain,REVIEW_REQUIRED,55,"Company name on page (67% match) | Ownership signals: ['about us', 'contact us', 'login'] | Industry keyword: 'loan'",,,2026-02-15T11:40:47.286515
+9109,Zenith Finance Private Ltd.,,,,N/A,https://zenithfinancial.net.in/,serper,OFFICIAL_WEBSITE_FOUND,95,"Company name on page (100% match) | Regulatory text: 'reserve bank of india' | Corporate email @zenithfinance.online | Ownership signals: ['about us', 'privacy policy', 'terms and conditions'] | Industry keyword: 'rbi'",https://zenithfinance.online/,,2026-02-15T11:40:52.198463
+9110,Zenith Fiscal Services Pvt Ltd,,,,N/A,https://zenithfiscal.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:41:10.009373
+9111,Zenith Machinery (P) Ltd,,,,N/A,https://www.zenithmachinery.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:41:13.630563
+9112,Zenith Sales Promotion (P) Ltd,,,,N/A,https://www.zenithsales.com/,direct_domain,REVIEW_REQUIRED,40,Company name on page (67% match) | Company name in title (55%),,,2026-02-15T11:41:15.208431
+9113,Zenon (India) (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:41:20.499364
+9114,Zerodha Capital Private Limited,,,,N/A,https://www.zerodha.com/,direct_domain,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['contact us', 'privacy policy', 'grievance'] | Industry keyword: 'rbi' | LinkedIn company page linked",,,2026-02-15T11:42:03.570545
+9115,Zeus Vinimay  Pvt.  Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:42:04.954857
+9116,Zharuka Fiscal Services (P) Ltd,,,,N/A,https://zharuka-fiscal.com/,serper,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:42:23.962182
+9117,Zigma Capital Finance Private Limited,,,,N/A,https://www.zigma.in/,direct_domain,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['about us', 'contact us', 'careers'] | Industry keyword: 'invest' | Company name in title (56%)",,,2026-02-15T11:42:32.893070
+9118,Zigma Consultants Pvt Ltd,,,,N/A,https://zigmaconsultants.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,82,Company name on page (100% match) | Corporate email @zigmaconsultants.com | Partial ownership signals: ['privacy policy'] | Industry keyword: 'financial services' | LinkedIn company page linked | Company name in title (85%),https://zigmaconsultants.com/,,2026-02-15T11:42:58.701572
+9119,Zilt Forms Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:43:01.150254
+9120,Zimkele Commodeal (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:43:10.361108
+9121,Zimkele Marketing (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:43:17.834704
+9122,Zing Investments Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:43:27.339806
+9123,Zipper Mercantiles (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:43:43.190270
+9124,Zircon Traders Limited,,,,N/A,https://www.zirconconsulting.in/,serper,FALSE_MATCH,35,"Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'nbfc' | LinkedIn company page linked",,Insufficient evidence (score 35/100),2026-02-15T11:43:54.993899
+9125,Ziwani Barter Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:44:19.327620
+9126,Zobel Sales Promotion Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:44:27.455487
+9127,Zodiac Business (P) Ltd,,,,N/A,https://www.zodiacbusiness.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:44:35.501164
+9128,Zodiac Consultants (P) Ltd,,,,N/A,https://zodiacconsultants.in/,direct_domain,REVIEW_REQUIRED,62,"Company name on page (100% match) | Corporate email @zodiacconsultants.in | Partial ownership signals: ['about us', 'login'] | Industry keyword: 'credit'",,,2026-02-15T11:44:37.056766
+9129,Zoho Finance Private Limited,,,,N/A,https://www.zoho.com/,direct_domain,REVIEW_REQUIRED,50,Company name on page (100% match) | Industry keyword: 'investment' | LinkedIn company page linked,,,2026-02-15T11:44:45.768304
+9130,Zonex Exim & Fincon (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:44:49.489968
+9131,Zoom Construction & Holding Co (P) Ltd,,,,N/A,https://www.zoomconstruction.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-15T11:45:00.900590
+9132,Zoom Supply (P) Ltd,,,,N/A,https://zoomsupply.co.th/,serper,REVIEW_REQUIRED,62,Company name on page (100% match) | Corporate email @zoomsupply.co.th | Partial ownership signals: ['login'] | Industry keyword: 'rbi',,,2026-02-15T11:45:24.783737
+9133,Zuari Goods & Services Pvt Ltd,,,,N/A,https://www.zuari.in/,serper,OFFICIAL_WEBSITE_FOUND,75,"Company name on page (61% match) | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'rbi' | LinkedIn company page linked | Company name in title (61%)",https://www.zuarimoney.com/,,2026-02-15T11:46:14.537269
+9134,Zulu Merchandise Pvt Ltd,,,,N/A,https://www.kreweofzulu.com/,serper,OFFICIAL_WEBSITE_FOUND,70,"Company name on page (100% match) | Corporate email @kreweofzulu.com | Ownership signals: ['contact us', 'privacy policy', 'login'] | Industry keyword: 'emi'",https://www.kreweofzulu.com/,,2026-02-15T11:46:31.047423
+9135,Zweig Securities (P) Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-15T11:46:50.164292

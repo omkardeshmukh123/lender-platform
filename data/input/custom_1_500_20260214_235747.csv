@@ -1,0 +1,502 @@
+row_number,company_name,cin,category,state,aum_cr,raw_url,search_source,outcome,score,evidence,validated_url,reject_reason,timestamp
+1,121 Finance Private Limited (Old Name Yerrow Finance and Investments Private Limited),,,,N/A,https://121finance.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (80% match) | Regulatory text: 'rbi registered' | Corporate email @121finance.com | Ownership signals: ['privacy policy', 'careers', 'login'] | Industry keyword: 'nbfc' | LinkedIn company page linked",https://121finance.com/,,2026-02-14T22:28:24.361588
+2,20Th Century Holdings P Ltd.,,,,N/A,https://www.20thcentury.com/,direct_domain,FALSE_MATCH,30,Company name on page (67% match),,Insufficient evidence (score 30/100),2026-02-14T22:28:28.649872
+3,360 ONE Prime Limited (Formerly : IIFL Wealth Prime Limited and IIFL Wealth Finance Ltd),,,,N/A,https://www.360one.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T22:28:53.642354
+4,4Fin Finance Private Limited,,,,N/A,https://4fin.in/,serper,REVIEW_REQUIRED,55,"Company name on page (100% match) | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'nbfc'",,,2026-02-14T22:28:56.453736
+5,5Paisa P2P Limited,,,,N/A,https://www.5paisa.com/investor-relations,serper,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (100% match) | Registered office address found | Corporate email @5paisa.com | Ownership signals: ['about us', 'contact us', 'board of directors'] | Industry keyword: 'nbfc' | LinkedIn company page linked",https://www.5paisa.com/investor-relations,,2026-02-14T22:29:04.644869
+6,7VIK Finvestment Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:30:04.587691
+7,A & A Capital Services Private Ltd.,,,,N/A,https://www.private.in/,direct_domain,FALSE_MATCH,0,,,No company token in domain: tokens ['capital'] not found in 'private',2026-02-14T22:30:13.520342
+8,A & P Exim Pvt. Ltd,,,,N/A,https://www.eximbankindia.in/sites/default/files/2025-10/Investor%20Presentation%20Oct%202025.pdf,serper,FALSE_MATCH,0,,,PDF file URL,2026-02-14T22:30:27.673209
+9,A A C Investments Pvt Ltd,,,,N/A,https://aacinvestments.com/,serper,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'investment' | Company name in title (81%)",,,2026-02-14T22:30:41.155516
+10,A B  Constructions Pvt Ltd,,,,N/A,https://abcl.com.bd/,serper,OFFICIAL_WEBSITE_FOUND,72,"Company name on page (100% match) | Corporate email @abcl.com.bd | Partial ownership signals: ['about us', 'privacy policy'] | Industry keyword: 'emi' | LinkedIn company page linked",https://abcl.com.bd/,,2026-02-14T22:31:25.521284
+11,A B Fiscal Services Pvt Ltd,,,,N/A,https://www.adityabirla.com/en/businesses/sectors/financial-services/,serper,OFFICIAL_WEBSITE_FOUND,80,"Registered office address found | Regulatory text: 'registered with rbi' | Ownership signals: ['about us', 'board of directors', 'privacy policy'] | Industry keyword: 'nbfc' | LinkedIn company page linked",https://www.adityabirlacapital.com/loans/about-us/company-profile,,2026-02-14T22:31:32.817782
+12,A B S Portfolio (P) Ltd,,,,N/A,https://www.abs.gov.au/about/our-organisation/corporate-reporting/abs-corporate-plan/2024-25/activities,serper,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['contact us', 'careers', 'login'] | Industry keyword: 'finance' | LinkedIn company page linked",,,2026-02-14T22:32:42.581377
+13,A B S Vipanan Pvt Ltd,,,,N/A,https://www.vipanan.in/,direct_domain,FALSE_MATCH,20,Registered office address found,,Insufficient evidence (score 20/100),2026-02-14T22:33:09.589166
+14,A C M Finvests Pvt Ltd,,,,N/A,https://www.finvests.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T22:33:12.883234
+15,A C Steels & Holdings (P) Ltd (Name as per MCA- A.C. Fincom Private Limited),,,,N/A,https://www.acsteel.co.in/,serper,REVIEW_REQUIRED,40,"Corporate email @acsteel.co.in | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'invest'",,,2026-02-14T22:33:14.476193
+16,A J Finance (P) Ltd,,,,N/A,https://www.ajfinance.co.uk/,serper,REVIEW_REQUIRED,40,"Corporate email @ajfinance.co.uk | Ownership signals: ['contact us', 'our team', 'privacy policy'] | Industry keyword: 'loan'",,,2026-02-14T22:33:23.622510
+17,A K Capital Finance Limited,,,,N/A,https://www.akgroup.co.in/group-companies-landing-page?articleId=28209,serper,OFFICIAL_WEBSITE_FOUND,82,"Company name on page (100% match) | Corporate email @akgroup.co.in | Partial ownership signals: ['contact us', 'login'] | Industry keyword: 'investment' | LinkedIn company page linked | Company name in title (71%)",https://www.akgroup.co.in/group-companies-landing-page?articleId=28209,,2026-02-14T22:33:36.811738
+18,A K Construction Pvt Ltd,,,,N/A,https://www.construction.com/,direct_domain,REVIEW_REQUIRED,55,"Company name on page (100% match) | Ownership signals: ['privacy policy', 'careers', 'customer login'] | LinkedIn company page linked",,,2026-02-14T22:33:43.346448
+19,A K I Investments Pvt Ltd,,,,N/A,https://www.akigroup.com/,serper,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (100% match) | Registered office address found | Corporate email @akigroup.com | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'finance' | LinkedIn company page linked",https://www.akigroup.com/,,2026-02-14T22:33:48.370455
+20,A K J Fincap Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:34:01.308457
+21,A K S Credits Ltd.,,,,N/A,https://credits.com/en/,direct_domain,OFFICIAL_WEBSITE_FOUND,95,"Company name on page (100% match) | Registered office address found | Ownership signals: ['terms of service', 'terms and conditions', 'head office'] | Industry keyword: 'finance' | LinkedIn company page linked | Company name in title (58%)",https://credits.com/en/,,2026-02-14T22:35:00.782727
+22,A K Traders (P) Ltd,,,,N/A,http://aktradersonline.com/,serper,REVIEW_REQUIRED,62,Company name on page (100% match) | Corporate email @aktradersonline.com | Partial ownership signals: ['about us'] | Industry keyword: 'emi',,,2026-02-14T22:35:06.343834
+23,A N N Capital Finance Private Limited (formerly known as Jullundur Motor & Land Finance Private Limited),,,,N/A,https://www.anncapitalfin.com/,serper,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T22:35:49.773270
+24,A P Consultants Pvt Ltd,,,,N/A,https://consultants.com/,direct_domain,FALSE_MATCH,30,Company name on page (100% match),,Insufficient evidence (score 30/100),2026-02-14T22:35:54.029273
+25,A P Holdings Private Limited,,,,N/A,https://ap-holdings.jp/english/company-profile.php,serper,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'emi' | LinkedIn company page linked",,,2026-02-14T22:35:56.080636
+26,A R C Enterprises (P) Ltd.,,,,N/A,https://arcenterprises.co.uk/en/home,serper,OFFICIAL_WEBSITE_FOUND,70,"Company name on page (100% match) | Corporate email @arcenterprises.co.uk | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Company name in title (74%)",https://arcenterprises.co.uk/en/home,,2026-02-14T22:36:35.980221
+27,A R C Finance Ltd,,,,N/A,http://www.arcfinance.in/,serper,OFFICIAL_WEBSITE_FOUND,82,Company name on page (75% match) | Regulatory text: 'nbfc registered' | Partial ownership signals: ['cin no'] | Industry keyword: 'nbfc' | Company name in title (75%),http://www.arcfinance.in/,,2026-02-14T22:37:27.505855
+28,A R T Leasing Ltd,,,,N/A,http://artgroupofcompanies.in/leasing.php,serper,OFFICIAL_WEBSITE_FOUND,95,"Company name on page (100% match) | Regulatory text: 'reserve bank of india' | Corporate email @artgroupofcompanies.in | Ownership signals: ['about us', 'contact us', 'management team'] | Industry keyword: 'nbfc'",http://artgroupofcompanies.in/leasing.php,,2026-02-14T22:37:31.661111
+29,A R Vinimay Pvt Ltd,,,,N/A,https://www.vinimay.co.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T22:37:38.387894
+30,A S Confin Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:38:01.959447
+31,A S P Fincap Private Limited,,,,N/A,https://fincap.com/,direct_domain,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['our team', 'careers', 'login'] | Industry keyword: 'rbi' | LinkedIn company page linked",,,2026-02-14T22:38:21.001950
+32,A To Z Securities Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:38:37.322383
+33,A V Commercial Co Pvt Ltd,,,,N/A,https://avro.co.in/,serper,OFFICIAL_WEBSITE_FOUND,90,"Company name on page (100% match) | Regulatory text: 'reserve bank of india' | Ownership signals: ['about us', 'contact us', 'board of directors'] | Industry keyword: 'non-banking' | Company name in title (65%)",https://avro.co.in/,,2026-02-14T22:39:18.138560
+34,A V L Leasing & Finance Limited,,,,N/A,https://www.avl.com/en-in/locations/avl-india-private-limited,serper,OFFICIAL_WEBSITE_FOUND,90,"Company name on page (100% match) | Regulatory text: 'reserve bank of india' | Ownership signals: ['about us', 'contact us', 'board of directors'] | Industry keyword: 'nbfc' | Company name in title (71%)",https://www.abhinavleasefinltd.in/,,2026-02-14T22:40:05.901762
+35,A V P Investments Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:40:17.026455
+36,A V S Finlease Limited,,,,N/A,https://www.finlease.com/,direct_domain,FALSE_MATCH,0,,,DNS resolution failed,2026-02-14T22:40:27.147579
+37,A. C. Choksi Financial Services Pvt. Ltd. (Name as per MCA - DEUS Financial Capital Private Limited),,,,N/A,https://www.choksi.com/,direct_domain,FALSE_MATCH,17,Partial ownership signals: ['login'] | Industry keyword: 'nbfc',,Insufficient evidence (score 17/100),2026-02-14T22:40:50.098085
+38,A. T. E. Pvt. Ltd.,,,,N/A,https://www.findevgateway.org/sites/default/files/publications/files/mfg-en-paper-the-indian-microfinance-crisis-2010-lessons-for-china-english-version-apr-2011.pdf,serper,FALSE_MATCH,0,,,PDF file URL,2026-02-14T22:40:52.529801
+39,A.D.And Associates Finance Private  Limited,,,,N/A,https://adassociatescs.com/,serper,OFFICIAL_WEBSITE_FOUND,90,"Company name on page (67% match) | Regulatory text: 'reserve bank of india' | Ownership signals: ['about us', 'contact us', 'careers'] | Industry keyword: 'nbfc' | Company name in title (59%)",https://adassociatescs.com/,,2026-02-14T22:40:55.347770
+40,A.G. Finance and Investments Pvt Ltd (Name as per MCA - A.G. Finance And Leasing Private Limited),,,,N/A,https://andinvestments.in/,direct_domain,REVIEW_REQUIRED,55,"Company name on page (80% match) | Ownership signals: ['about us', 'our team', 'privacy policy'] | Industry keyword: 'finance'",,,2026-02-14T22:41:14.503598
+41,A.K. Bajaj Investment Private Limited,,,,N/A,https://www.bajaj.com/,direct_domain,REVIEW_REQUIRED,40,Company name on page (100% match) | Industry keyword: 'mortgage',,,2026-02-14T22:41:44.897419
+42,A.K. Shorewala Securities Ltd.,,,,N/A,https://company.vakilsearch.com/a-k-shorewala-securities-limited/U74899DL1995PLC068097,serper,FALSE_MATCH,0,,,"No company token in domain: tokens ['securities', 'shorewala'] not found in 'companyvakilsearch'",2026-02-14T22:41:49.052434
+43,A.K.G. Securities and Consultancy Limited,,,,N/A,https://www.akgsecurities.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T22:41:56.164132
+44,A.N.R. Finlease (P) Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:41:57.264507
+45,A.R. Leasing Pvt. Ltd.,,,,N/A,https://arleasing.com/,serper,FALSE_MATCH,0,,,HTTP 408,2026-02-14T22:42:05.491572
+46,A.S.P. Investments (P) Ltd.,,,,N/A,https://aspfinserv.com/,serper,FALSE_MATCH,0,,,No company token in domain: tokens ['investmentsltd'] not found in 'aspfinserv',2026-02-14T22:42:34.965194
+47,A.T. Invofin India Pvt Ltd,,,,N/A,https://www.invofin.com/,direct_domain,FALSE_MATCH,0,,,DNS resolution failed,2026-02-14T22:42:51.198410
+48,A.T.N. Leasing & Finance Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:43:15.269398
+49,Aaa Mg Finance Limited,,,,N/A,https://www.aaa.com/International/,direct_domain,REVIEW_REQUIRED,47,Company name on page (100% match) | Partial ownership signals: ['board of directors'] | Industry keyword: 'rbi',,,2026-02-14T22:43:44.321902
+50,Aachman Vanijya Pvt Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:43:50.519580
+51,Aad Finlease (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:43:59.914264
+52,Aadhar Financial Services Ltd.,,,,N/A,https://www.aadhar.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,87,Company name on page (100% match) | Registered office address found | Partial ownership signals: ['head office'] | Industry keyword: 'emi' | LinkedIn company page linked | Company name in title (50%),https://www.aadhar.com/,,2026-02-14T22:44:07.468326
+53,Aadhar India Finvest Limited,,,,N/A,https://www.aadharfinvest.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T22:44:19.515563
+54,Aadhi Bhagavan Finance Private Limited,,,,N/A,https://aadhibhagavan.org,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T22:44:22.983196
+55,Aadi Shakti Portfolio & Finlease Pvt. Ltd.,,,,N/A,https://aadishakti.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (60% match) | Registered office address found | Corporate email @aadishakti.com | Ownership signals: ['about us', 'contact us', 'corporate office'] | Industry keyword: 'emi' | Company name in title (50%)",https://aadishakti.com/,,2026-02-14T22:44:26.375021
+56,Aadidev Investment & Finance Ltd.,,,,N/A,https://aadidev.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,90,"Company name on page (100% match) | Corporate email @aadidev.com | Ownership signals: ['about us', 'our team', 'login'] | Industry keyword: 'rbi' | LinkedIn company page linked | Company name in title (56%)",https://aadidev.com/,,2026-02-14T22:44:32.707482
+57,Aagam Capital Ltd.( Old Name Subhkam Capital Ltd),,,,N/A,https://www.aagam.co.in/,direct_domain,REVIEW_REQUIRED,62,Company name on page (75% match) | Corporate email @aagam.co.in | Partial ownership signals: ['about us'] | Industry keyword: 'emi',,,2026-02-14T22:44:44.637787
+58,Aagam Holdings Private Limited,,,,N/A,https://www.aagamcapital.com/,serper,FALSE_MATCH,27,"Partial ownership signals: ['about us', 'contact us'] | Industry keyword: 'nbfc' | Company name in title (52%)",,Insufficient evidence (score 27/100),2026-02-14T22:45:20.563172
+59,Aaina Engineering Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:45:35.023049
+60,Aakanksha  Electronics  Pvt.  Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:45:42.817444
+61,Aakanksha Financial & Placement Services Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:45:52.543573
+62,Aakansha Advisory Sevices (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:46:00.155911
+63,Aakarshak Synthetics Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:46:07.890833
+64,Aalekha Supply (P) Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:46:14.936817
+65,Aalok Deep Finance Pvt. Ltd.,,,,N/A,https://www.aalokdeep.com/,direct_domain,REVIEW_REQUIRED,55,Company name on page (84% match) | Corporate email @aalokdeep.com | Company name in title (84%),,,2026-02-14T22:46:21.435576
+66,Aamara Capital Pvt Ltd.,,,,N/A,https://www.aamara.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T22:46:23.427408
+67,Aamcol Trexim (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:46:26.312204
+68,Aan Finance And Investment Private Limited,,,,N/A,https://www.aanand.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T22:46:33.507554
+69,Aar Kay Finlease (P) Ltd.,,,,N/A,https://www.aarkay.com/,direct_domain,REVIEW_REQUIRED,40,Company name on page (67% match) | Company name in title (50%),,,2026-02-14T22:46:36.141176
+70,Aar Shyam India Investment Company Limited,,,,N/A,https://aarshyam.in,direct_domain,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'investment' | Company name in title (100%)",,,2026-02-14T22:46:41.166523
+71,Aaradhya Capital Private Limited,,,,N/A,https://www.aaradhya.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T22:46:50.303671
+72,Aarambh Securities Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:46:51.790874
+73,Aarchi Consultancy (P) Ltd,,,,N/A,https://aarchi-consultancy-pvt-ltd.charteredone.com/U74140WB1993PTC060953,serper,OFFICIAL_WEBSITE_FOUND,77,"Company name on page (100% match) | Registered office address found | Partial ownership signals: ['registered office', 'login'] | Industry keyword: 'rbi' | Company name in title (74%)",https://aarchi-consultancy-pvt-ltd.charteredone.com/U74140WB1993PTC060953,,2026-02-14T22:47:01.647544
+74,Aardee Credits (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:47:09.623049
+75,Aarkay Investments (P) Ltd,,,,N/A,https://aarkay-finance.com/nbfc-loan.html,serper,FALSE_MATCH,0,,,DNS resolution failed,2026-02-14T22:47:17.172301
+76,Aarkay Tie-Up  Pvt.  Ltd.,,,,N/A,https://aarkay-finance.com/nbfc-loan.html,serper,FALSE_MATCH,0,,,DNS resolution failed,2026-02-14T22:47:34.637295
+77,Aarpee Commercial Co (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:47:52.047160
+78,Aarsh Fincon Limited(Formerly Known as Akme Fincon  Ltd.),,,,N/A,https://aarshfincon.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T22:47:59.177151
+79,Aarthik Finance & Leasing Pvt. Ltd.,,,,N/A,https://aarthik.in/,direct_domain,REVIEW_REQUIRED,55,"Company name on page (100% match) | Ownership signals: ['contact us', 'privacy policy', 'login'] | Company name in title (65%)",,,2026-02-14T22:48:02.284071
+80,Aarti Corporate Services Ltd.,,,,N/A,https://www.aarti-surfactants.com/assets/investors/final-letter-of-offer_25-jan-2023.pdf,serper,FALSE_MATCH,0,,,PDF file URL,2026-02-14T22:48:18.393238
+81,Aarti Marketings Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:48:21.765813
+82,Aashiyana Goods (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:48:31.020481
+83,Aashrit Capital Limited,,,,N/A,http://aashritcapital.com/,serper,OFFICIAL_WEBSITE_FOUND,90,"Company name on page (100% match) | Regulatory text: 'reserve bank of india' | Ownership signals: ['about us', 'cin no', 'login'] | Industry keyword: 'nbfc' | Company name in title (100%)",http://aashritcapital.com/,,2026-02-14T22:48:38.310538
+84,Aashriya Capital & Financial Services Pvt Ltd,,,,N/A,https://www.aashriya.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T22:48:43.885405
+85,Aasman Kamraz Leasing & Hire Purchase Company Pvt Ltd,,,,N/A,https://company.vakilsearch.com/aasman-kamraz-leasing-hire-purchase-company-private-limited/U65921JK1997PTC001645,serper,OFFICIAL_WEBSITE_FOUND,95,"Company name on page (100% match) | Registered office address found | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'loan' | LinkedIn company page linked | Company name in title (72%)",https://company.vakilsearch.com/aasman-kamraz-leasing-hire-purchase-company-private-limited/U65921JK1997PTC001645,,2026-02-14T22:48:45.323746
+86,"Aasra Fincorp Private Limited (Name Changed On May 14, 2019)",,,,N/A,https://aasrafincorp.com/,direct_domain,FALSE_MATCH,30,Company name on page (60% match),,Insufficient evidence (score 30/100),2026-02-14T22:48:52.962727
+87,Aastamangalam Finance Limited(Formerly Known As Upasana Finance Limited),,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:49:10.588362
+88,Aastha Chemical (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:49:19.173487
+89,Aatma Capital Private Limited,,,,N/A,http://aatmacapital.com/,serper,REVIEW_REQUIRED,57,"Company name on page (100% match) | Partial ownership signals: ['contact us', 'management team'] | Industry keyword: 'nbfc' | Company name in title (100%)",,,2026-02-14T22:49:26.634087
+90,Aawkins Tracom (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:50:09.990215
+91,Aay Jay Consultants & Investment (P) Ltd,,,,N/A,https://aayjay.com/,direct_domain,REVIEW_REQUIRED,55,"Company name on page (67% match) | Ownership signals: ['contact us', 'privacy policy', 'terms of service'] | Industry keyword: 'emi'",,,2026-02-14T22:50:20.580645
+92,Aayush Manufacturers  &  Financiers  Pvt.  Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:50:22.329880
+93,Aayush Motor Finance Private Limited (Received From Ro Lucknow),,,,N/A,https://www.aayushmotor.com/,serper,REVIEW_REQUIRED,40,Company name on page (60% match) | Industry keyword: 'loan',,,2026-02-14T22:50:29.753488
+94,AB Leasing & Finance Limited,,,,N/A,https://www.cibil.com/regulatory,serper,FALSE_MATCH,0,,,"No company token in domain: tokens ['leasing', 'finance'] not found in 'cibil'",2026-02-14T22:50:48.300376
+95,Abans Finance Private Limited,,,,N/A,https://buyabans.com,direct_domain,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'rbi' | LinkedIn company page linked",,,2026-02-14T22:50:53.134881
+96,Abbot Tracon Pvt Ltd,,,,N/A,https://www.abbott.in/homepage.html,serper,FALSE_MATCH,35,"Ownership signals: ['about us', 'privacy policy', 'careers'] | Industry keyword: 'invest' | LinkedIn company page linked",,Insufficient evidence (score 35/100),2026-02-14T22:51:02.845298
+97,ABC Financial Services (P) Ltd .,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:51:11.086528
+98,Abha Property Project Limited,,,,N/A,https://abhaproperty.in/,direct_domain,OFFICIAL_WEBSITE_FOUND,90,"Company name on page (100% match) | Regulatory text: 'nbfc registered' | Ownership signals: ['contact us', 'grievance', 'cin no'] | Industry keyword: 'nbfc' | Company name in title (89%)",https://abhaproperty.in/,,2026-02-14T22:51:17.369011
+99,Abhani Securities  Pvt.  Ltd.,,,,N/A,https://www.prabhatsecuritiesltd.co.in/,serper,OFFICIAL_WEBSITE_FOUND,85,"Registered office address found | Regulatory text: 'reserve bank of india' | Corporate email @prabhatsecuritiesltd.co.in | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'nbfc'",https://www.prabhatsecuritiesltd.co.in/,,2026-02-14T22:51:24.872924
+100,Abharani Vinimay (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:51:35.174547
+101,Abhay Commerce  Pvt.  Ltd.,,,,N/A,https://abhaybhutada.com/,serper,OFFICIAL_WEBSITE_FOUND,72,Company name on page (67% match) | Regulatory text: 'systemically important' | Partial ownership signals: ['about us'] | Industry keyword: 'nbfc',https://abhaybhutada.com/,,2026-02-14T22:51:42.370778
+102,Abhaykumar Lea-Fin & Investments (Private) Limited,,,,N/A,https://www.unicohousingfinance.com/careers,serper,OFFICIAL_WEBSITE_FOUND,85,"Company name on page (100% match) | Registered office address found | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'rbi' | LinkedIn company page linked",https://www.unicohousingfinance.com/careers,,2026-02-14T22:51:55.820708
+103,Abhi Commercial & Finvest Pvt Ltd,,,,N/A,https://abhi.com.pk/,serper,REVIEW_REQUIRED,60,"Corporate email @abhi.com.pk | Ownership signals: ['about us', 'privacy policy', 'terms and conditions'] | Industry keyword: 'nbfc' | LinkedIn company page linked | Company name in title (54%)",,,2026-02-14T22:52:07.649634
+104,Abhi Portfolio Pvt. Ltd.,,,,N/A,https://abhiportfolio.in/,direct_domain,REVIEW_REQUIRED,40,Company name on page (78% match) | Company name in title (78%),,,2026-02-14T22:52:21.558220
+105,Abhideep  Plantation (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:52:27.625435
+106,Abhideep Exports  Pvt. Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:52:35.949818
+107,Abhideep Global Finance Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:52:43.277766
+108,Abhilash Growth Fund Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:52:51.946334
+109,Abhimanyoo Business (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:53:00.336412
+110,Abhinandan Investments Limited (Name as per MCA - Abhinandan Tradex Limited),,,,N/A,https://abhinandangroup.com/,serper,OFFICIAL_WEBSITE_FOUND,80,"Company name on page (67% match) | Corporate email @abhinandangroup.com | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'rbi' | Company name in title (55%)",https://abhinandangroup.com/,,2026-02-14T22:53:09.615543
+111,Abhinandan Vanijya (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:53:46.723933
+112,Abhinav Capital Services Ltd. (Formerly Known As Abhinav Homes And Resorts Ltd.),,,,N/A,https://www.abhinav.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,70,"Registered office address found | Corporate email @abhinav.com | Ownership signals: ['about us', 'our team', 'privacy policy'] | Industry keyword: 'investment' | LinkedIn company page linked",https://www.abhinav.com/,,2026-02-14T22:53:53.904097
+113,Abhinav Leasing & Finance Ltd.,,,,N/A,https://www.abhinav.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (100% match) | Registered office address found | Corporate email @abhinav.com | Ownership signals: ['about us', 'our team', 'privacy policy'] | Industry keyword: 'investment' | LinkedIn company page linked",https://www.abhinav.com/,,2026-02-14T22:53:58.510377
+114,Abhiraj Trading And Investments Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:54:02.517168
+115,Abhiruchi Vision  Pvt. Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:54:11.231012
+116,Abhisheik Portfolio Management Ltd.,,,,N/A,https://www.abhisheikfinance.com/terms-conditions.html,serper,REVIEW_REQUIRED,55,"Company name on page (100% match) | Ownership signals: ['about us', 'privacy policy', 'terms and conditions'] | Industry keyword: 'rbi'",,,2026-02-14T22:54:18.622733
+117,Abhishek Capital Services (P) Ltd,,,,N/A,https://abhishekcapital.com/,serper,OFFICIAL_WEBSITE_FOUND,87,"Company name on page (100% match) | Regulatory text: 'non-banking financial company' | Corporate email @abhisheksecurities.com | Partial ownership signals: ['about us', 'contact us'] | Industry keyword: 'nbfc'",http://www.abhisheksecurities.com/hdb_fin.htm,,2026-02-14T22:54:25.561915
+118,Abhishek Chemicals Pvt.Ltd.,,,,N/A,http://www.abhishekchemical.com/,serper,REVIEW_REQUIRED,47,"Company name on page (100% match) | Partial ownership signals: ['about us', 'contact us'] | Industry keyword: 'emi'",,,2026-02-14T22:55:20.474676
+119,Abhishek Finance Co. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:55:28.519800
+120,Abhishek Finlease Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:56:06.194563
+121,Abhishek Finsec Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:56:14.039947
+122,Abhishek Fiscal Services Pvt Ltd,,,,N/A,https://upskillwithabhishek.com/financial-services/,serper,FALSE_MATCH,17,"Partial ownership signals: ['privacy policy', 'careers'] | Industry keyword: 'nbfc'",,Insufficient evidence (score 17/100),2026-02-14T22:56:48.244492
+123,Abhishek Share & Securities (P) Ltd,,,,N/A,http://www.abhisheksecurities.com/,serper,REVIEW_REQUIRED,62,"Company name on page (100% match) | Corporate email @abhisheksecurities.com | Partial ownership signals: ['about us', 'contact us'] | Industry keyword: 'investment'",,,2026-02-14T22:56:57.437298
+124,Abhishek Stock Broking Services (P) Ltd,,,,N/A,http://www.abhisheksecurities.com/,serper,REVIEW_REQUIRED,62,"Company name on page (67% match) | Corporate email @abhisheksecurities.com | Partial ownership signals: ['about us', 'contact us'] | Industry keyword: 'investment'",,,2026-02-14T22:57:04.718118
+125,Abhiyan Capital (India) Private Limited {Earlier known as Dowell Fiscal Services Private Limited},,,,N/A,https://www.abhiyancapital.com/,serper,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (60% match) | Registered office address found | Regulatory text: 'rbi registered' | Corporate email @abhiyancapital.com | Ownership signals: ['about us', 'contact us', 'management team'] | Industry keyword: 'nbfc' | LinkedIn company page linked",https://www.abhiyancapital.com/,,2026-02-14T22:57:20.261000
+126,"Abhiyan Merchantts Private Limited (on MCA: PRIDE
+CAPITAL PRIVATE LIMITED)",,,,N/A,https://www.abhiyanmerchantts.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T22:57:31.277342
+127,Abinandan Holdings (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T22:57:33.455587
+128,Abir Traders (P) Ltd,,,,N/A,https://www.abirtraders.com/,direct_domain,REVIEW_REQUIRED,40,Company name on page (100% match) | Company name in title (68%),,,2026-02-14T22:57:40.772787
+129,Abm Finlease  Private Limited,,,,N/A,https://abmfinlease.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T22:57:43.779468
+130,Aboli Investment Pvt. Ltd.,,,,N/A,https://www.aboli.co.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T22:58:00.027577
+131,Abrepose Financial  &  Technical  Services  Ltd.,,,,N/A,https://abrepose.in/wp-content/uploads/2022/11/2017-18.pdf,serper,FALSE_MATCH,0,,,PDF file URL,2026-02-14T22:58:38.491861
+132,ABT Finance Limited,,,,N/A,https://abt-finance-limited.charteredone.com/U65921TZ1985PLC001575,serper,REVIEW_REQUIRED,67,"Company name on page (100% match) | Registered office address found | Partial ownership signals: ['registered office', 'login'] | Industry keyword: 'rbi'",,,2026-02-14T22:58:42.701539
+133,Access Equity Pvt Ltd,,,,N/A,https://www.accessequity.in/,direct_domain,OFFICIAL_WEBSITE_FOUND,90,"Company name on page (100% match) | Registered office address found | Corporate email @accessequity.in | Ownership signals: ['contact us', 'privacy policy', 'terms and conditions'] | Industry keyword: 'rbi'",https://www.accessequity.in/,,2026-02-14T22:59:11.652329
+134,Accessline Limited (Formerly Accessline Private Limited),,,,N/A,https://accessline.amex-payment.com/,serper,REVIEW_REQUIRED,40,Company name on page (67% match) | Company name in title (56%),,,2026-02-14T22:59:24.174895
+135,Accord Securities  Ltd.,,,,N/A,https://www.accordsecurities.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,80,"Company name on page (100% match) | Corporate email @accordsecurities.com | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'nbfc' | Company name in title (100%)",https://www.accordsecurities.com/,,2026-02-14T22:59:57.933074
+136,Accredit Distributors (P) Ltd,,,,N/A,https://accredit-distributors-pvt-ltd.charteredone.com/U74140WB1994PTC062186,serper,OFFICIAL_WEBSITE_FOUND,77,"Company name on page (100% match) | Registered office address found | Partial ownership signals: ['registered office', 'login'] | Industry keyword: 'rbi' | Company name in title (77%)",https://accredit-distributors-pvt-ltd.charteredone.com/U74140WB1994PTC062186,,2026-02-14T23:00:02.180646
+137,Accredut Finance And Investment Private Limited,,,,N/A,https://www.accredutfinance.com/,serper,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (100% match) | Registered office address found | Regulatory text: 'reserve bank of india' | Corporate email @accredutfinance.com | Ownership signals: ['about us', 'our team', 'registered office'] | Industry keyword: 'nbfc' | Company name in title (88%)",https://www.accredutfinance.com/,,2026-02-14T23:00:10.688503
+138,Accura Capital Private Limited (Formerly known as Dimple Finance and Investment Private Limited),,,,N/A,https://www.accura.in/,direct_domain,FALSE_MATCH,17,"Partial ownership signals: ['about us', 'contact us'] | Company name in title (53%)",,Insufficient evidence (score 17/100),2026-02-14T23:00:18.683491
+139,Accurate Finman Services Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:00:34.842813
+140,Accurex Traders Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:00:42.948570
+141,Ace Finlease Private Limited,,,,N/A,https://acegroup.in/companies/,serper,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (100% match) | Registered office address found | Regulatory text: 'reserve bank of india' | Corporate email @acegroup.in | Ownership signals: ['about us', 'contact us', 'board of directors'] | Industry keyword: 'nbfc'",https://acegroup.in/companies/,,2026-02-14T23:00:49.380137
+142,Acepro Finance Private Limited,,,,N/A,https://acepro.com/,direct_domain,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'emi' | Company name in title (57%)",,,2026-02-14T23:00:59.950736
+143,Acetylene Trexim (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:01:08.157612
+144,ACG Leasing Ltd.,,,,N/A,https://www.acg.com/,direct_domain,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'loan' | LinkedIn company page linked",,,2026-02-14T23:01:15.119916
+145,ACG Sons Financiers Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:01:17.565421
+146,Achi Finance And Management Consultancy Private Limited,,,,N/A,http://shreeachi.com/group.htm,serper,REVIEW_REQUIRED,47,Company name on page (100% match) | Partial ownership signals: ['about us'] | Industry keyword: 'finance',,,2026-02-14T23:01:25.861839
+147,Achiievers Finance India Private Limited,,,,N/A,https://www.achiieversfinance.com/,serper,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (100% match) | Regulatory text: 'nbfc-nd' | Corporate email @achiieversfinance.com | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'nbfc' | LinkedIn company page linked | Company name in title (65%)",https://www.achiieversfinance.com/,,2026-02-14T23:01:34.490069
+148,Achin Vyapaar (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:01:49.514553
+149,Achyut & Neeta Holdings & Finance Private Limited,,,,N/A,https://www.achyutneeta.com/,direct_domain,REVIEW_REQUIRED,50,Company name on page (100% match) | Industry keyword: 'finance' | Company name in title (100%),,,2026-02-14T23:01:56.492180
+150,Acme (P) Ltd (Name as per MCA - Boast Traders Private Limited),,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:01:57.307057
+151,Acme Consultants (P) Ltd,,,,N/A,https://acmeconsultant.co.in/,serper,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (100% match) | Registered office address found | Corporate email @acmeconsultant.co.in | Ownership signals: ['about us', 'contact us', 'management team'] | Industry keyword: 'emi' | LinkedIn company page linked | Company name in title (65%)",https://acmeconsultant.co.in/,,2026-02-14T23:02:34.224802
+152,Acme Resources Limited,,,,N/A,https://www.acmeresources.in/,direct_domain,REVIEW_REQUIRED,57,Company name on page (100% match) | Partial ownership signals: ['about us'] | Industry keyword: 'loan' | Company name in title (72%),,,2026-02-14T23:03:15.259570
+153,ACN Financial Services Limited,,,,N/A,https://acn.co.in/,direct_domain,REVIEW_REQUIRED,47,"Company name on page (100% match) | Partial ownership signals: ['contact us', 'grievance'] | Industry keyword: 'loan'",,,2026-02-14T23:03:42.389611
+154,Acolyte Finserv Limited (earlier known as Gagan Metals Limited),,,,N/A,https://www.acolyte.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:03:48.705975
+155,Acsys Investments Private Limited,,,,N/A,https://www.acsysindia.com/,serper,OFFICIAL_WEBSITE_FOUND,82,Company name on page (100% match) | Regulatory text: 'rbi registered' | Partial ownership signals: ['contact us'] | Industry keyword: 'nbfc' | Company name in title (100%),https://www.acsysindia.com/,,2026-02-14T23:03:53.546258
+156,ACT Fininvest Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:03:59.772220
+157,Action Capital Private Limited,,,,N/A,https://www.actioncapital.com/,serper,OFFICIAL_WEBSITE_FOUND,70,"Company name on page (100% match) | Corporate email @actioncapital.com | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'nbfc'",https://www.actioncapital.com/,,2026-02-14T23:04:09.054982
+158,Active Finvest Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:04:23.146140
+159,Acuvision Capital And Finance Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:04:30.133826
+160,Adani Finserve Private Limited,,,,N/A,https://www.adanifinserve.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:04:39.464645
+161,Adarsh Capital Finstock Ltd,,,,N/A,https://www.adarshfinstock.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:04:41.607748
+162,Adarsh Commercial (P) Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:04:43.718640
+163,Adarsha Motor Credit Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:04:52.023878
+164,Adcon Capital Services Ltd.,,,,N/A,https://www.adcon.in/,direct_domain,FALSE_MATCH,30,Company name on page (100% match),,Insufficient evidence (score 30/100),2026-02-14T23:04:59.344430
+165,Add - Truck Commercial Pvt Ltd,,,,N/A,https://asia.daimlertruck.com/en/press-releases/india/bharatbenz-customers-gain-attractive-finance-options/,serper,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['about us', 'contact us', 'careers'] | Industry keyword: 'nbfc' | LinkedIn company page linked",,,2026-02-14T23:05:07.772846
+166,Addarsh Management (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:05:15.241517
+167,Addies Innovations Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:05:21.929451
+168,Adharshila Capital Services Ltd.,,,,N/A,https://www.adharshila.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:05:29.786938
+169,Adhinath Investments Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:05:30.923211
+170,Adhishwar Nivesh Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:05:38.570203
+171,Adhunik Bharat Finance Company Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:05:46.356303
+172,Adhunik Investments Private Limited,,,,N/A,https://www.adhunikfinserve.com/,serper,OFFICIAL_WEBSITE_FOUND,72,"Company name on page (100% match) | Corporate email @adhunikfinserve.com | Partial ownership signals: ['about us', 'contact us'] | Industry keyword: 'nbfc' | Company name in title (69%)",https://www.adhunikfinserve.com/,,2026-02-14T23:05:54.481120
+173,Adhunik Merchandise  Pvt.  Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:06:12.098583
+174,Adi Chitragupta Finance Limited,,,,N/A,https://adichitragupta.com/,direct_domain,REVIEW_REQUIRED,47,"Company name on page (100% match) | Partial ownership signals: ['about us', 'contact us'] | Industry keyword: 'emi'",,,2026-02-14T23:06:18.406006
+175,Adinath Financial Services (P) Ltd,,,,N/A,https://www.adinath.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:06:28.326814
+176,Adishakti Mercantiles (P) Ltd,,,,N/A,https://www.adishaktisecurities.com/,serper,FALSE_MATCH,25,"Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'finance'",,Insufficient evidence (score 25/100),2026-02-14T23:06:30.745599
+177,Adisun Investments (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:06:39.685070
+178,Aditi Capfin Services Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:06:46.810054
+179,Aditi Industries Ltd.,,,,N/A,https://www.adititrolley.com/post/how-to-choose-a-perfect-trolley-national-aditi,serper,REVIEW_REQUIRED,40,Company name on page (100% match) | Industry keyword: 'emi',,,2026-02-14T23:06:53.135141
+180,Aditi Sanchar Suvidha (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:07:14.731450
+181,Aditi Trade & Finance Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:07:22.301976
+182,Aditsh Fintech Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:07:28.433204
+183,Aditya Birla Capital Limited,,,,N/A,https://www.adityabirla.com/,direct_domain,REVIEW_REQUIRED,47,"Company name on page (100% match) | Partial ownership signals: ['our team', 'careers'] | Industry keyword: 'lending'",,,2026-02-14T23:07:35.698504
+184,Aditya Consultants & Traders Ltd,,,,N/A,https://www.adityaconsultants.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:07:36.609176
+185,Aditya Realtors  Ltd.,,,,N/A,https://www.adityarealtors.com/,direct_domain,REVIEW_REQUIRED,47,"Company name on page (100% match) | Partial ownership signals: ['about us', 'login'] | Industry keyword: 'credit'",,,2026-02-14T23:07:43.774076
+186,Aditya Resources Ltd,,,,N/A,https://udyogplus.adityabirlacapital.com/blogs/understanding-nbfc,serper,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (100% match) | Registered office address found | Regulatory text: 'reserve bank of india' | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'nbfc' | LinkedIn company page linked",https://udyogplus.adityabirlacapital.com/blogs/understanding-nbfc,,2026-02-14T23:08:08.695435
+187,Aditya Trexim Pvt Ltd,,,,N/A,https://udyogplus.adityabirlacapital.com/blogs/understanding-nbfc,serper,OFFICIAL_WEBSITE_FOUND,80,"Registered office address found | Regulatory text: 'reserve bank of india' | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'nbfc' | LinkedIn company page linked",https://udyogplus.adityabirlacapital.com/blogs/understanding-nbfc,,2026-02-14T23:08:17.298068
+188,Adiyaman Investments Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:08:24.423198
+189,Adjavis Capital Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:08:32.446375
+190,Ad-Manum Finance Limited.,,,,N/A,https://www.admanumfinance.com/Annual%20Report_AMFL_FY%202024-25.pdf,serper,FALSE_MATCH,0,,,PDF file URL,2026-02-14T23:09:06.554362
+191,Admiral Finstock Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:09:09.776812
+192,Admire Vinimay (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:09:17.826596
+193,Adonis Niketan Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:09:25.883510
+194,Adonis Niryat (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:09:33.941843
+195,Advaita Finance Solution Private Limited,,,,N/A,https://www.advaitasolution.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,72,"Company name on page (100% match) | Corporate email @advaitasolution.com | Partial ownership signals: ['about us', 'contact us'] | Industry keyword: 'loan' | Company name in title (97%)",https://www.advaitasolution.com/,,2026-02-14T23:09:41.268743
+196,Advance Business Services Ltd,,,,N/A,https://advancebusiness.co.in/,direct_domain,REVIEW_REQUIRED,57,Company name on page (100% match) | Partial ownership signals: ['contact us'] | Industry keyword: 'emi' | Company name in title (74%),,,2026-02-14T23:09:43.598831
+197,Advance Finstock Private Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:10:05.816216
+198,Advanced Fiscal Services Pvt.Ltd.,,,,N/A,https://advancedfiscalservices.com/,serper,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (76% match) | Registered office address found | Corporate email @advancedfiscalservices.com | Ownership signals: ['about us', 'contact us', 'corporate office'] | Industry keyword: 'loan' | Company name in title (76%)",https://advancedfiscalservices.com/,,2026-02-14T23:10:13.046689
+199,Advanced Leasing & Finance Pvt. Ltd.,,,,N/A,https://www.advanced.com/,direct_domain,REVIEW_REQUIRED,42,"Corporate email @advanced.com | Partial ownership signals: ['contact us', 'login'] | Industry keyword: 'emi' | LinkedIn company page linked",,,2026-02-14T23:10:42.101041
+200,Advantage Equi Fund (P) Ltd,,,,N/A,https://indiaadvantage.co.in/,serper,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (100% match) | Registered office address found | Corporate email @indiaadvantage.co.in | Ownership signals: ['about us', 'contact us', 'management team'] | Industry keyword: 'rbi' | LinkedIn company page linked",https://indiaadvantage.co.in/,,2026-02-14T23:10:46.526926
+201,Advent Finserv Private Limited (Earlier known as Nannu Holdings Ltd.),,,,N/A,https://www.advent.com/,direct_domain,FALSE_MATCH,35,"Ownership signals: ['contact us', 'our team', 'investor relations'] | Industry keyword: 'finance' | LinkedIn company page linked",,Insufficient evidence (score 35/100),2026-02-14T23:10:53.652135
+202,Advent Fiscal Private Limited,,,,N/A,https://www.advent.energy/wp-content/uploads/2023/04/Annual-Report.pdf,serper,FALSE_MATCH,0,,,PDF file URL,2026-02-14T23:10:55.470297
+203,Adventz Finance Private Limited,,,,N/A,https://www.adventz.com/,direct_domain,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['about us', 'contact us', 'board of directors'] | Industry keyword: 'financial services' | Company name in title (70%)",,,2026-02-14T23:10:59.611147
+204,Adventz Securities Enterprises Limited (Formerly Poddar Heritage Corp Ltd),,,,N/A,https://www.adventz.com/,serper,FALSE_MATCH,25,"Ownership signals: ['about us', 'contact us', 'board of directors'] | Industry keyword: 'financial services'",,Insufficient evidence (score 25/100),2026-02-14T23:11:03.747284
+205,Advik Capital Ltd,,,,N/A,https://www.advik.co.in/,direct_domain,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (100% match) | Registered office address found | Corporate email @advik.co.in | Ownership signals: ['about us', 'registered office', 'corporate office'] | Industry keyword: 'rbi' | LinkedIn company page linked | Company name in title (60%)",https://www.advik.co.in/,,2026-02-14T23:11:10.864853
+206,Advin Fiscal Services (P) Ltd,,,,N/A,https://advancedfiscalservices.com/,serper,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (69% match) | Registered office address found | Corporate email @advancedfiscalservices.com | Ownership signals: ['about us', 'contact us', 'corporate office'] | Industry keyword: 'loan' | Company name in title (69%)",https://advancedfiscalservices.com/,,2026-02-14T23:11:20.836635
+207,Adwita Finvest Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:11:40.002009
+208,Aeon Credit Service India Private Limited,,,,N/A,https://www.aeon.com/,direct_domain,REVIEW_REQUIRED,40,Company name on page (100% match) | Industry keyword: 'loan',,,2026-02-14T23:11:48.162579
+209,Aereo Dealcom Private Limited,,,,N/A,https://aereo.io/,serper,FALSE_MATCH,35,"Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'emi' | Company name in title (56%)",,Insufficient evidence (score 35/100),2026-02-14T23:11:51.062234
+210,Aero Securities Pvt Ltd,,,,N/A,https://spiritaerosecuritiessettlement.com/Home/SubmitClaim,serper,FALSE_MATCH,0,,,HTTP 403,2026-02-14T23:11:58.368745
+211,Aeroflex Finance Private Limited,,,,N/A,https://aeroflexfinance.com/,serper,OFFICIAL_WEBSITE_FOUND,80,"Company name on page (100% match) | Regulatory text: 'non-banking financial company' | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'nbfc'",https://aeroflexfinance.com/,,2026-02-14T23:12:06.009006
+212,Affirmative Financial Services Private Limited,,,,N/A,https://www.affirmative.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:12:42.186225
+213,Affluent Securities (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:12:46.050226
+214,Afsons (India)  Pvt.  Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:12:54.492469
+215,Afsons Investors  Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:13:10.409355
+216,AG Securities Private Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:13:17.767502
+217,Agaman Financial Services Limited,,,,N/A,https://agaman.in/,direct_domain,REVIEW_REQUIRED,57,Company name on page (100% match) | Partial ownership signals: ['contact us'] | Industry keyword: 'emi' | Company name in title (57%),,,2026-02-14T23:13:25.234182
+218,Agarni Leasing & Finance Private Limited,,,,N/A,https://www.agarni.com/,direct_domain,REVIEW_REQUIRED,40,Company name on page (100% match) | Industry keyword: 'emi',,,2026-02-14T23:13:34.364094
+219,Agarsons Fincap Services Pvt. Ltd.,,,,N/A,https://agarsonsfincap.com/,direct_domain,REVIEW_REQUIRED,50,Company name on page (70% match) | Industry keyword: 'emi' | Company name in title (70%),,,2026-02-14T23:13:38.655273
+220,Agarwal Assignments Pvt. Ltd.,,,,N/A,https://www.agarwalassignments.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,80,"Company name on page (100% match) | Corporate email @agarwalassignments.com | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'nbfc' | LinkedIn company page linked",https://www.agarwalassignments.com/,,2026-02-14T23:13:41.540921
+221,Agarwal Datamatics Pvt Ltd,,,,N/A,https://blog.datamatics.com/successfully-tread-the-risk-compliance-management-tightrope-with-rpa,serper,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['about us', 'contact us', 'board of directors'] | Industry keyword: 'loan' | LinkedIn company page linked",,,2026-02-14T23:13:45.361820
+222,Agarwal Finestate Pvt.Ltd.,,,,N/A,https://agarwal-finestate-private-limited.charteredone.com/U65993HR1995PTC094169,serper,OFFICIAL_WEBSITE_FOUND,77,"Company name on page (100% match) | Registered office address found | Partial ownership signals: ['registered office', 'login'] | Industry keyword: 'rbi' | Company name in title (74%)",https://agarwal-finestate-private-limited.charteredone.com/U65993HR1995PTC094169,,2026-02-14T23:13:53.122250
+223,Agarwal Fiscal Private Limited,,,,N/A,https://www.agarwalassignments.com/,serper,REVIEW_REQUIRED,50,"Corporate email @agarwalassignments.com | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'nbfc' | LinkedIn company page linked",,,2026-02-14T23:13:59.504601
+224,Agarwal Holdings Private Limited,,,,N/A,https://agarwalholdings.in/,direct_domain,REVIEW_REQUIRED,57,Company name on page (100% match) | Partial ownership signals: ['contact us'] | Industry keyword: 'emi' | Company name in title (88%),,,2026-02-14T23:14:10.693113
+225,Agarwal Telecommunications Pvt. Ltd.,,,,N/A,https://www.agarwalassignments.com/,serper,FALSE_MATCH,0,,,HTTP 503,2026-02-14T23:14:13.843450
+226,Agarwal Trexim  Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:14:36.631019
+227,Agarwalla Udyog Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:14:45.136316
+228,Agastya Vyapaar  Pvt.  Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:14:52.286079
+229,Agate Finance Limited,,,,N/A,https://www.agate.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:14:59.258829
+230,Agbros Fincap Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:15:02.023171
+231,Ageless Capital And Finance Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:15:08.906171
+232,Agf Finlease Pvt. Ltd.,,,,N/A,https://agffinlease.com/,direct_domain,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'nbfc' | Company name in title (73%)",,,2026-02-14T23:15:16.120158
+233,Aggarwal Capfin Financial Services Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:15:22.390812
+234,"Agile Finserv Private Limited (Old Name - Mand Hire Purchase Private Limited, Jalandhar)",,,,N/A,https://www.agilefinserv.com/,serper,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:15:28.771350
+235,Agile Finvest Limited,,,,N/A,https://www.agilefinserv.com/,serper,OFFICIAL_WEBSITE_FOUND,70,"Company name on page (100% match) | Corporate email @agileinvestment.in | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'nbfc'",https://agileinvestment.in/bonds/,,2026-02-14T23:15:49.894637
+236,Aglow Fin Trade Pvt. Ltd.,,,,N/A,https://aglowfin.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:16:02.763800
+237,Aglow Financial Services Private Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:16:26.397467
+238,AGM Management Services Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:16:32.465088
+239,Agni Fin-Lease Pvt.Ltd.,,,,N/A,https://agnifinlease.com/,direct_domain,REVIEW_REQUIRED,62,"Company name on page (100% match) | Corporate email @agnifinlease.com | Partial ownership signals: ['contact us', 'privacy policy'] | Industry keyword: 'nbfc'",,,2026-02-14T23:17:22.969258
+240,Agog Securities Brokerages Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:17:25.418424
+241,Agora Microfinance  India Ltd.(Formerly Jagdhan Finance And Investments Limited),,,,N/A,https://www.agoramicrofinance.com/,direct_domain,REVIEW_REQUIRED,42,"Corporate email @agoramicrofinance.com | Partial ownership signals: ['contact us', 'privacy policy'] | Industry keyword: 'loan' | LinkedIn company page linked",,,2026-02-14T23:17:32.067169
+242,Agr Investments Ltd.,,,,N/A,https://www.agrknowledge.com/industries/services/,serper,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'nbfc' | LinkedIn company page linked",,,2026-02-14T23:17:50.094183
+243,Agra Capitals Private Limited,,,,N/A,https://www.agracapital.com/about-us/,serper,OFFICIAL_WEBSITE_FOUND,80,"Company name on page (100% match) | Corporate email @agracapital.com | Ownership signals: ['about us', 'our team', 'login'] | Industry keyword: 'finance' | Company name in title (60%)",https://www.agracapital.com/about-us/,,2026-02-14T23:18:26.395892
+244,Agra Conductors And Electricals (P) Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:18:47.977113
+245,Agraj Marketing Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:18:53.740448
+246,Agrasar Vanijya (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:19:00.193496
+247,Agrawala Finserve Pvt.Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:19:04.895189
+248,Agrim Fincap Pvt.Ltd.,,,,N/A,https://agrimfincap.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (67% match) | Registered office address found | Regulatory text: 'non-banking financial company' | Corporate email @agrimfincap.com | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'nbfc' | LinkedIn company page linked",https://agrimfincap.com/,,2026-02-14T23:19:10.271065
+249,Agriwise Finserv Limited (Formerly Known as Staragri Finance Limited),,,,N/A,https://www.agriwise.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:19:12.414148
+250,Agro Indus Credits Limited (Formerly Known As Agro Indus Finance And Leasing (India)Ltd,,,,N/A,https://www.agroindus.co.in/,direct_domain,OFFICIAL_WEBSITE_FOUND,95,"Company name on page (88% match) | Regulatory text: 'reserve bank of india' | Corporate email @agroindus.co.in | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'nbfc'",https://www.agroindus.co.in/,,2026-02-14T23:19:13.082117
+251,Agroha Finvest Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:19:32.878557
+252,Agroha Savings Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:19:37.910638
+253,Agya Technologies Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:19:42.042283
+254,Aha Holdings Pvt. Ltd. [Formerly: Idream Holdings Pvt. Ltd.],,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:19:47.107255
+255,Ahalia Finforex Limited (Formerly known as Ahalia Money Exchange and Financial Services Private Limited),,,,N/A,https://www.ahaliafinforex.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:20:15.790392
+256,Ahinsa Merchandise Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:20:18.672830
+257,Ahmednagar Finance Limited,,,,N/A,https://www.ahmednagar.com/,direct_domain,FALSE_MATCH,30,Company name on page (100% match),,Insufficient evidence (score 30/100),2026-02-14T23:20:24.024628
+258,Ahuja Finance Co. P. Ltd.,,,,N/A,https://ahuja.com/,direct_domain,FALSE_MATCH,30,Company name on page (100% match),,Insufficient evidence (score 30/100),2026-02-14T23:20:49.272801
+259,Ahusons Finance & Investments Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:21:21.607387
+260,Ahv Investments Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:21:25.740037
+261,AIC Securities Private Limited [Formerly: Mehra Securities Pvt Ltd],,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:21:30.406561
+262,Aim Credit  Capital  (P)  Ltd.,,,,N/A,https://www.aim.in/,direct_domain,REVIEW_REQUIRED,40,Company name on page (100% match) | Industry keyword: 'rbi',,,2026-02-14T23:21:35.159076
+263,Aim Fincon Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:21:41.141952
+264,Aimfin Enterprises Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:21:45.572442
+265,Airan Financial Services Private Limited,,,,N/A,https://www.airan.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:21:50.982350
+266,Airon Cash And Credit Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:22:25.707671
+267,Airwave Tradefin (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:22:31.842415
+268,Aishwaryam Financial Services Private Limited,,,,N/A,https://www.aishwaryam.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (100% match) | Registered office address found | Corporate email @aishwaryam.com | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'rbi' | LinkedIn company page linked",https://www.aishwaryam.com/,,2026-02-14T23:22:36.723812
+269,Aiswarya Hire Purchase And Leasing Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:22:40.227396
+270,Ajagar Finance Private Limited,,,,N/A,https://www.ajagar.com/,direct_domain,FALSE_MATCH,30,Company name on page (100% match),,Insufficient evidence (score 30/100),2026-02-14T23:22:46.221984
+271,Ajanta Merchants  Pvt. Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:22:50.647853
+272,Ajay Ice Factory (P) Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:22:55.820356
+273,Ajay Investment Enterprise Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:23:00.920150
+274,Ajay Multi Pojects Private Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:23:33.378055
+275,Ajay Properties & Investment Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:23:37.582480
+276,Ajayhari Textrade (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:23:42.959594
+277,Ajcon Finance Limited (Formerly Ajcon Commodity Brokers Ltd.),,,,N/A,https://www.ajcon.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:23:48.327581
+278,Ajit Motor Hire Purchase Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:24:08.447014
+279,Ajitnath Steels (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:24:13.295259
+280,Ajivika Finance Limited (oldname- Kohli And Kohli Financial Consultants Ltd),,,,N/A,https://www.ajivika.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:24:18.072519
+281,Ajiwika Financial Services Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:24:19.335341
+282,Akaanksha Credit  & Leasing Pvt.Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:24:23.372012
+283,Akansha Credit Capital Pvt. Ltd.,,,,N/A,https://www.akansha.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:24:49.282883
+284,Akansha Dealcom Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:25:23.852677
+285,Akara Capital Advisors Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:25:29.557512
+286,Akasa Finance Limited,,,,N/A,https://akasa.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,80,"Company name on page (100% match) | Corporate email @akasa.com | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'emi' | LinkedIn company page linked",https://akasa.com/,,2026-02-14T23:25:36.227439
+287,Akash Ganga Finvest Private Limited,,,,N/A,https://www.akashganga.com/,direct_domain,REVIEW_REQUIRED,40,Company name on page (100% match) | Company name in title (71%),,,2026-02-14T23:25:37.800988
+288,Akb Trexim Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:25:39.361503
+289,AKD Vinimay Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:25:44.020191
+290,Akg Finvest,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:25:49.144277
+291,AKG Infin (P) Ltd,,,,N/A,https://www.akginfin.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,70,"Company name on page (100% match) | Corporate email @akginfin.com | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'nbfc'",https://www.akginfin.com/,,2026-02-14T23:25:53.511462
+292,Akg Investment Scenario (P) Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:25:56.043016
+293,Akhand Investments Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:26:00.897384
+294,Akhilesh Lefin Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:26:06.758010
+295,Akhivi Tea Plantations & Agro Industris Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:26:12.229132
+296,Akhshayaa Finance Bhaarath Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:26:16.969795
+297,Akin Tracom (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:26:21.298980
+298,Akin Trading (P) Ltd,,,,N/A,https://www.akintrading.com/,direct_domain,REVIEW_REQUIRED,57,Company name on page (100% match) | Partial ownership signals: ['privacy policy'] | Industry keyword: 'emi' | Company name in title (62%),,,2026-02-14T23:26:26.490612
+299,Akin Vincom (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:26:31.884222
+300,Akm Securities Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:26:36.332751
+301,Akm Systems Private Limited,,,,N/A,https://www.akmsystems.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,82,"Company name on page (100% match) | Corporate email @akmsystems.com | Partial ownership signals: ['about us', 'our team'] | Industry keyword: 'finance' | LinkedIn company page linked | Company name in title (50%)",https://www.akmsystems.com/,,2026-02-14T23:26:41.472831
+302,Akme Fintrade (India) Ltd.,,,,N/A,https://www.akmefintrade.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,90,"Company name on page (100% match) | Corporate email @akmefintrade.com | Ownership signals: ['about us', 'contact us', 'management team'] | Industry keyword: 'loan' | LinkedIn company page linked | Company name in title (88%)",https://www.akmefintrade.com/,,2026-02-14T23:26:44.833865
+303,Akp Finvest Privatelmited.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:26:53.322142
+304,Akriti Developers (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:26:58.174519
+305,Akriti Finance Pvt Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:27:02.352998
+306,Akriti Financial Services (P) Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:27:55.773411
+307,Akruti Securities Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:28:35.879822
+308,Aks International Ltd.,,,,N/A,https://www.aksinternational.in/,direct_domain,REVIEW_REQUIRED,60,"Company name on page (100% match) | Corporate email @aksinternational.in | Ownership signals: ['about us', 'contact us', 'our team']",,,2026-02-14T23:28:41.583809
+309,Akshay Fiscal Services Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:28:58.658453
+310,Akshay Mercantiles (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:29:04.071327
+311,Al Barr Finance House Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:29:08.552983
+312,Alag Impex (P) Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:29:14.818416
+313,Alang Credits And Holdings Private Limited,,,,N/A,https://alangcredits.com/,direct_domain,REVIEW_REQUIRED,57,Company name on page (75% match) | Partial ownership signals: ['contact us'] | Industry keyword: 'credit' | Company name in title (67%),,,2026-02-14T23:29:20.110600
+314,Alankar Commodities Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:29:24.274673
+315,Alankit Finsec Ltd.,,,,N/A,https://www.alankitfinsec.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:29:28.758108
+316,Alankrit Holding & Finlease (P) Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:29:31.534188
+317,Alankrit Vyapaar (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:29:36.457530
+318,ALB Leasing & Finance Ltd.,,,,N/A,https://alb.in/,direct_domain,REVIEW_REQUIRED,55,Company name on page (100% match) | Corporate email @alb.in | Company name in title (55%),,,2026-02-14T23:29:41.887583
+319,Albatross Investments (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:29:50.211953
+320,Albeli Leasing & Finance (P) Ltd.,,,,N/A,https://www.albeli.co.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:30:05.002947
+321,Alberta Merchants Private Limited,,,,N/A,https://www.albertamerchants.com/,direct_domain,REVIEW_REQUIRED,50,Company name on page (65% match) | Industry keyword: 'credit' | Company name in title (65%),,,2026-02-14T23:30:19.260384
+322,Albright Consultants  Pvt Ltd,,,,N/A,https://www.albright-group.com/,direct_domain,REVIEW_REQUIRED,67,"Company name on page (100% match) | Partial ownership signals: ['our team', 'login'] | Industry keyword: 'rbi' | LinkedIn company page linked | Company name in title (65%)",,,2026-02-14T23:30:22.546729
+323,Albright Electricals (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:30:28.143807
+324,Alchemie Financial Services Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:30:32.153527
+325,ALCO Company Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:30:43.684919
+326,Alco Suppliers Private Limited,,,,N/A,https://alcosuppliers.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:30:53.750607
+327,Alcon Goods & Commercial Services (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:30:58.456772
+328,Alert Consultants & Credit (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:31:03.236050
+329,Alexcy Commercial (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:31:28.429466
+330,Alexcy Marketing (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:31:33.555384
+331,Alexcy Vinimay (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:31:38.667203
+332,Alfa Fiscal Services Private Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:31:44.334760
+333,Alfa Tie Up (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:31:49.545877
+334,Alfred Herbert ( India) Ltd,,,,N/A,https://www.alfredherbert.co.in/,direct_domain,OFFICIAL_WEBSITE_FOUND,77,"Company name on page (100% match) | Registered office address found | Partial ownership signals: ['contact us', 'investor relations'] | Industry keyword: 'invest' | Company name in title (100%)",https://www.alfredherbert.co.in/,,2026-02-14T23:31:54.801272
+335,Alia Finlease Private Limited,,,,N/A,https://www.aliafinlease.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:32:03.296802
+336,Allenburry (India) Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:32:07.057132
+337,Allen'S Housing  & Finance Ltd,,,,N/A,https://www.allens.com/,direct_domain,FALSE_MATCH,37,"Company name on page (100% match) | Partial ownership signals: ['privacy policy', 'login']",,Insufficient evidence (score 37/100),2026-02-14T23:32:35.633914
+338,Allgrow Finance and Investment Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:32:41.164392
+339,Allied Capital & Investments Private Limited,,,,N/A,https://www.alliedinvestments.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:32:47.636301
+340,Allied Commodities (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:32:50.069952
+341,Allied Marketing  Pvt.  Ltd.,,,,N/A,https://alliedmarketing.co.in/,direct_domain,REVIEW_REQUIRED,47,"Company name on page (67% match) | Partial ownership signals: ['about us', 'contact us'] | Company name in title (58%)",,,2026-02-14T23:32:58.535277
+342,Allied Merchants (P) Ltd,,,,N/A,https://alliedmerchants.com/,direct_domain,FALSE_MATCH,37,Company name on page (100% match) | Partial ownership signals: ['contact us'],,Insufficient evidence (score 37/100),2026-02-14T23:33:15.773849
+343,Allied Stock Investors Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:33:27.736597
+344,Allnet Financial Services Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:33:33.570799
+345,Alltime Suppliers (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:34:03.516169
+346,Allworth  Merchandise  Pvt. Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:34:07.548311
+347,Almak Finance Pvt. Ltd.,,,,N/A,https://www.almak.com/,direct_domain,REVIEW_REQUIRED,40,Company name on page (67% match) | Company name in title (67%),,,2026-02-14T23:34:12.542664
+348,"Almal Capital Private Limited (Formerly, Atul Capital Market Ltd)",,,,N/A,https://almal.in/,direct_domain,FALSE_MATCH,32,"Corporate email @almal.in | Partial ownership signals: ['about us', 'privacy policy'] | LinkedIn company page linked",,Insufficient evidence (score 32/100),2026-02-14T23:34:16.103960
+349,Almal Financiers & Consultants (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:34:41.721489
+350,Almighty Finance & Investment Pvt Ltd,,,,N/A,https://www.almighty.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:34:46.394620
+351,Almondz Finanz Limited,,,,N/A,https://almondzfinanz.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,90,"Company name on page (100% match) | Regulatory text: 'rbi registered' | Ownership signals: ['contact us', 'privacy policy', 'grievance'] | Industry keyword: 'nbfc' | Company name in title (100%)",https://almondzfinanz.com/,,2026-02-14T23:34:48.295713
+352,Alok Financial  Services  Pvt.  Ltd.,,,,N/A,https://alok.co.in/,direct_domain,FALSE_MATCH,27,Partial ownership signals: ['contact us'] | Industry keyword: 'emi' | Company name in title (53%),,Insufficient evidence (score 27/100),2026-02-14T23:34:50.446029
+353,Alokik Capital Private Limited,,,,N/A,https://www.alokik.com/,direct_domain,FALSE_MATCH,30,Company name on page (100% match),,Insufficient evidence (score 30/100),2026-02-14T23:35:09.938816
+354,Alokik Finlease Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:35:14.545888
+355,Alosha Marketing Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:35:19.355570
+356,Alosha Vanijya (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:35:25.676827
+357,Alpak Investments Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:35:30.006906
+358,Alpha Alternatives Financial Services Private Limited (Formerly Provincial Finance & Leasing Company Private Limited),,,,N/A,https://alphaalternatives.in/,direct_domain,OFFICIAL_WEBSITE_FOUND,82,"Company name on page (70% match) | Corporate email @alphaalternatives.in | Partial ownership signals: ['contact us', 'privacy policy'] | Industry keyword: 'finance' | LinkedIn company page linked | Company name in title (70%)",https://alphaalternatives.in/,,2026-02-14T23:35:34.988524
+359,Alpha Motor Finance Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:35:41.577436
+360,Alpha Sales (P) Ltd,,,,N/A,https://www.alphasales.com/,direct_domain,FALSE_MATCH,30,Company name on page (100% match),,Insufficient evidence (score 30/100),2026-02-14T23:36:04.861122
+361,Alpha Stocks & Finservices Pvt. Ltd.,,,,N/A,https://www.alphastocks.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:36:08.327732
+362,Alpha Vanijya (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:36:09.253490
+363,Alpine Capital Services Ltd.,,,,N/A,https://www.alpine.co.in/,direct_domain,REVIEW_REQUIRED,40,Company name on page (100% match) | Company name in title (51%),,,2026-02-14T23:36:14.256996
+364,Alpine Commercial Co Ltd,,,,N/A,https://www.alpinecommercial.co.in/,direct_domain,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (100% match) | Registered office address found | Regulatory text: 'reserve bank of india' | Ownership signals: ['about us', 'contact us', 'board of directors'] | Industry keyword: 'nbfc'",https://www.alpinecommercial.co.in/,,2026-02-14T23:36:30.391564
+365,Alpine Finlease Limited,,,,N/A,https://alpinefinlease.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (100% match) | Registered office address found | Corporate email @alpinefinlease.com | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'nbfc' | Company name in title (86%)",https://alpinefinlease.com/,,2026-02-14T23:36:38.803940
+366,Alps Investments Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:36:42.329245
+367,Alps Sales Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:37:00.298618
+368,Alsa Financial Consultants Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:37:05.857050
+369,Alstromeria Capital Private Limited,,,,N/A,https://alstromeria.com/,direct_domain,REVIEW_REQUIRED,50,Company name on page (100% match) | Industry keyword: 'emi' | Company name in title (64%),,,2026-02-14T23:37:10.044252
+370,ALT Capital Pvt Ltd,,,,N/A,https://www.alt.co.in/,direct_domain,REVIEW_REQUIRED,47,"Company name on page (100% match) | Partial ownership signals: ['about us', 'contact us'] | Industry keyword: 'emi'",,,2026-02-14T23:37:47.208748
+371,Alta Leasing & Finance Ltd.,,,,N/A,https://www.alta.com/,direct_domain,REVIEW_REQUIRED,55,"Company name on page (100% match) | Ownership signals: ['contact us', 'our team', 'privacy policy'] | Industry keyword: 'rbi'",,,2026-02-14T23:37:53.088096
+372,Altar Investment Pvt. Ltd.,,,,N/A,https://www.altar.co.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:37:59.618106
+373,Althaea Finance & Leasing Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:38:14.220131
+374,Altina Finance Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:38:27.233287
+375,Altitude Finvest Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:38:54.941369
+376,Altius Securities Trading Private Limited,,,,N/A,https://www.altiussecurities.com/,direct_domain,FALSE_MATCH,30,Company name on page (67% match),,Insufficient evidence (score 30/100),2026-02-14T23:39:00.275908
+377,Altona Investments Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:39:02.881433
+378,Altop Commodities   Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:39:29.009996
+379,Altura Financial Services Limited,,,,N/A,https://altura.com/,direct_domain,REVIEW_REQUIRED,57,Company name on page (100% match) | Partial ownership signals: ['login'] | Industry keyword: 'rbi' | Company name in title (61%),,,2026-02-14T23:39:46.858280
+380,Alwar General Finance Co. Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:39:50.776370
+381,Aman Fincap Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:39:55.337668
+382,Aman Growth Fund Private Limited,,,,N/A,https://amangrowth.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:40:00.351319
+383,Aman Holdings (P)  Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:40:04.960332
+384,Amar Amba Finance Hire Purchase Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:40:23.825450
+385,Amar Investments Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:40:49.551931
+386,Amar Jyoti Udyog Ltd,,,,N/A,https://www.amarjyoti.com/,direct_domain,REVIEW_REQUIRED,47,Company name on page (76% match) | Partial ownership signals: ['login'] | Company name in title (76%),,,2026-02-14T23:41:03.838115
+387,Amar Plaza  &  Holdings  Ltd.,,,,N/A,https://www.amarplaza.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:41:06.882896
+388,Amar Securities  Pvt.  Ltd.,,,,N/A,https://www.amarsecurities.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:41:11.238386
+389,Amar Shakti  Commerce  & Industries  Ltd.,,,,N/A,https://amarshakti.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,80,"Company name on page (75% match) | Corporate email @amarshakti.com | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'capital' | Company name in title (62%)",https://amarshakti.com/,,2026-02-14T23:41:12.307621
+390,Amar Vanijya Limited,,,,N/A,https://amarvanijya.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,90,"Company name on page (100% match) | Regulatory text: 'reserve bank of india' | Ownership signals: ['about us', 'contact us', 'management team'] | Industry keyword: 'non-banking' | Company name in title (100%)",https://amarvanijya.com/,,2026-02-14T23:41:18.077236
+391,Amaravathi Financial Solutions Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:41:21.071634
+392,Amarendra Financial Private Limited,,,,N/A,https://amarendra.net/,direct_domain,REVIEW_REQUIRED,40,Company name on page (100% match) | Company name in title (55%),,,2026-02-14T23:41:26.420317
+393,Amarjit Motor Finance Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:41:57.804173
+394,Amarjyoti Vyapaar Pvt. Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:42:03.047174
+395,Amarnath Securities Limited,,,,N/A,http://ww38.amarnathsecurities.com/,direct_domain,REVIEW_REQUIRED,40,Company name on page (100% match) | Company name in title (88%),,,2026-02-14T23:42:07.801152
+396,Amarpadma Credits Pvt.Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:42:12.151589
+397,Amaze Holdings Limited(Formerly - Yeast Holdings  Ltd.),,,,N/A,https://www.amazeholdings.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:42:17.054383
+398,Amazer Investment & Finance Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:42:19.171699
+399,Ambaa Securities  Pvt.  Ltd.,,,,N/A,https://ambaasecurities.com/,direct_domain,FALSE_MATCH,0,,,HTTP 408,2026-02-14T23:42:38.702177
+400,Ambadi Investments Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:42:59.461119
+401,Ambala Trafin Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:43:07.582269
+402,Ambarella Cap Fin Private Limited  (Prev. Keshan Polymers Private Limited),,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:43:12.376379
+403,Ambarnuj Finance & Investments Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:43:17.666697
+404,Amber Credit Co. Ltd.,,,,N/A,https://www.amber.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:43:23.241615
+405,Amber Distributors (P) Ltd,,,,N/A,https://amberdistributors.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,100,"Company name on page (100% match) | Regulatory text: 'rbi registered' | Ownership signals: ['about us', 'contact us', 'our team'] | Industry keyword: 'nbfc' | LinkedIn company page linked | Company name in title (50%)",https://amberdistributors.com/,,2026-02-14T23:43:27.068745
+406,Amber Fincorp Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:43:34.174852
+407,Ambica Barter (P) Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:43:42.099948
+408,Ambica Capital Markets Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:43:48.157488
+409,Ambit Finvest Pvt. Ltd. [Formerly - Ambit Retail Finance Pvt. Ltd.],,,,N/A,https://www.ambitfinvest.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:43:54.389989
+410,Ambium Finserve Limited (earlier known as Ambium Finserve Private Limited),,,,N/A,https://ambiumfinserve.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:44:13.338878
+411,Ambuja Merchandise (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:44:19.469979
+412,Ambuja Neotia Holdings Private Limited,,,,N/A,https://www.ambujaneotia.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,80,"Company name on page (67% match) | Corporate email @ambujaneotia.com | Ownership signals: ['about us', 'contact us', 'privacy policy'] | Industry keyword: 'investment' | LinkedIn company page linked",https://www.ambujaneotia.com/,,2026-02-14T23:44:25.378700
+413,Amer Investments (Delhi) Limited,,,,N/A,https://www.amerinvestments.com/,direct_domain,FALSE_MATCH,10,Industry keyword: 'investment',,Insufficient evidence (score 10/100),2026-02-14T23:44:27.590445
+414,Americorp Capital Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:44:52.637305
+415,Amica Finance Private Limited,,,,N/A,https://www.amica.com/,direct_domain,REVIEW_REQUIRED,65,"Company name on page (100% match) | Ownership signals: ['about us', 'contact us', 'terms and conditions'] | Industry keyword: 'rbi' | LinkedIn company page linked",,,2026-02-14T23:45:21.756809
+416,Amici Securities Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:45:23.270655
+417,Amideep Securities Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:45:28.802494
+418,Amigo Finstock Private Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:45:36.302369
+419,Amigo Trexim (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:45:42.583594
+420,Amin Finvest Holding Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:45:48.770830
+421,Amin Finvest Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:46:18.693694
+422,Amishi Lease & Finance (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:46:47.074640
+423,Amit Auto Credit Co (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:46:52.616691
+424,Amit Commercial Co. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:46:57.791170
+425,Amit Credit Co (P) Ltd,,,,N/A,https://www.amit.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:47:02.916750
+426,Amit Vanijya (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:47:07.274580
+427,AML Financial Services Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:47:12.336579
+428,Amodini Sales  Pvt.  Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:47:36.781745
+429,Amodini Vyapar Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:47:42.131628
+430,Amol Fabtrade Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:47:48.067537
+431,Amol Financial Services Private Limited,,,,N/A,https://www.amol.co.in/,direct_domain,REVIEW_REQUIRED,40,Company name on page (100% match) | Industry keyword: 'investment',,,2026-02-14T23:47:53.296450
+432,Ampfin Capital Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:48:21.110262
+433,AMPI Finance Private Limited [formerly: AMPI Finance LTD],,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:48:27.628816
+434,Ampire Finance Private Limited (Earlier known as Maulesh Investments Private Limited),,,,N/A,https://www.ampire.com/,direct_domain,FALSE_MATCH,17,"Partial ownership signals: ['privacy policy', 'login'] | Company name in title (52%)",,Insufficient evidence (score 17/100),2026-02-14T23:48:33.282670
+435,Ample Fincap Pvt Ltd,,,,N/A,https://www.amplefincap.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,90,"Company name on page (100% match) | Regulatory text: 'non-banking financial company' | Ownership signals: ['contact us', 'our team', 'apply now'] | Industry keyword: 'nbfc' | Company name in title (100%)",https://www.amplefincap.com/,,2026-02-14T23:48:35.948772
+436,Ample Finvest Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:48:41.925817
+437,Amrabathi Investra Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:48:46.707457
+438,Amrapali Barter Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:48:52.616136
+439,Amravati Eximp  Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:48:57.732070
+440,Amrit Financial Services (P)  Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:49:03.014835
+441,Amrit Kunj Consultants Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:49:30.314540
+442,Amrit Malwa Capital Limited (Formerly Known as Amrit Hire Purchase Limited ),,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:49:35.699558
+443,Amrit Sales Promotion Pvt. Ltd.,,,,N/A,https://amritsales.com/,direct_domain,REVIEW_REQUIRED,57,Company name on page (67% match) | Partial ownership signals: ['contact us'] | Industry keyword: 'emi' | Company name in title (67%),,,2026-02-14T23:49:41.165032
+444,Amrit Trade Link (P) Ltd,,,,N/A,https://www.amrittrade.com/,direct_domain,REVIEW_REQUIRED,40,Company name on page (100% match) | Company name in title (79%),,,2026-02-14T23:49:43.482250
+445,Amritkunj Capital Markets Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:49:45.785751
+446,Amritvani Exim (P) Ltd,,,,N/A,https://amritvaniexim.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:49:52.878082
+447,Amros Commercial Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:50:00.460088
+448,Amu Leasing Pvt.Ltd,,,,N/A,https://amu.in/en,direct_domain,FALSE_MATCH,27,"Partial ownership signals: ['terms and conditions', 'login'] | Industry keyword: 'rbi' | Company name in title (57%)",,Insufficient evidence (score 27/100),2026-02-14T23:50:05.843859
+449,Ana Vincom (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:50:23.946765
+450,Anaanta Finvest Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:50:30.243937
+451,Anadi Investments Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:50:57.468789
+452,Anaga Swagat Finance & Investment Pvt. Ltd (Formerly Artintel Finance And Investments Pvt. Ltd).,,,,N/A,https://www.anagaswagat.in/,direct_domain,FALSE_MATCH,17,Partial ownership signals: ['contact us'] | Industry keyword: 'loan',,Insufficient evidence (score 17/100),2026-02-14T23:51:03.299563
+453,Anagram Industries Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:51:04.756663
+454,Anamica Financial Services Pvt. Ltd.,,,,N/A,https://www.anamica.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:51:10.733662
+455,Anamica Portfolio Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:51:15.057943
+456,Anamica Traders Pvt.Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:51:21.192808
+457,Anamika Capital Finance Pvt Ltd,,,,N/A,https://anamika.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,70,"Company name on page (100% match) | Corporate email @anamika.com | Ownership signals: ['about us', 'contact us', 'login'] | Industry keyword: 'rbi'",https://anamika.com/,,2026-02-14T23:51:26.632879
+458,Anamika Holdings Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:51:31.548696
+459,Anamika Securities Pvt.Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:51:36.831857
+460,Anand Agency (P) Ltd,,,,N/A,https://www.anandagency.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:51:42.472174
+461,Anand Brothers Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:51:45.371820
+462,Anand Property Finance Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:51:59.386562
+463,Anand Rathi Global Finance  Ltd. [Formerly - Rathi Global Finance  Ltd.],,,,N/A,https://anandrathi.com/,direct_domain,OFFICIAL_WEBSITE_FOUND,85,"Company name on page (83% match) | Registered office address found | Ownership signals: ['about us', 'privacy policy', 'terms and conditions'] | Industry keyword: 'nbfc' | LinkedIn company page linked",https://anandrathi.com/,,2026-02-14T23:52:04.897868
+464,Anand Sons Finance Private Limited,,,,N/A,https://www.anandsons.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:52:06.891420
+465,Anant Overseas Pvt. Ltd.,,,,N/A,https://www.anantoverseas.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:52:16.575837
+466,Ananya Finance For Inclusive Growth Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:52:18.416375
+467,Anchal Towers Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:52:23.433119
+468,Anchor Finstock Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:52:28.527585
+469,Anchorage Finkred Private Limited,,,,N/A,https://www.anchoragefinkred.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:52:33.703438
+470,Ancient Traders   Pvt. Ltd.,,,,N/A,https://ancienttraders.com/,direct_domain,REVIEW_REQUIRED,55,Company name on page (77% match) | Corporate email @ancienttraders.com | Company name in title (77%),,,2026-02-14T23:52:36.466107
+471,Andaz Builders Pvt.Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:52:48.330782
+472,Andhra Pradesh Industrial Development Corporation Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:52:53.567193
+473,Andhra Pradesh Power Finance Corporation Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:53:13.504038
+474,Andhra Pradesh State Financial Services Corporation Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:53:30.442409
+475,Aneja Hire Purchase Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:53:41.317942
+476,Aneri Fincap Limited (Previously Farry Industries Ltd),,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:53:47.121665
+477,Angad Chemical  Pvt. Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:54:35.016746
+478,Angel Fincap Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:54:41.081579
+479,Angel Holdings Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:55:28.487699
+480,Angela Mercantiles  Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:55:56.709525
+481,Angles Trading (P) Ltd,,,,N/A,https://www.anglestrading.in/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:56:02.382150
+482,Anglian Finvest Private Limited (Formerly Known As Yojana Finvest Pvt.Ltd.),,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:56:03.581687
+483,Anglo Commotrade Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:56:10.378451
+484,Angoora Tradefin  Pvt.  Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:56:16.440313
+485,Angoori Syntex Pvt. Ltd. (Name as per MCA - Urban Infraventures Private Limited),,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:56:22.260383
+486,Angraj Lease & Finances Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:56:27.668926
+487,Anik Financial Services Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:56:32.120683
+488,Anil Auto  Finance  Pvt.  Ltd.,,,,N/A,https://www.anilauto.com/,direct_domain,REVIEW_REQUIRED,62,Company name on page (67% match) | Corporate email @anilauto.com | Partial ownership signals: ['login'] | Industry keyword: 'emi',,,2026-02-14T23:56:39.822456
+489,Anil Raj Promoters &Fincon Pvt. Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:56:45.047024
+490,Anila Financiers P. Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:56:53.787166
+491,Anima Mercantile Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:57:00.176363
+492,Aniruddh Motor And General Finance Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:57:05.444526
+493,Anirudh Financiers  Pvt.  Ltd.,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:57:09.913868
+494,Anish Consultants & Credit Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:57:15.323845
+495,Anisha Estate & Finance (P) Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:57:19.375023
+496,Anita Risewell Holdings Pvt Ltd,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:57:24.704558
+497,Anjali Capfin Private  Ltd.,,,,N/A,https://www.anjalicapfin.com/,direct_domain,REVIEW_REQUIRED,62,"Company name on page (100% match) | Corporate email @anjalicapfin.com | Partial ownership signals: ['about us', 'contact us'] | Industry keyword: 'loan'",,,2026-02-14T23:57:29.315427
+498,Anjali Credit Pvt Ltd,,,,N/A,https://www.anjali.com/,direct_domain,FALSE_MATCH,0,,,Insufficient evidence (score 0/100),2026-02-14T23:57:34.581381
+499,Anjali Microfin Private Limited (Formerly M C S Tradefin  Private Limited),,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:57:36.486012
+500,Anjana Projects Private Limited,,,,N/A,,,URL_NOT_FOUND,0,,,,2026-02-14T23:57:42.351891
