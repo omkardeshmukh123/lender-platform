@@ -90,7 +90,7 @@ export default function LandingPage() {
             <div className="text-gray-600">Verified Lenders</div>
           </div>
           <div>
-            <div className="text-4xl font-bold text-blue-600 mb-2">36</div>
+            <div className="text-4xl font-bold text-blue-600 mb-2">28</div>
             <div className="text-gray-600">States Covered</div>
           </div>
           <div>
