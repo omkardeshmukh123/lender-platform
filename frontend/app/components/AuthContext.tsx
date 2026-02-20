@@ -34,19 +34,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ? { id: session.user.id, email: session.user.email || '' } : null)
-      setLoading(false)
-    })
+  // Check active session
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session?.user) {
+      // Check if email is confirmed
+      const isConfirmed = session.user.confirmed_at != null
+      
+      if (!isConfirmed) {
+        console.log('⚠️ Email not confirmed yet')
+      }
+      
+      setUser({ 
+        id: session.user.id, 
+        email: session.user.email || '' 
+      })
+    } else {
+      setUser(null)
+    }
+    setLoading(false)
+  })
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ? { id: session.user.id, email: session.user.email || '' } : null)
-    })
+  // Listen for auth changes
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    console.log('Auth event:', event) // Will show 'SIGNED_IN' when confirmed
+    
+    if (session?.user) {
+      setUser({ 
+        id: session.user.id, 
+        email: session.user.email || '' 
+      })
+    } else {
+      setUser(null)
+    }
+  })
 
-    return () => subscription.unsubscribe()
-  }, [])
+  return () => subscription.unsubscribe()
+}, [])
 
   const signUp = async (email: string, password: string) => {
     const result = await supabase.auth.signUp({
