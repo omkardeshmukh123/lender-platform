@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
+import { ReactNode } from 'react'
+import { AuthProvider } from './components/AuthContext'
 
 export const metadata: Metadata = {
   title: 'Lender Discovery Platform',
@@ -14,7 +15,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   )
 }
