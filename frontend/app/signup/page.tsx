@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import type { FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '../components/AuthContext'
@@ -22,15 +21,17 @@ export default function SignUp() {
   const router = useRouter()
   const { signUp } = useAuth()
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
+    // Validation
     if (!email || !phone || !password || !confirmPassword) {
       setError('All fields are required')
       return
     }
 
+    // Phone validation (Indian format)
     const phoneRegex = /^[6-9]\d{9}$/
     if (!phoneRegex.test(phone.replace(/\D/g, ''))) {
       setError('Please enter a valid 10-digit Indian phone number')
@@ -49,114 +50,136 @@ export default function SignUp() {
 
     setLoading(true)
 
-    // ✅ FIXED SECTION
-    const response = await signUp(email, password)
-    const authData = response?.data
-    const signUpError = response?.error
+    try {
+      // Sign up with Supabase Auth
+      const { data: authData, error: signUpError } = await signUp(email, password)
 
-    if (signUpError) {
-      setError(signUpError.message)
-      setLoading(false)
-      return
-    }
+      if (signUpError) {
+        setError(signUpError.message)
+        setLoading(false)
+        return
+      }
 
-    if (authData?.user) {
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .insert([
-          {
+      // Save phone number to user_profiles table
+      if (authData?.user) {
+        const profileResult = await supabase
+          .from('user_profiles')
+          .insert({
             user_id: authData.user.id,
             email: email,
             phone: phone,
-          }
-        ])
+          })
 
-      if (profileError) {
-        console.error('Error saving profile:', profileError)
+        if (profileResult.error) {
+          console.error('Profile save error:', profileResult.error)
+          // Continue anyway - user is created, just phone not saved
+        }
       }
-    }
 
-    router.push('/dashboard')
+      // Redirect to dashboard
+      router.push('/dashboard')
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during signup')
+      setLoading(false)
+    }
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center px-4">
       <div className="max-w-md w-full">
+        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">🏦 Create Account</h1>
           <p className="text-gray-600">Join thousands of users finding the right lenders</p>
         </div>
 
+        {/* Form */}
         <div className="bg-white rounded-lg shadow-lg p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Error Message */}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
                 {error}
               </div>
             )}
 
+            {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address *
               </label>
               <input
+                id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="you@example.com"
                 disabled={loading}
               />
             </div>
 
+            {/* Phone */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
                 Phone Number *
               </label>
               <input
+                id="phone"
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="9876543210"
                 maxLength={10}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                 disabled={loading}
               />
+              <p className="text-xs text-gray-500 mt-1">Enter 10-digit mobile number</p>
             </div>
 
+            {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password *
               </label>
               <input
+                id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="At least 6 characters"
                 disabled={loading}
               />
             </div>
 
+            {/* Confirm Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-2">
                 Confirm Password *
               </label>
               <input
+                id="confirm-password"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Re-enter your password"
                 disabled={loading}
               />
             </div>
 
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
+              className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
 
+          {/* Login Link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
@@ -167,6 +190,7 @@ export default function SignUp() {
           </div>
         </div>
 
+        {/* Back to Home */}
         <div className="text-center mt-6">
           <Link href="/" className="text-sm text-gray-600 hover:text-gray-900">
             ← Back to Home
