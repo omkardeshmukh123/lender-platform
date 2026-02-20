@@ -1,5 +1,5 @@
 'use client'
-
+import { Suspense } from 'react'
 export const dynamic = 'force-dynamic'
 
 
@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '../components/AuthContext'
 
-export default function Login() {
+function LoginContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -148,5 +148,12 @@ export default function Login() {
         </div>
       </div>
     </div>
+  )
+}
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   )
 }
