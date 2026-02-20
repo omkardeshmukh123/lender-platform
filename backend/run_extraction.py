@@ -1,16 +1,15 @@
 """
-run_extraction.py  — Lender Discovery Platform v4
-=================================================
-Two modes:
-  1. python run_extraction.py banks  → Top 50 banks (WITH validation)
-  2. python run_extraction.py nbfcs  → Your verified NBFC CSV (NO validation)
-  3. python run_extraction.py all    → Both
+run_extraction.py  — Lender Discovery Platform v5 (FLEXIBLE)
+==============================================================
+FLEXIBLE INPUT: Handles ANY of these scenarios:
+  1. company_name + website  → Use both
+  2. company_name only       → Gemini searches and finds website
+  3. website only            → Gemini extracts company name from site
 
-Validation rules:
-  - Banks:  validated — checks URL is a real bank domain before extracting
-  - NBFCs:  NO validation — you provide genuine verified list only
-  - State filter: uses operating_states ONLY (not HQ state)
-  - Pan-India banks: shown for every state filter
+Modes:
+  python run_extraction.py banks  → Top 50 banks (WITH validation)
+  python run_extraction.py nbfcs  → Your NBFC CSV (NO validation, FLEXIBLE)
+  python run_extraction.py all    → Both
 """
 
 import os, csv, json, time, glob, sys
@@ -43,8 +42,6 @@ ALL_INDIA_STATES = [
 ]
 
 # ── Bank validation ───────────────────────────────────────────
-
-# Known legitimate Indian bank domains
 KNOWN_BANK_DOMAINS = {
     'hdfcbank.com', 'icicibank.com', 'axisbank.com', 'kotak.com',
     'yesbank.in', 'indusind.com', 'idfcfirstbank.com', 'bandhanbank.com',
@@ -61,44 +58,28 @@ KNOWN_BANK_DOMAINS = {
     'lvbank.com', 'psbindia.com',
 }
 
-# Banking keywords that confirm a financial institution URL
 BANK_KEYWORDS = {
     'bank', 'banking', 'finance', 'financial', 'credit', 'lending',
     'loan', 'nbfc', 'capital', 'invest', 'sbi', 'hdfc', 'icici',
     'kotak', 'axis', 'indusind', 'federal', 'karnataka', 'saraswat'
 }
 
-# Hard reject — wrong industry detected
 BANK_REJECT_TERMS = {
     'shop', 'store', 'hotel', 'restaurant', 'hospital', 'school',
     'college', 'university', 'pharma', 'steel', 'textile', 'realty',
     'construction', 'architect', 'travel', 'tourism'
 }
 
-
 def validate_bank(name: str, url: str) -> tuple:
-    """
-    Validate a bank URL before extraction.
-    Returns: (is_valid: bool, score: int, reason: str)
-
-    Scoring:
-      +60  Known bank domain (whitelist match)
-      +30  Company initials found in domain
-      +25  Significant name word found in domain
-      +20  Banking keyword in URL
-      +15  Banking keyword in company name
-    Threshold: score >= 50 to pass
-    """
+    """Validate a bank URL. Returns (is_valid, score, reason)"""
     score   = 0
     reasons = []
     domain  = url.lower()
     name_lc = name.lower()
 
-    # Hard reject — wrong industry
     if any(t in domain for t in BANK_REJECT_TERMS):
         return False, 0, "non-banking domain detected"
 
-    # Check 1: Domain in known bank whitelist (+60)
     domain_root = (domain
                    .replace('https://', '').replace('http://', '')
                    .replace('www.', '').split('/')[0])
@@ -106,13 +87,11 @@ def validate_bank(name: str, url: str) -> tuple:
         score += 60
         reasons.append("known bank domain")
 
-    # Check 2: Company initials in domain (+30)
     initials = "".join(w[0] for w in name_lc.split() if w).lower()
     if len(initials) >= 2 and initials in domain:
         score += 30
         reasons.append("initials match domain")
 
-    # Check 3: Significant word from name in domain (+25)
     significant = [w for w in name_lc.split()
                    if len(w) > 4 and w not in
                    {'bank', 'small', 'finance', 'india', 'limited', 'private'}]
@@ -120,12 +99,10 @@ def validate_bank(name: str, url: str) -> tuple:
         score += 25
         reasons.append("name word in domain")
 
-    # Check 4: Banking keyword in URL (+20)
     if any(k in domain for k in BANK_KEYWORDS):
         score += 20
         reasons.append("banking keyword in URL")
 
-    # Check 5: Banking keyword in company name (+15)
     if any(k in name_lc for k in BANK_KEYWORDS):
         score += 15
         reasons.append("banking keyword in name")
@@ -161,7 +138,7 @@ class Lender:
 
 
 # ── Gemini extraction ─────────────────────────────────────────
-PROMPT = """You are a financial data researcher. Extract accurate data about this Indian lending institution.
+PROMPT_WITH_NAME = """You are a financial data researcher. Extract accurate data about this Indian lending institution.
 
 Company: {company_name}
 Type: {company_type}
@@ -187,40 +164,122 @@ Extract these fields. Use null if not found. Do NOT guess.
 11. has_subsidiaries → true if company has subsidiaries, false otherwise
 12. phone           → Primary contact phone number
 13. email           → Primary contact email
+14. website         → Official website URL (find it if not provided)
 
 Return ONLY valid JSON, no markdown, no explanation:
 {{"aum_crores":null,"product_types":[],"primary_product":null,"hq_city":null,
 "hq_state":null,"operating_states":[],"established_year":null,"employee_count":null,
 "ticket_size_min":null,"ticket_size_max":null,"has_subsidiaries":false,
+"phone":null,"email":null,"website":null}}"""
+
+PROMPT_NAME_ONLY = """You are a financial data researcher. Find and extract data about this Indian lending institution.
+
+Company: {company_name}
+Type: {company_type}
+
+FIRST: Search for this company's official website.
+THEN: Extract all fields below.
+
+Extract these fields. Use null if not found. Do NOT guess.
+
+1. website          → Official website URL (REQUIRED - search and find it)
+2. aum_crores       → Total AUM in Indian Crores
+3. product_types    → ALL loan products as JSON array
+4. primary_product  → Most important single product
+5. hq_city          → Headquarters city
+6. hq_state         → Full state name
+7. operating_states → JSON array of states, or ["PAN_INDIA"]
+8. established_year → 4-digit founding year
+9. employee_count   → Total employees
+10. ticket_size_min → Min loan in Lakhs
+11. ticket_size_max → Max loan in Lakhs
+12. has_subsidiaries → true/false
+13. phone           → Contact phone
+14. email           → Contact email
+
+Return ONLY valid JSON:
+{{"website":null,"aum_crores":null,"product_types":[],"primary_product":null,"hq_city":null,
+"hq_state":null,"operating_states":[],"established_year":null,"employee_count":null,
+"ticket_size_min":null,"ticket_size_max":null,"has_subsidiaries":false,
+"phone":null,"email":null}}"""
+
+PROMPT_URL_ONLY = """You are a financial data researcher. Extract data from this financial institution's website.
+
+Website: {website}
+Type: {company_type}
+
+FIRST: Identify the company's official name.
+THEN: Extract all fields below.
+
+Extract these fields. Use null if not found.
+
+1. company_name     → Official company name (REQUIRED - extract from website)
+2. aum_crores       → Total AUM in Indian Crores
+3. product_types    → ALL loan products as JSON array
+4. primary_product  → Most important product
+5. hq_city          → Headquarters city
+6. hq_state         → Full state name
+7. operating_states → JSON array of states, or ["PAN_INDIA"]
+8. established_year → Founding year
+9. employee_count   → Total employees
+10. ticket_size_min → Min loan in Lakhs
+11. ticket_size_max → Max loan in Lakhs
+12. has_subsidiaries → true/false
+13. phone           → Contact phone
+14. email           → Contact email
+
+Return ONLY valid JSON:
+{{"company_name":null,"aum_crores":null,"product_types":[],"primary_product":null,"hq_city":null,
+"hq_state":null,"operating_states":[],"established_year":null,"employee_count":null,
+"ticket_size_min":null,"ticket_size_max":null,"has_subsidiaries":false,
 "phone":null,"email":null}}"""
 
 
-def extract_with_gemini(name: str, website: str, ctype: str) -> Optional[Dict]:
+def extract_with_gemini(name: str, website: str, ctype: str, 
+                        scenario: str = 'both') -> Optional[Dict]:
+    """
+    Extract data using Gemini Flash + Google Search.
+    scenario: 'both' | 'name_only' | 'url_only'
+    """
     if not GEMINI_KEY:
         print("    ✗ GEMINI_API_KEY not set")
         return None
+    
     try:
-        payload = {
-            "contents": [{"parts": [{"text": PROMPT.format(
+        # Select appropriate prompt
+        if scenario == 'name_only':
+            prompt = PROMPT_NAME_ONLY.format(company_name=name, company_type=ctype)
+        elif scenario == 'url_only':
+            prompt = PROMPT_URL_ONLY.format(website=website, company_type=ctype)
+        else:  # both
+            prompt = PROMPT_WITH_NAME.format(
                 company_name=name, company_type=ctype, website=website
-            )}]}],
+            )
+        
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {"temperature": 0.1, "maxOutputTokens": 1500},
             "tools": [{"googleSearchRetrieval": {}}]
         }
+        
         resp = requests.post(
             f"{GEMINI_URL}?key={GEMINI_KEY}",
-            json=payload, timeout=45
+            json=payload, timeout=60
         )
+        
         if resp.status_code != 200:
             print(f"    ✗ HTTP {resp.status_code}: {resp.text[:100]}")
             return None
 
         text = resp.json()['candidates'][0]['content']['parts'][0]['text'].strip()
+        
+        # Clean markdown
         if '```' in text:
             text = '\n'.join(
                 l for l in text.split('\n')
                 if not l.strip().startswith('```')
             )
+        
         return json.loads(text.strip())
 
     except json.JSONDecodeError as e:
@@ -231,10 +290,16 @@ def extract_with_gemini(name: str, website: str, ctype: str) -> Optional[Dict]:
         return None
 
 
-# ── Build Lender from Gemini output ──────────────────────────
 def build_lender(name: str, ctype: str, website: str,
                  pan_india_flag: bool, data: Dict) -> Lender:
-
+    """Build Lender object from extracted data"""
+    
+    # Handle extracted company name (URL-only scenario)
+    final_name = data.get('company_name') or name
+    
+    # Handle extracted website (name-only scenario)
+    final_website = data.get('website') or website
+    
     hq_city  = data.get('hq_city') or ''
     hq_state = data.get('hq_state') or ''
     hq_loc   = f"{hq_city}, {hq_state}".strip(', ')
@@ -250,9 +315,9 @@ def build_lender(name: str, ctype: str, website: str,
         is_pan    = False
 
     return Lender(
-        company_name     = name,
+        company_name     = final_name,
         company_type     = ctype,
-        website          = website,
+        website          = final_website,
         aum_crores       = data.get('aum_crores'),
         product_types    = json.dumps(data.get('product_types') or []),
         primary_product  = data.get('primary_product') or '',
@@ -273,6 +338,7 @@ def build_lender(name: str, ctype: str, website: str,
 
 
 def save(results: list, path: Path):
+    """Save results to CSV"""
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, 'w', newline='', encoding='utf-8') as f:
         w = csv.DictWriter(f, fieldnames=results[0].keys())
@@ -316,7 +382,7 @@ def run_banks():
         print(f"\n[{i}/{total}] {name}  ({ctype})")
         print(f"  URL: {website}")
 
-        # ── VALIDATION ───────────────────────────────────────
+        # Validation
         is_valid, score, reason = validate_bank(name, website)
         print(f"  Validation: {score}/100 — {reason}")
 
@@ -330,9 +396,9 @@ def run_banks():
             skipped += 1
             continue
 
-        # ── EXTRACTION ───────────────────────────────────────
+        # Extraction
         print(f"  → Extracting with Gemini...")
-        data = extract_with_gemini(name, website, ctype)
+        data = extract_with_gemini(name, website, ctype, 'both')
 
         if not data:
             results.append(asdict(Lender(
@@ -345,14 +411,13 @@ def run_banks():
             results.append(asdict(build_lender(name, ctype, website, pan, data)))
             ok += 1
             fields = sum(1 for v in data.values() if v is not None and v != [] and v != '')
-            print(f"  ✓ {fields}/13 fields extracted")
+            print(f"  ✓ {fields}/14 fields extracted")
 
-        # Crash-safe save every 5 rows
         if i % 5 == 0 or i == total:
             save(results, BANKS_OUT)
             print(f"\n  💾 {len(results)} rows saved  ✓{ok} ✗{fail} ⊘{skipped}")
 
-        time.sleep(2)   # 30 req/min rate limit
+        time.sleep(2)
 
     print(f"\n{'='*60}")
     print(f"BANKS DONE  ✓{ok} extracted  ✗{fail} failed  ⊘{skipped} rejected")
@@ -361,14 +426,16 @@ def run_banks():
 
 
 # ─────────────────────────────────────────────────────────────
-# MODE 2 — NBFCs  (validation OFF — trust your verified list)
+# MODE 2 — NBFCs  (validation OFF, FLEXIBLE INPUT)
 # ─────────────────────────────────────────────────────────────
 def run_nbfcs():
     csv_files = sorted(glob.glob(str(INPUT_DIR / '*.csv')))
 
     if not csv_files:
         print(f"\n✗ No CSV files found in: {INPUT_DIR}")
-        print("  Add your NBFC CSV with columns: company_name, website")
+        print("  Add your NBFC CSV with ANY of these columns:")
+        print("    - company_name (or)")
+        print("    - website / validated_url / raw_url")
         return
 
     all_rows = []
@@ -382,7 +449,8 @@ def run_nbfcs():
 
     print(f"\n{'='*60}")
     print(f"NBFC EXTRACTION  ({total} from {len(csv_files)} file(s))")
-    print(f"Validation: OFF — using your verified list directly")
+    print(f"Validation: OFF — trust your verified list")
+    print(f"FLEXIBLE: Handles name-only, URL-only, or both")
     print(f"{'='*60}")
 
     for i, row in enumerate(all_rows, 1):
@@ -393,38 +461,63 @@ def run_nbfcs():
             row.get('raw_url', '')
         ).strip()
 
-        print(f"\n[{i}/{total}] {name}")
-        print(f"  URL: {website}")
-
-        if not name:
-            print("  ✗ No company name — skipped")
+        # Scenario detection
+        if not name and not website:
+            print(f"\n[{i}/{total}] (empty row) — SKIPPED")
             skip += 1
             continue
 
-        if not website:
-            print("  ✗ No URL — skipped")
-            skip += 1
-            continue
+        # SCENARIO 1: Name + Website
+        if name and website:
+            print(f"\n[{i}/{total}] {name}")
+            print(f"  URL: {website}")
+            print(f"  ✓ Both name and URL provided")
+            scenario = 'both'
 
-        # No validation — you give us genuine NBFCs
+        # SCENARIO 2: Name only
+        elif name and not website:
+            print(f"\n[{i}/{total}] {name}")
+            print(f"  ℹ️  No URL — Gemini will search for official website")
+            website = ""
+            scenario = 'name_only'
+
+        # SCENARIO 3: URL only
+        else:
+            print(f"\n[{i}/{total}] (name unknown)")
+            print(f"  URL: {website}")
+            print(f"  ℹ️  No name — Gemini will extract from website")
+            name = ""
+            scenario = 'url_only'
+
+        # Extraction
         print(f"  → Extracting with Gemini...")
-        data = extract_with_gemini(name, website, 'NBFC')
+        data = extract_with_gemini(name, website, 'NBFC', scenario)
 
         if not data:
             results.append(asdict(Lender(
-                company_name=name, company_type='NBFC', website=website,
+                company_name=name or "Unknown",
+                company_type='NBFC',
+                website=website or "",
                 extraction_status='failed',
                 error='Gemini returned no data'
             )))
             fail += 1
+            print("  ✗ Extraction failed")
             continue
 
-        results.append(asdict(build_lender(name, 'NBFC', website, False, data)))
+        # Build lender
+        lender = build_lender(name or "Unknown", 'NBFC', website or "", False, data)
+        results.append(asdict(lender))
         ok += 1
+        
         fields = sum(1 for v in data.values() if v is not None and v != [] and v != '')
-        print(f"  ✓ {fields}/13 fields extracted")
+        print(f"  ✓ {fields}/14 fields extracted")
+        
+        if scenario == 'name_only' and data.get('website'):
+            print(f"  → Found website: {data['website']}")
+        if scenario == 'url_only' and data.get('company_name'):
+            print(f"  → Found company: {data['company_name']}")
 
-        # Crash-safe save every 10 rows
         if i % 10 == 0 or i == total:
             save(results, NBFCS_OUT)
             print(f"\n  💾 {len(results)} rows saved  ✓{ok} ✗{fail} ⊘{skip}")
@@ -455,6 +548,6 @@ if __name__ == '__main__':
     else:
         print("\nUsage:")
         print("  python run_extraction.py banks   # Extract top 50 banks")
-        print("  python run_extraction.py nbfcs   # Extract your NBFC CSV")
+        print("  python run_extraction.py nbfcs   # Extract your NBFC CSV (FLEXIBLE)")
         print("  python run_extraction.py all     # Both")
         sys.exit(1)

@@ -1,15 +1,20 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
-
 import { useState } from 'react'
+import type { FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '../components/AuthContext'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+)
 
 export default function SignUp() {
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
@@ -17,13 +22,18 @@ export default function SignUp() {
   const router = useRouter()
   const { signUp } = useAuth()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
 
-    // Validation
-    if (!email || !password || !confirmPassword) {
+    if (!email || !phone || !password || !confirmPassword) {
       setError('All fields are required')
+      return
+    }
+
+    const phoneRegex = /^[6-9]\d{9}$/
+    if (!phoneRegex.test(phone.replace(/\D/g, ''))) {
+      setError('Please enter a valid 10-digit Indian phone number')
       return
     }
 
@@ -39,95 +49,114 @@ export default function SignUp() {
 
     setLoading(true)
 
-    const { error: signUpError } = await signUp(email, password)
+    // ✅ FIXED SECTION
+    const response = await signUp(email, password)
+    const authData = response?.data
+    const signUpError = response?.error
 
     if (signUpError) {
       setError(signUpError.message)
       setLoading(false)
-    } else {
-      // Success - redirect to login
-      router.push('/login?message=Check your email to confirm your account')
+      return
     }
+
+    if (authData?.user) {
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .insert([
+          {
+            user_id: authData.user.id,
+            email: email,
+            phone: phone,
+          }
+        ])
+
+      if (profileError) {
+        console.error('Error saving profile:', profileError)
+      }
+    }
+
+    router.push('/dashboard')
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center px-4">
       <div className="max-w-md w-full">
-        {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">🏦 Lender Discovery</h1>
-          <p className="text-gray-600">Create your account</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">🏦 Create Account</h1>
+          <p className="text-gray-600">Join thousands of users finding the right lenders</p>
         </div>
 
-        {/* Form */}
         <div className="bg-white rounded-lg shadow-lg p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Error Message */}
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
                 {error}
               </div>
             )}
 
-            {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address *
               </label>
               <input
-                id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="you@example.com"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                 disabled={loading}
               />
             </div>
 
-            {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number *
               </label>
               <input
-                id="password"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                maxLength={10}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Password *
+              </label>
+              <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="At least 6 characters"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                 disabled={loading}
               />
             </div>
 
-            {/* Confirm Password */}
             <div>
-              <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-2">
-                Confirm Password
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Confirm Password *
               </label>
               <input
-                id="confirm-password"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Re-enter your password"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                 disabled={loading}
               />
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
-              {loading ? 'Creating account...' : 'Sign Up'}
+              {loading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
 
-          {/* Login Link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
@@ -138,7 +167,6 @@ export default function SignUp() {
           </div>
         </div>
 
-        {/* Back to Home */}
         <div className="text-center mt-6">
           <Link href="/" className="text-sm text-gray-600 hover:text-gray-900">
             ← Back to Home
