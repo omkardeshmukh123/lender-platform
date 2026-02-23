@@ -1,5 +1,0 @@
-2026-02-23 01:27:45 | INFO     | setup_logging:94 | Logging initialized: D:\Lender-Platform2\lender-platform\logs\nbfc_extraction_20260223_012745.log
-2026-02-23 01:27:45 | INFO     | main:850 | ======================================================================
-2026-02-23 01:27:45 | INFO     | main:851 | NBFC EXTRACTION - PRODUCTION v2.0
-2026-02-23 01:27:45 | INFO     | main:852 | ======================================================================
-2026-02-23 01:27:45 | ERROR    | load_nbfc_csv:770 | File not found: D:\Lender-Platform2\lender-platform\data\input\nbfc_names.csv

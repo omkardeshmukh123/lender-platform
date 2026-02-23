@@ -4,3 +4,7 @@ frontend/node_modules/
 .env
 .env.local
 logs/
+
+# Logs contain sensitive API keys - never commit!
+logs/
+*.log
