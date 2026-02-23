@@ -8,3 +8,5 @@ logs/
 # Logs contain sensitive API keys - never commit!
 logs/
 *.log
+logs/
+*.log
