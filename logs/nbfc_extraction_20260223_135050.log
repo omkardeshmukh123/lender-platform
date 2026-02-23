@@ -1,0 +1,10 @@
+2026-02-23 13:50:50 | INFO     | setup_logging:94 | Logging initialized: D:\Lender-Platform2\lender-platform\logs\nbfc_extraction_20260223_135050.log
+2026-02-23 13:50:50 | INFO     | main:897 | ======================================================================
+2026-02-23 13:50:50 | INFO     | main:898 | NBFC EXTRACTION - PRODUCTION v2.0
+2026-02-23 13:50:50 | INFO     | main:899 | ======================================================================
+2026-02-23 13:50:50 | INFO     | load_nbfc_csv:840 | Loaded 934 NBFCs from CSV
+2026-02-23 13:50:50 | INFO     | load:310 | Loaded checkpoint: 3 processed
+2026-02-23 13:50:50 | INFO     | main:940 | Processing NBFC ID 102: A R T Leasing Ltd
+2026-02-23 13:50:54 | DEBUG    | _new_conn:1049 | Starting new HTTPS connection (1): generativelanguage.googleapis.com:443
+2026-02-23 13:51:03 | WARNING  | main:996 | Interrupted by user
+2026-02-23 13:51:03 | INFO     | main:1017 | Final stats: {}

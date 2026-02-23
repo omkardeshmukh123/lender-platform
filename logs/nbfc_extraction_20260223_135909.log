@@ -1,0 +1,6 @@
+2026-02-23 13:59:09 | INFO     | setup_logging:94 | Logging initialized: D:\Lender-Platform2\lender-platform\logs\nbfc_extraction_20260223_135909.log
+2026-02-23 13:59:09 | INFO     | main:887 | ======================================================================
+2026-02-23 13:59:09 | INFO     | main:888 | NBFC EXTRACTION - PRODUCTION v2.0
+2026-02-23 13:59:09 | INFO     | main:889 | ======================================================================
+2026-02-23 13:59:09 | INFO     | load_nbfc_csv:830 | Loaded 934 NBFCs from CSV
+2026-02-23 13:59:09 | INFO     | main:930 | Processing NBFC ID 99: 121 Finance Private Limited (Old Name Yerrow Finance and Investments Private Limited)

@@ -1,0 +1,46 @@
+2026-02-22 21:43:19,451  INFO      Fetching https://rbi.org.in/commonman/english/scripts/banksinindia.aspx (attempt 1/4) ...
+2026-02-22 21:43:20,351  INFO        GET OK — 20381 bytes (HTTP 200)
+2026-02-22 21:43:20,353  WARNING   Page is only 20381 bytes (threshold 50000) — likely ASP.NET skeleton.
+2026-02-22 21:43:20,353  WARNING   No ASP.NET hidden fields found — cannot POST.
+2026-02-22 21:43:20,354  WARNING     ASP.NET POST failed — continuing with GET skeleton.
+2026-02-22 21:43:20,354  INFO      Parsing HTML DOM ...
+2026-02-22 21:43:20,355  WARNING   No populated content div found — scanning all tables.
+2026-02-22 21:43:20,357  INFO      Fetching co-operative bank PDFs ...
+2026-02-22 21:43:20,358  INFO      Fetching PDF: https://rbidocs.rbi.org.in/rdocs/Content/pdfs/SCCB20141702.pdf
+2026-02-22 21:43:21,308  INFO        PDF 'Scheduled State Co-operative Banks': 1 page(s)
+2026-02-22 21:43:21,495  INFO        Extracted 7 banks from PDF 'Scheduled State Co-operative Banks'
+2026-02-22 21:43:21,496  INFO      Fetching PDF: https://rbidocs.rbi.org.in/rdocs/Content/pdfs/NSCB20141402.pdf
+2026-02-22 21:43:21,674  INFO        PDF 'Non-Scheduled State Co-operative Banks': 1 page(s)
+2026-02-22 21:43:21,775  INFO        Extracted 3 banks from PDF 'Non-Scheduled State Co-operative Banks'
+2026-02-22 21:43:21,779  INFO      Merging & ordering ...
+2026-02-22 21:43:21,780  INFO      Writing CSVs ...
+2026-02-22 21:43:21,785  INFO      Wrote 1 category CSV(s) + master_banks.csv
+2026-02-22 21:43:21,789  INFO      QA diff: 63 missing, 10 extra
+2026-02-22 21:55:58,045  INFO      Dependencies: httpx=True  playwright=True  pdfplumber=True  chardet=True
+2026-02-22 21:55:58,046  INFO      ── Strategy: requests ──────────────────────────────────────────
+2026-02-22 21:55:58,047  INFO        [requests] attempt 1 — UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64...
+2026-02-22 21:55:59,086  INFO        [requests] OK — 20385 bytes (HTTP 200)
+2026-02-22 21:55:59,089  WARNING     ✗ Strategy 'requests' skeleton/thin: only 20,385 bytes (threshold 50,000)
+2026-02-22 21:55:59,090  INFO      ── Strategy: httpx ──────────────────────────────────────────
+2026-02-22 21:55:59,090  INFO        [httpx] sending HTTP/2 GET ...
+2026-02-22 21:56:00,006  INFO      HTTP Request: GET https://rbi.org.in/commonman/english/scripts/banksinindia.aspx "HTTP/2 200 OK"
+2026-02-22 21:56:00,017  INFO        [httpx] OK — 20433 bytes (HTTP 200, proto HTTP/2)
+2026-02-22 21:56:00,019  WARNING     ✗ Strategy 'httpx' skeleton/thin: only 20,433 bytes (threshold 50,000)
+2026-02-22 21:56:00,020  INFO      ── Strategy: playwright ──────────────────────────────────────────
+2026-02-22 21:56:00,020  INFO        [playwright] launching headless Chromium ...
+2026-02-22 21:56:03,099  INFO        [playwright] tables present — page loaded
+2026-02-22 21:56:03,239  INFO        [playwright] OK — 221060 bytes
+2026-02-22 21:56:03,265  INFO        ✓ Strategy 'playwright' passed content check: 221,060 bytes, 46 category signals ✓
+2026-02-22 21:56:03,323  INFO      Parsing HTML DOM ...
+2026-02-22 21:56:03,357  WARNING   No populated content div — scanning all tables.
+2026-02-22 21:56:03,646  INFO      Fetching co-operative bank PDFs ...
+2026-02-22 21:56:03,646  INFO      Fetching PDF: https://rbidocs.rbi.org.in/rdocs/Content/pdfs/SCCB20141702.pdf
+2026-02-22 21:56:04,522  INFO        PDF 'Scheduled State Co-operative Banks': 1 page(s)
+2026-02-22 21:56:04,729  INFO        Extracted 7 banks from 'Scheduled State Co-operative Banks'
+2026-02-22 21:56:04,729  INFO      Fetching PDF: https://rbidocs.rbi.org.in/rdocs/Content/pdfs/NSCB20141402.pdf
+2026-02-22 21:56:05,068  INFO        PDF 'Non-Scheduled State Co-operative Banks': 1 page(s)
+2026-02-22 21:56:05,163  INFO        Extracted 3 banks from 'Non-Scheduled State Co-operative Banks'
+2026-02-22 21:56:05,165  INFO      Merging & ordering ...
+2026-02-22 21:56:05,167  INFO      Writing CSVs ...
+2026-02-22 21:56:05,182  INFO      Wrote 10 category CSV(s) + master_banks.csv
+2026-02-22 21:56:05,187  INFO      QA diff: 22 missing, 101 extra
