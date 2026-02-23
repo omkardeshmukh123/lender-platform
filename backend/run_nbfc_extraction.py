@@ -13,6 +13,7 @@ Enterprise Features:
 - Output validation
 - Audit trail
 - Health checks
+- Secure API key loading from .env file
 """
 
 import os, csv, json, time, sys, re, logging, hashlib
@@ -22,6 +23,14 @@ from dataclasses import dataclass, asdict, field
 from datetime import datetime
 from collections import Counter
 import requests
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # Loads .env from current directory
+except ImportError:
+    print("Warning: python-dotenv not installed. Install with: pip install python-dotenv")
+    print("Falling back to environment variables...")
 
 # ══════════════════════════════════════════════════════════════
 # CONFIGURATION
@@ -34,6 +43,7 @@ OUTPUT     = OUTPUT_DIR / 'nbfc_extracted_verified.csv'
 LOG_DIR    = ROOT / 'logs'
 CHECKPOINT_FILE = OUTPUT_DIR / '.checkpoint.json'
 
+# Load API key from .env file (more secure)
 GEMINI_KEY = os.getenv('GEMINI_API_KEY', '')
 GEMINI_URL = 'https://generativelanguage.googleapis.com/v1/models'
 
@@ -890,8 +900,16 @@ def main():
     
     # Validate environment
     if not GEMINI_KEY:
-        logging.error("GEMINI_API_KEY not set")
-        print("\n✗ Set GEMINI_API_KEY environment variable\n")
+        logging.error("GEMINI_API_KEY not found")
+        print("\n" + "="*70)
+        print("  ✗ ERROR: GEMINI_API_KEY not found!")
+        print("="*70)
+        print("\n  Create a .env file in your project root with:")
+        print("  GEMINI_API_KEY=your_api_key_here")
+        print("\n  Or set it as an environment variable:")
+        print("  export GEMINI_API_KEY=your_api_key_here")
+        print("\n  Get your API key from: https://aistudio.google.com/apikeys")
+        print("="*70 + "\n")
         sys.exit(1)
     
     # Load data
