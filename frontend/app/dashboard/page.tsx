@@ -19,13 +19,13 @@ type Lender = {
   last_year_revenue: number | null
   is_listed: boolean | null
   stock_symbol: string | null
-  primary_loan_segments: string[] // This should be parsed from JSON string
+  primary_loan_segments: string[]
   primary_product: string | null
-  product_types: string[] // This should be parsed from JSON string
+  product_types: string[]
   established_year: number | null
   hq_location: string | null
   hq_state: string | null
-  operating_states: string[] // This should be parsed from JSON string
+  operating_states: string[]
   operating_intensity: string | null
   pan_india: boolean | null
   rbi_category: string | null
@@ -187,7 +187,7 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-1">🏦 Lender Discovery Platform</h1>
+              <h1 className="text-3xl font-bold mb-1">Lender Discovery Platform</h1>
               <p className="text-blue-100 text-sm">Find the right financial partner for your needs</p>
             </div>
             
@@ -354,7 +354,7 @@ function LenderCard({ lender }: { lender: Lender }) {
           </span>
           {lender.is_listed && (
             <span className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded text-center whitespace-nowrap">
-              📈 {lender.stock_symbol || 'Listed'}
+              {lender.stock_symbol || 'Listed'}
             </span>
           )}
         </div>
@@ -365,7 +365,7 @@ function LenderCard({ lender }: { lender: Lender }) {
         {lender.aum_crores !== null && lender.aum_crores !== undefined && (
           <div className="bg-blue-50 p-2 rounded">
             <p className="font-semibold text-blue-900">
-              💰 AUM: ₹{lender.aum_crores.toLocaleString()} Cr
+              AUM: ₹{lender.aum_crores.toLocaleString()} Cr
               {lender.aum_category && (
                 <span className="ml-2 px-2 py-0.5 bg-blue-200 text-blue-900 rounded text-xs">
                   {lender.aum_category}
@@ -377,29 +377,27 @@ function LenderCard({ lender }: { lender: Lender }) {
 
         {/* Revenue */}
         {lender.last_year_revenue && (
-          <p>📊 <span className="font-medium">Revenue:</span> ₹{lender.last_year_revenue.toLocaleString()} Cr</p>
+          <p><span className="font-medium">Revenue:</span> ₹{lender.last_year_revenue.toLocaleString()} Cr</p>
         )}
 
         {/* Primary Product */}
         {lender.primary_product && (
-          <p>🎯 <span className="font-medium">Primary:</span> {lender.primary_product}</p>
+          <p><span className="font-medium">Primary:</span> {lender.primary_product}</p>
         )}
         
         {/* Operating Intensity */}
         {lender.operating_intensity && (
-          <p>🌍 <span className="font-medium">Coverage:</span> {lender.operating_intensity}
-            {lender.pan_india && ' 🇮🇳'}
-          </p>
+          <p><span className="font-medium">Coverage:</span> {lender.operating_intensity}</p>
         )}
 
         {/* HQ Location */}
         {lender.hq_location && (
-          <p>📍 <span className="font-medium">HQ:</span> {lender.hq_location}</p>
+          <p><span className="font-medium">HQ:</span> {lender.hq_location}</p>
         )}
 
         {/* RBI Category for NBFCs */}
         {lender.rbi_category && (
-          <p>🏛️ <span className="font-medium">RBI:</span> {lender.rbi_category}</p>
+          <p><span className="font-medium">RBI:</span> {lender.rbi_category}</p>
         )}
 
         {/* RBI Registration Number */}
@@ -411,19 +409,19 @@ function LenderCard({ lender }: { lender: Lender }) {
         
         {/* Established Year */}
         {lender.established_year && (
-          <p>📅 <span className="font-medium">Since:</span> {lender.established_year}</p>
+          <p><span className="font-medium">Since:</span> {lender.established_year}</p>
         )}
 
         {/* Employees */}
         {lender.employee_count && (
-          <p>👥 <span className="font-medium">Employees:</span> {lender.employee_count.toLocaleString()}</p>
+          <p><span className="font-medium">Employees:</span> {lender.employee_count.toLocaleString()}</p>
         )}
 
         {/* Recent Funding */}
         {(lender.recent_funding || lender.recent_funding_amount) && (
           <div className="text-xs bg-yellow-50 p-2 rounded border border-yellow-200">
             <p className="font-medium text-yellow-900">
-              💵 {formatFunding()}
+              Recent Funding: {formatFunding()}
             </p>
           </div>
         )}
@@ -452,13 +450,13 @@ function LenderCard({ lender }: { lender: Lender }) {
       {lender.operating_states && lender.operating_states.length > 0 && !lender.pan_india && (
         <div className="mb-4 text-xs text-gray-600">
           <p>
-            📌 Operating in <span className="font-semibold">{lender.operating_states.length}</span> state{lender.operating_states.length > 1 ? 's' : ''}
+            Operating in <span className="font-semibold">{lender.operating_states.length}</span> state{lender.operating_states.length > 1 ? 's' : ''}
           </p>
         </div>
       )}
 
       {/* Contact Info */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="flex flex-wrap gap-2">
         {lender.website && (
           <a
             href={lender.website}
@@ -466,7 +464,7 @@ function LenderCard({ lender }: { lender: Lender }) {
             rel="noopener noreferrer"
             className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 transition-colors"
           >
-            🌐 Website →
+            Website →
           </a>
         )}
         {lender.phone && (
@@ -474,7 +472,7 @@ function LenderCard({ lender }: { lender: Lender }) {
             href={`tel:${lender.phone}`}
             className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-md hover:bg-gray-200 transition-colors"
           >
-            📞 Call
+            Call
           </a>
         )}
         {lender.email && (
@@ -482,7 +480,7 @@ function LenderCard({ lender }: { lender: Lender }) {
             href={`mailto:${lender.email}`}
             className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-md hover:bg-gray-200 transition-colors"
           >
-            ✉️ Email
+            Email
           </a>
         )}
       </div>
