@@ -1,0 +1,30 @@
+{
+  "known_pan_india_banks": [
+    "state bank of india",
+    "hdfc bank",
+    "icici bank",
+    "axis bank",
+    "bank of baroda",
+    "punjab national bank",
+    "canara bank",
+    "union bank of india",
+    "bank of india",
+    "kotak mahindra bank"
+  ],
+  "known_single_state_foreign_banks": [
+    "sonali bank",
+    "industrial bank of korea"
+  ],
+  "lab_indicators": [
+    "\\bLocal Area Bank\\b",
+    "\\bLAB\\b"
+  ],
+  "pan_india_min_states": 25,
+  "psu_min_aum": 50000,
+  "micro_bank_threshold": 500,
+  "valid_intensities": [
+    "panindia",
+    "regional",
+    "singlestate"
+  ]
+}

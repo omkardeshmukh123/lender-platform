@@ -1,0 +1,2 @@
+ID,Lender,Type,Rule,Category,Severity,Message,Fix,Confidence
+133,Jammu & Kashmir Bank Limited,Private Bank,HQ_NOT_IN_OPERATING_STATES,HQ_Consistency,ERROR,HQ in Jammu and Kashmir but operating states don't include it,UPDATE lenders SET operating_states = operating_states || ARRAY['Jammu and Kashmir'] WHERE id = 133;,100
