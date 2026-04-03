@@ -12,6 +12,14 @@ out/
 .env
 .env.local
 .env.*.local
+*.env
+
+# ==============================
+# API Keys (SECRETS)
+# ==============================
+*gemini*key*
+*api_key*
+*secret_key*
 
 # ==============================
 # Python
@@ -42,3 +50,16 @@ tsconfig.tsbuildinfo
 # Vercel
 # ==============================
 .vercel
+
+# ==============================
+# Data Output (extracted CSVs, checkpoints — stay local)
+# ==============================
+data/output/*.csv
+data/output/*.json
+data/output/.*.json
+data/output/*.txt
+
+# ==============================
+# Claude / AI settings (local only)
+# ==============================
+.claude/settings.local.json
