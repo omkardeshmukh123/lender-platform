@@ -184,16 +184,18 @@ async def search_lenders(
         idx += 1
 
     if state:
+        # operating_states is TEXT[] — use ANY(), not JSONB @> operator
         conditions.append(
-            f"(pan_india = true OR operating_states @> jsonb_build_array(${idx}::text))"
+            f"(pan_india = true OR ${idx} = ANY(operating_states))"
         )
         params.append(state)
         idx += 1
 
     if loan_type:
+        # primary_loan_segments is TEXT[] — use ANY(), not JSONB @> operator
         lt_conds = []
         for lt in loan_type:
-            lt_conds.append(f"primary_loan_segments @> jsonb_build_array(${idx}::text)")
+            lt_conds.append(f"${idx} = ANY(primary_loan_segments)")
             params.append(lt)
             idx += 1
         conditions.append(f"({' OR '.join(lt_conds)})")
