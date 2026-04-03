@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
-import { User, Settings, LogOut } from 'lucide-react'
+import { User, LogOut } from 'lucide-react'
 import Image from 'next/image'
 
 interface NavbarProps {
@@ -90,14 +90,6 @@ export function Navbar({ authenticated = false, user, onSignOut }: NavbarProps) 
                   </div>
 
                   <div className="py-2">
-                    <button
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150 flex items-center gap-3"
-                    >
-                      <Settings className="w-4 h-4 text-[#3B5CCC]" />
-                      Settings
-                    </button>
-                    
                     <button
                       onClick={handleSignOut}
                       className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 transition-colors duration-150 flex items-center gap-3"

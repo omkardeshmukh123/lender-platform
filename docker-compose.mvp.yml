@@ -1,0 +1,39 @@
+version: "3.9"
+
+# ══════════════════════════════════════════════════════════════
+# MITRAM360 — MVP Stack (recommended for initial deployment)
+#
+# What this runs:
+#   api     — FastAPI on port 8000
+#
+# What is NOT here (use these as free cloud services instead):
+#   Database  → Supabase (external, already configured)
+#   Frontend  → Vercel (free tier)
+#   Analytics → Grafana Cloud (free tier, grafana.com)
+#   Airflow   → NOT NEEDED at MVP scale
+#               Run extraction scripts manually:
+#               python backend/run_nbfc_extraction.py
+#               python backend/run_rbi_extraction.py
+#               python backend/run_policy_extraction.py
+#
+# Usage:
+#   docker compose -f docker-compose.mvp.yml up -d
+# ══════════════════════════════════════════════════════════════
+
+services:
+  api:
+    build:
+      context: ./backend/api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped

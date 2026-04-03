@@ -24,19 +24,11 @@ export function Footer() {
           {/* Legal */}
           <div>
             <h4 className="text-white font-medium mb-4">Legal</h4>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">Data Security</a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">Compliance</a>
-              </li>
+            <ul className="space-y-2 text-sm text-gray-500">
+              <li>Privacy Policy</li>
+              <li>Terms of Service</li>
+              <li>Data Security</li>
+              <li>RBI Compliance</li>
             </ul>
           </div>
           

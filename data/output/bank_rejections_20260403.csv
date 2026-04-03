@@ -1,0 +1,9 @@
+bank_name,bank_type,rejection_reason,rejected_at
+Hong Kong and Shanghai Banking Corporation Limited,Foreign Bank,Capability violation: Foreign Bank cannot offer 'Rural Loan',2026-04-03T13:00:45.815783
+JSC VTB Bank Lobby,Foreign Bank,Capability violation: Foreign Bank cannot offer 'Rural Loan',2026-04-03T13:02:23.527102
+PT Bank Maybank Indonesia TBK,Foreign Bank,Capability violation: Foreign Bank cannot offer 'Rural Loan',2026-04-03T13:12:52.902534
+Sonali Bank PLC,Foreign Bank,Capability violation: Foreign Bank cannot offer 'Agriculture Loan',2026-04-03T13:20:29.787909
+Sumitomo Mitsui Banking Corporation,Foreign Bank,Capability violation: Foreign Bank cannot offer 'Rural Loan',2026-04-03T13:21:23.397436
+UBS AG,Foreign Bank,[REVIEW] No loan products extracted — needs manual review,2026-04-03T13:22:02.345925
+The Arunachal Pradesh State Co-operative Apex Bank Ltd.,Cooperative Bank,Capability violation: Cooperative Bank cannot offer 'Consumer Durable Loan',2026-04-03T13:31:07.248029
+Cooperatieve Rabobank U.A./ Coöperatieve Centrale Raiffeisen-Boerenleenbank B.A.,Foreign Bank,Capability violation: Foreign Bank cannot offer 'Agriculture Loan',2026-04-03T13:34:01.875945

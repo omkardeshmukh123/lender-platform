@@ -3,10 +3,16 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-)
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error(
+    'Missing required environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set.'
+  )
+}
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 type User = {
   id: string
@@ -34,42 +40,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-  // Check active session
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    if (session?.user) {
-      // Check if email is confirmed
-      const isConfirmed = session.user.confirmed_at != null
-      
-      if (!isConfirmed) {
-        console.log('⚠️ Email not confirmed yet')
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email || '',
+        })
+      } else {
+        setUser(null)
       }
-      
-      setUser({ 
-        id: session.user.id, 
-        email: session.user.email || '' 
-      })
-    } else {
-      setUser(null)
-    }
-    setLoading(false)
-  })
+      setLoading(false)
+    })
 
-  // Listen for auth changes
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-    console.log('Auth event:', event) // Will show 'SIGNED_IN' when confirmed
-    
-    if (session?.user) {
-      setUser({ 
-        id: session.user.id, 
-        email: session.user.email || '' 
-      })
-    } else {
-      setUser(null)
-    }
-  })
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email || '',
+        })
+      } else {
+        setUser(null)
+      }
+    })
 
-  return () => subscription.unsubscribe()
-}, [])
+    return () => subscription.unsubscribe()
+  }, [])
 
   const signUp = async (email: string, password: string) => {
     const result = await supabase.auth.signUp({

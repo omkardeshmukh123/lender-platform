@@ -1,0 +1,90 @@
+{
+  "title": "Loan Interest Rate Comparison",
+  "uid": "interest_comparison",
+  "tags": ["loans", "comparison"],
+  "schemaVersion": 38,
+  "refresh": "1h",
+  "time": { "from": "now-30d", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Average Interest Rate by Loan Type",
+      "type": "barchart",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "uid": "lender_platform_pg" },
+      "targets": [
+        {
+          "rawSql": "SELECT loan_type, avg_rate_min, avg_rate_max FROM v_interest_by_loan_type ORDER BY avg_rate_min",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": { "fillOpacity": 70 }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Best Interest Rate per Loan Type (by Lender)",
+      "type": "table",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "uid": "lender_platform_pg" },
+      "targets": [
+        {
+          "rawSql": "SELECT loan_type, MIN(interest_rate_min) AS best_rate, company_name FROM policies p JOIN lenders l ON l.id = p.lender_id WHERE p.is_active AND p.approval_status = 'approved' AND l.approval_status = 'approved' AND p.interest_rate_min IS NOT NULL GROUP BY loan_type, company_name ORDER BY loan_type, best_rate LIMIT 50",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Interest Rate Distribution (box plot by type)",
+      "type": "histogram",
+      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 },
+      "datasource": { "uid": "lender_platform_pg" },
+      "targets": [
+        {
+          "rawSql": "SELECT loan_type, interest_rate_min FROM policies p JOIN lenders l ON l.id = p.lender_id WHERE p.is_active AND p.approval_status = 'approved' AND l.approval_status = 'approved' AND p.interest_rate_min IS NOT NULL ORDER BY loan_type",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "PSU vs Private vs NBFC — Rate Comparison",
+      "type": "bargauge",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 6 },
+      "datasource": { "uid": "lender_platform_pg" },
+      "targets": [
+        {
+          "rawSql": "SELECT company_type, ROUND(AVG(p.interest_rate_min)::numeric, 2) AS avg_min_rate FROM policies p JOIN lenders l ON l.id = p.lender_id WHERE p.is_active AND p.approval_status = 'approved' AND l.approval_status = 'approved' AND p.interest_rate_min IS NOT NULL GROUP BY company_type ORDER BY avg_min_rate",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "thresholds": {
+          "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 12 },
+            { "color": "red",    "value": 20 }
+          ]
+        }}
+      }
+    },
+    {
+      "id": 5,
+      "title": "Daily Match Searches",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 6 },
+      "datasource": { "uid": "lender_platform_pg" },
+      "targets": [
+        {
+          "rawSql": "SELECT day AS time, searches FROM v_match_volume_daily ORDER BY day",
+          "format": "time_series"
+        }
+      ]
+    }
+  ]
+}

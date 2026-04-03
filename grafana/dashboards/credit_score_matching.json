@@ -1,0 +1,79 @@
+{
+  "title": "Best Loans by Credit Score",
+  "uid": "credit_score_matching",
+  "tags": ["credit-score", "matching"],
+  "schemaVersion": 38,
+  "refresh": "1h",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Best Available Rate per Credit Score Bracket",
+      "type": "table",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 10 },
+      "datasource": { "uid": "lender_platform_pg" },
+      "targets": [
+        {
+          "rawSql": "SELECT credit_bracket, loan_type, company_name AS lender, best_rate AS \"Best Rate (%)\", loan_amount_max AS \"Max Amount (L)\", credit_score_min AS \"Min CIBIL\" FROM v_best_by_credit_score ORDER BY credit_bracket, best_rate LIMIT 100",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Best Rate (%)" },
+            "properties": [
+              { "id": "unit", "value": "percent" },
+              { "id": "custom.displayMode", "value": "color-background" },
+              { "id": "thresholds", "value": {
+                "steps": [
+                  { "color": "green",  "value": null },
+                  { "color": "yellow", "value": 14 },
+                  { "color": "red",    "value": 24 }
+                ]
+              }}
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "title": "Lender Count Accepting Each Credit Score Bracket",
+      "type": "piechart",
+      "gridPos": { "x": 0, "y": 10, "w": 12, "h": 8 },
+      "datasource": { "uid": "lender_platform_pg" },
+      "targets": [
+        {
+          "rawSql": "SELECT CASE WHEN credit_score_min <= 550 THEN '300-549' WHEN credit_score_min <= 649 THEN '550-649' WHEN credit_score_min <= 699 THEN '650-699' WHEN credit_score_min <= 749 THEN '700-749' ELSE '750+' END AS bracket, COUNT(DISTINCT lender_id) AS lenders FROM policies WHERE is_active AND approval_status = 'approved' AND credit_score_min IS NOT NULL GROUP BY 1 ORDER BY 1",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Avg Interest Rate vs Credit Score Min",
+      "type": "scatter",
+      "gridPos": { "x": 12, "y": 10, "w": 12, "h": 8 },
+      "datasource": { "uid": "lender_platform_pg" },
+      "targets": [
+        {
+          "rawSql": "SELECT credit_score_min, interest_rate_min, loan_type FROM policies p JOIN lenders l ON l.id = p.lender_id WHERE p.is_active AND p.approval_status = 'approved' AND l.approval_status = 'approved' AND credit_score_min IS NOT NULL AND interest_rate_min IS NOT NULL ORDER BY credit_score_min",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Match Volume by Credit Score Range (Last 30 Days)",
+      "type": "barchart",
+      "gridPos": { "x": 0, "y": 18, "w": 24, "h": 7 },
+      "datasource": { "uid": "lender_platform_pg" },
+      "targets": [
+        {
+          "rawSql": "SELECT CASE WHEN credit_score < 550 THEN 'Poor (<550)' WHEN credit_score < 650 THEN 'Fair (550-649)' WHEN credit_score < 700 THEN 'Average (650-699)' WHEN credit_score < 750 THEN 'Good (700-749)' ELSE 'Excellent (750+)' END AS bracket, COUNT(*) AS searches FROM matching_requests WHERE created_at >= NOW() - INTERVAL '30 days' AND credit_score IS NOT NULL GROUP BY 1 ORDER BY MIN(credit_score)",
+          "format": "table"
+        }
+      ]
+    }
+  ]
+}

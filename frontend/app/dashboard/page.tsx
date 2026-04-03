@@ -1,283 +1,410 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+/**
+ * app/dashboard/page.tsx
+ * =======================
+ * Data source: FastAPI  GET /lenders/search
+ * Auth: Supabase (unchanged — only used for login/session, not data)
+ */
+
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
+import { SlidersHorizontal } from 'lucide-react'
 import { useAuth } from '../components/AuthContext'
-import { Navbar } from '../components/Navbar'
-import { Hero } from '../components/Hero'
-import { SearchFilter } from '../components/SearchFilter'
-import { LenderCard } from '../components/LenderCard'
-import { StatsSection } from '../components/StatsSection'
-import { Footer } from '../components/Footer'
+import { Navbar }        from '../components/Navbar'
+import { Hero }          from '../components/Hero'
+import {
+  SearchFilter,
+  MultiFilters,
+  DEFAULT_FILTERS,
+  YEAR_RANGE_OPTIONS,
+  SortField,
+  SortDirection,
+} from '../components/SearchFilter'
+import { LenderCard }    from '../components/LenderCard'
+import { StatsSection }  from '../components/StatsSection'
+import { Footer }        from '../components/Footer'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-)
+// ─────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────
 
-type Lender = {
-  id: number
-  company_name: string
-  company_type: string
-  aum_crores: number | null
-  aum_category: string | null
-  last_year_revenue: number | null
-  is_listed: boolean | null
-  stock_symbol: string | null
-  primary_loan_segments: string[]
-  primary_product: string | null
-  product_types: string[]
-  established_year: number | null
-  hq_location: string | null
-  hq_state: string | null
-  operating_states: string[]
-  operating_intensity: string | null
-  pan_india: boolean | null
-  rbi_category: string | null
-  rbi_registration_number: string | null
-  employee_count: number | null
-  website: string | null
-  recent_funding: string | null
-  recent_funding_amount: number | null
-  recent_funding_year: number | null
-  phone: string | null
-  email: string | null
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+const PAGE_SIZE = 50
+
+const LOAN_TYPES: string[] = [
+  'MSME Loan', 'Personal Loan', 'Home Loan', 'Business Loan',
+  'Vehicle Loan', 'Gold Loan', 'Education Loan', 'Micro Loan',
+  'Loan Against Property', 'Working Capital', 'Agriculture Loan',
+  'EV Loan', 'Two Wheeler Loan', 'Rural Loan', 'Microfinance',
+  'Supply Chain Finance', 'Consumer Durable Loan', 'Credit Card',
+]
+
+const TICKET_SIZES: string[] = ['Micro', 'Small', 'Mid', 'Large']
+
+const COMPANY_TYPES: string[] = [
+  'NBFC', 'Private Bank', 'PSU Bank', 'Foreign Bank',
+  'Cooperative Bank', 'NBFC-MFI', 'Small Finance Bank',
+]
+
+const LISTING_OPTIONS: string[] = ['All', 'Listed Only', 'Unlisted Only']
+
+// Static list of Indian states — doesn't change, no need for an API call
+const INDIA_STATES: string[] = [
+  'All States',
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
+  'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
+  'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
+  'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+  'Delhi', 'Jammu & Kashmir', 'Ladakh', 'Puducherry', 'Chandigarh',
+]
+
+// ─────────────────────────────────────────────────────────────
+// TYPES  — shape returned by FastAPI /lenders/search
+// ─────────────────────────────────────────────────────────────
+
+interface LenderSummary {
+  id:                    number
+  company_name:          string
+  company_type:          string
+  rbi_category:          string | null
+  aum_crores:            number | null
+  aum_category:          string | null
+  hq_state:              string | null
+  hq_location:           string | null
+  operating_intensity:   string | null
+  pan_india:             boolean
+  primary_loan_segments: string[]   // already parsed array from API
+  operating_states:      string[]   // already parsed array from API
+  website:               string | null
+  quality_score:         number | null
+  employee_count:        number | null
+  established_year:      number | null
+  is_listed:             boolean
+  phone:                 string | null
+  email:                 string | null
 }
+
+interface LenderSearchResponse {
+  total:   number
+  page:    number
+  limit:   number
+  results: LenderSummary[]
+}
+
+// ─────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────
+
+function fmtAum(val: number | null | undefined): string {
+  if (!val) return 'N/A'
+  return `₹${val.toLocaleString('en-IN')} Cr`
+}
+
+function fmtNum(val: number | null | undefined): string | null {
+  if (!val && val !== 0) return null
+  return val.toLocaleString('en-IN')
+}
+
+// ─────────────────────────────────────────────────────────────
+// API FETCH
+// ─────────────────────────────────────────────────────────────
+
+function yearRangeToParams(range: string): { min?: number; max?: number } {
+  switch (range) {
+    case 'Before 2000':   return { max: 1999 }
+    case '2000–2009':     return { min: 2000, max: 2009 }
+    case '2010–2019':     return { min: 2010, max: 2019 }
+    case '2020 & after':  return { min: 2020 }
+    default:              return {}
+  }
+}
+
+async function fetchFromAPI(f: MultiFilters, pg: number): Promise<LenderSearchResponse> {
+  const params = new URLSearchParams()
+
+  if (f.search.trim())             params.set('q', f.search.trim())
+  if (f.state && f.state !== 'All States') params.set('state', f.state)
+  if (f.listingStatus === 'Listed Only')   params.set('is_listed', 'true')
+  if (f.listingStatus === 'Unlisted Only') params.set('is_listed', 'false')
+  if (f.sortField)                 params.set('sort_by', f.sortField)
+  if (f.sortDirection)             params.set('sort_dir', f.sortDirection)
+
+  const yr = yearRangeToParams(f.establishedYearRange ?? 'All Years')
+  if (yr.min !== undefined) params.set('established_year_min', String(yr.min))
+  if (yr.max !== undefined) params.set('established_year_max', String(yr.max))
+
+  f.loanType.forEach(t    => params.append('loan_type',    t))
+  f.companyType.forEach(t => params.append('company_type', t))
+  f.ticketSize.forEach(t  => params.append('aum_category', t))
+
+  params.set('page',  String(pg + 1))   // API is 1-indexed, our state is 0-indexed
+  params.set('limit', String(PAGE_SIZE))
+
+  const res = await fetch(`${API_URL}/v1/lenders/search?${params}`)
+  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`)
+  return res.json() as Promise<LenderSearchResponse>
+}
+
+// ─────────────────────────────────────────────────────────────
+// COMPONENT
+// ─────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
   const { user, signOut, loading: authLoading } = useAuth()
   const router = useRouter()
-  const [lenders, setLenders] = useState<Lender[]>([])
-  const [filteredLenders, setFilteredLenders] = useState<Lender[]>([])
-  const [loading, setLoading] = useState(true)
-  
-  // Filter states matching new design
-  const [filters, setFilters] = useState({
-    search: '',
-    loanType: 'All Loan Types',
-    state: 'All States',
-    ticketSize: 'All Sizes',
-    companyType: 'All Types',
-    sortBy: 'All'
-  })
 
-  // Redirect to landing if not logged in
+  const [lenders,       setLenders]       = useState<LenderSummary[]>([])
+  const [totalCount,    setTotalCount]    = useState(0)
+  const [loading,       setLoading]       = useState(true)
+  const [filterLoading, setFilterLoading] = useState(false)
+  const [apiError,      setApiError]      = useState<string | null>(null)
+  const [page,          setPage]          = useState(0)
+  const [filters,       setFilters]       = useState<MultiFilters>(DEFAULT_FILTERS)
+  const [sidebarOpen,   setSidebarOpen]   = useState(false)
+
+  const isFirstLoad  = useRef(true)
+  const requestIdRef = useRef(0)
+
+  // ── Auth guard ──────────────────────────────────────────────
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/')
-    }
+    if (!authLoading && !user) router.push('/')
   }, [user, authLoading, router])
 
-  useEffect(() => {
-    if (user) {
-      fetchLenders()
-    }
-  }, [user])
+  // ── Main fetch ──────────────────────────────────────────────
+  const fetchLenders = useCallback(async (f: MultiFilters, pg: number) => {
+    const thisRequestId = ++requestIdRef.current
 
-  useEffect(() => {
-    applyFilters()
-  }, [lenders, filters])
+    if (isFirstLoad.current) setLoading(true)
+    else                     setFilterLoading(true)
 
-  async function fetchLenders() {
-    setLoading(true)
-    
-    const { data, error } = await supabase
-      .from('lenders')
-      .select('*')
-      .order('aum_crores', { ascending: false, nullsFirst: false })
-    
-    if (error) {
-      console.error('Error fetching lenders:', error)
-    } else {
-      // Parse JSON string fields to arrays
-      const parsedData = (data || []).map(lender => ({
-        ...lender,
-        primary_loan_segments: safeJsonParse(lender.primary_loan_segments, []),
-        product_types: safeJsonParse(lender.product_types, []),
-        operating_states: safeJsonParse(lender.operating_states, [])
-      }))
-      setLenders(parsedData)
-    }
-    
-    setLoading(false)
-  }
+    try {
+      const data = await fetchFromAPI(f, pg)
 
-  // Helper to safely parse JSON strings
-  function safeJsonParse(value: any, fallback: any = []): any {
-    if (!value) return fallback
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value)
-      } catch {
-        return fallback
+      if (thisRequestId !== requestIdRef.current) return
+
+      setApiError(null)
+      setLenders(data.results)
+      setTotalCount(data.total)
+    } catch (err: unknown) {
+      if (thisRequestId !== requestIdRef.current) return
+      const msg = err instanceof Error ? err.message : 'Unknown error'
+      console.error('[Dashboard] API error:', msg)
+      setApiError('Unable to reach the server. Please check your connection and try again.')
+      setLenders([])
+      setTotalCount(0)
+    } finally {
+      if (thisRequestId === requestIdRef.current) {
+        setLoading(false)
+        setFilterLoading(false)
+        isFirstLoad.current = false
       }
     }
-    return value
-  }
+  }, [])
 
-  function applyFilters() {
-    let filtered = [...lenders]
+  useEffect(() => {
+    if (user) fetchLenders(filters, page)
+  }, [user, filters, page, fetchLenders])
 
-    // Search filter
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase()
-      filtered = filtered.filter(l =>
-        l.company_name?.toLowerCase().includes(searchLower) ||
-        l.hq_location?.toLowerCase().includes(searchLower) ||
-        l.hq_state?.toLowerCase().includes(searchLower) ||
-        l.primary_product?.toLowerCase().includes(searchLower)
-      )
-    }
+  // ── Filter change handler ───────────────────────────────────
+  const handleFilterChange = useCallback(
+    <K extends keyof MultiFilters>(key: K, value: MultiFilters[K]) => {
+      setPage(0)
+      isFirstLoad.current = false
+      setFilters(prev => ({ ...prev, [key]: value }))
+    },
+    []
+  )
 
-    // Loan Type filter
-    if (filters.loanType && filters.loanType !== 'All Loan Types') {
-      filtered = filtered.filter(
-        l => l.primary_loan_segments && l.primary_loan_segments.includes(filters.loanType)
-      )
-    }
+  // ── Transform API rows → LenderCard props ──────────────────
+  const transformedLenders = lenders.map(l => ({
+    id:              String(l.id),
+    name:            l.company_name          || 'Unknown',
+    city:            l.hq_location?.split(',')[0]?.trim() || l.hq_state || 'N/A',
+    state:           l.hq_state              || 'N/A',
+    companyType:     l.company_type          || 'N/A',
+    aum:             fmtAum(l.aum_crores),
+    established:     l.established_year ? String(l.established_year) : 'N/A',
+    ticketSize:      l.aum_category          || 'N/A',
+    products:        l.primary_loan_segments,
+    operatingStates: l.operating_states,
+    headquarters:    l.hq_location           || l.hq_state || 'N/A',
+    employees:       fmtNum(l.employee_count),
+    phone:           l.phone                 || null,
+    email:           l.email                 || null,
+    website:         l.website               || null,
+  }))
 
-    // State filter - shows pan-India banks for every state
-    if (filters.state && filters.state !== 'All States') {
-      filtered = filtered.filter(l => {
-        if (l.pan_india) return true
-        if (l.operating_states && l.operating_states.includes(filters.state)) return true
-        return false
-      })
-    }
-
-    // AUM/Ticket Size filter
-    if (filters.ticketSize && filters.ticketSize !== 'All Sizes') {
-      filtered = filtered.filter(l => l.aum_category === filters.ticketSize)
-    }
-
-    // Company Type filter
-    if (filters.companyType && filters.companyType !== 'All Types') {
-      filtered = filtered.filter(l => l.company_type === filters.companyType)
-    }
-
-    // Listing Status filter
-    if (filters.sortBy && filters.sortBy !== 'All') {
-      if (filters.sortBy === 'Listed Only') {
-        filtered = filtered.filter(l => l.is_listed === true)
-      } else if (filters.sortBy === 'Unlisted Only') {
-        filtered = filtered.filter(l => l.is_listed === false || l.is_listed === null)
-      }
-    }
-
-    setFilteredLenders(filtered)
-  }
-
-  // Handle filter changes
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }))
-  }
-
-  // Extract unique values for filters
-  const loanTypes = ['All Loan Types', ...Array.from(
-    new Set(lenders.flatMap(l => l.primary_loan_segments || []))
-  ).sort()]
-  
-  const states = ['All States', ...Array.from(
-    new Set(lenders.flatMap(l => l.operating_states || []))
-  ).sort()]
-
-  const ticketSizes = ['All Sizes', 'Micro', 'Small', 'Mid', 'Large']
-
-  const companyTypes = ['All Types', ...Array.from(
-    new Set(lenders.map(l => l.company_type).filter(Boolean))
-  ).sort()]
-
-  const listingStatus = ['All', 'Listed Only', 'Unlisted Only']
-
+  // ── Auth loading screen ─────────────────────────────────────
   if (authLoading || !user) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B5CCC]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B5CCC]" />
       </div>
     )
   }
 
-  // Transform Supabase data to match LenderCard component format
-  const transformedLenders = filteredLenders.map(lender => ({
-    id: lender.id.toString(),
-    name: lender.company_name,
-    city: lender.hq_location?.split(',')[0]?.trim() || lender.hq_state || 'N/A',
-    state: lender.hq_state || 'N/A',
-    companyType: lender.company_type,
-    aum: lender.aum_crores ? `₹${lender.aum_crores.toLocaleString()} Cr` : 'N/A',
-    established: lender.established_year?.toString() || 'N/A',
-    ticketSize: lender.aum_category || 'N/A',
-    products: lender.primary_loan_segments || [],
-    operatingStates: lender.operating_states || [],
-    headquarters: lender.hq_location || lender.hq_state || 'N/A',
-    employees: lender.employee_count?.toLocaleString() || null,
-    phone: lender.phone || null,
-    email: lender.email || null,
-    website: lender.website || null
-  }))
-
+  // ── Render ──────────────────────────────────────────────────
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-white">
-      <Navbar 
-        authenticated={true} 
-        user={user}
-        onSignOut={signOut}
-      />
-      
+      <Navbar authenticated user={user} onSignOut={signOut} />
       <Hero />
-      
-      <SearchFilter
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        resultsCount={filteredLenders.length}
-        loanTypes={loanTypes}
-        states={states}
-        ticketSizes={ticketSizes}
-        companyTypes={companyTypes}
-        listingStatus={listingStatus}
-      />
 
-      {/* Results Section */}
-      <section className="relative flex-1 py-12 bg-gradient-to-b from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-8">
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B5CCC]"></div>
-              <p className="mt-4 text-gray-600">Loading lenders...</p>
+      <div className="flex flex-1 min-h-0">
+
+        <SearchFilter
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          resultsCount={totalCount}
+          loanTypes={LOAN_TYPES}
+          states={INDIA_STATES}
+          ticketSizes={TICKET_SIZES}
+          companyTypes={COMPANY_TYPES}
+          listingStatus={LISTING_OPTIONS}
+          yearRanges={[...YEAR_RANGE_OPTIONS]}
+          sidebar
+          sidebarOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+
+        <main className="flex-1 min-w-0 py-8 px-4 sm:px-6 lg:px-8
+                         bg-gradient-to-b from-gray-50 to-white">
+
+          <div className="flex items-center justify-between mb-6 md:hidden">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2
+                         bg-white border border-gray-200 rounded-xl
+                         text-sm font-medium text-gray-700
+                         hover:border-gray-300 transition-colors shadow-sm"
+            >
+              <SlidersHorizontal className="w-4 h-4 text-[#3B5CCC]" />
+              Filters
+            </button>
+            <span className="text-sm text-gray-600">
+              <span className="font-bold text-[#3B5CCC]">
+                {totalCount.toLocaleString('en-IN')}
+              </span>
+              {' '}lender{totalCount !== 1 ? 's' : ''}
+            </span>
+          </div>
+
+          {filterLoading && !loading && (
+            <div className="flex justify-center mb-6">
+              <span className="flex items-center gap-2 text-sm text-gray-500
+                               bg-white px-4 py-2 rounded-full border border-gray-200 shadow-sm">
+                <span className="animate-spin inline-block w-4 h-4 border-b-2 border-[#3B5CCC] rounded-full" />
+                Updating results…
+              </span>
             </div>
-          ) : transformedLenders.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {transformedLenders.map((lender, index) => (
-                <LenderCard key={lender.id} lender={lender} index={index} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 bg-white rounded-2xl shadow-md shadow-gray-200/50 border border-[#E5E7EB]">
-              <p className="text-gray-600 mb-4">No lenders found matching your criteria.</p>
+          )}
+
+          {/* API error banner */}
+          {apiError && !loading && (
+            <div className="flex items-center justify-between mb-6
+                            bg-red-50 border border-red-200 rounded-xl px-5 py-4">
+              <div>
+                <p className="text-red-700 font-semibold text-sm">Connection error</p>
+                <p className="text-red-500 text-xs mt-0.5">{apiError}</p>
+              </div>
               <button
-                onClick={() => setFilters({
-                  search: '',
-                  loanType: 'All Loan Types',
-                  state: 'All States',
-                  ticketSize: 'All Sizes',
-                  companyType: 'All Types',
-                  sortBy: 'All'
-                })}
-                className="px-6 py-2.5 bg-[#3B5CCC] text-white rounded-xl hover:bg-[#2d4aa8] transition-colors font-medium"
+                onClick={() => { setApiError(null); fetchLenders(filters, page) }}
+                className="px-4 py-2 bg-red-600 text-white text-xs font-medium
+                           rounded-lg hover:bg-red-700 transition-colors flex-shrink-0 ml-4"
               >
-                Reset Filters
+                Retry
               </button>
             </div>
           )}
-        </div>
-      </section>
 
-      <StatsSection totalLenders={lenders.length} />
-      
+          {loading ? (
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse"
+                >
+                  <div className="h-5 bg-gray-200 rounded w-3/4 mb-3" />
+                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-2" />
+                  <div className="h-4 bg-gray-200 rounded w-2/3 mb-2" />
+                  <div className="h-4 bg-gray-200 rounded w-1/3 mb-5" />
+                  <div className="flex gap-2">
+                    <div className="h-6 bg-gray-200 rounded w-20" />
+                    <div className="h-6 bg-gray-200 rounded w-16" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+          ) : transformedLenders.length > 0 ? (
+            <>
+              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {transformedLenders.map((lender, index) => (
+                  <LenderCard key={lender.id} lender={lender} index={index} />
+                ))}
+              </div>
+
+              {totalCount > PAGE_SIZE && (
+                <div className="flex items-center justify-center gap-4 mt-10">
+                  <button
+                    onClick={() => setPage(p => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                    className="px-5 py-2 rounded-xl border border-gray-200 text-sm font-medium
+                               bg-white hover:bg-gray-50 transition-colors
+                               disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    ← Previous
+                  </button>
+
+                  <span className="text-sm text-gray-600">
+                    <span className="font-semibold text-gray-900">
+                      {(page * PAGE_SIZE + 1).toLocaleString('en-IN')}–
+                      {Math.min((page + 1) * PAGE_SIZE, totalCount).toLocaleString('en-IN')}
+                    </span>
+                    {' '}of{' '}
+                    <span className="font-semibold text-[#3B5CCC]">
+                      {totalCount.toLocaleString('en-IN')}
+                    </span>
+                  </span>
+
+                  <button
+                    onClick={() => setPage(p => p + 1)}
+                    disabled={(page + 1) * PAGE_SIZE >= totalCount}
+                    className="px-5 py-2 rounded-xl border border-gray-200 text-sm font-medium
+                               bg-white hover:bg-gray-50 transition-colors
+                               disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
+            </>
+
+          ) : (
+            <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 shadow-sm">
+              <div className="text-5xl mb-4" aria-hidden="true">🔍</div>
+              <p className="text-gray-800 font-semibold text-lg mb-1">
+                No lenders found
+              </p>
+              <p className="text-gray-400 text-sm mb-6">
+                Try removing some filters or searching with different terms
+              </p>
+              <button
+                onClick={() => { setFilters(DEFAULT_FILTERS); setPage(0) }}
+                className="px-6 py-2.5 bg-[#3B5CCC] text-white rounded-xl font-medium
+                           hover:bg-[#2d4aa8] transition-colors"
+              >
+                Reset All Filters
+              </button>
+            </div>
+          )}
+
+        </main>
+      </div>
+
+      <StatsSection totalLenders={totalCount} />
       <Footer />
     </div>
   )

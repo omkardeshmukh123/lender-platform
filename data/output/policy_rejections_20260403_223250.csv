@@ -1,0 +1,2 @@
+lender_id,lender_name,product_name,gate,reason,timestamp
+1007,Ujjawal Fiscal Services Pvt. Ltd.,MSME Loan,lender_type,MFI loan_amount_max 5.0L exceeds RBI MFI cap of 3.0L,2026-04-03T20:54:18.832576
