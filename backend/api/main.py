@@ -213,6 +213,16 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 _raw_origins    = os.environ.get("CORS_ORIGINS", "http://localhost:3000")
 _allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
+# Always include Vercel preview/production URLs for this project
+_vercel_patterns = [
+    "https://lender-platform.vercel.app",
+    "https://lender-platform-omkars-projects-9ce8f848.vercel.app",
+]
+for _origin in _vercel_patterns:
+    if _origin not in _allowed_origins:
+        _allowed_origins.append(_origin)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins,
