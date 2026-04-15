@@ -60,6 +60,11 @@ class Config:
     gemini_retry_delay_secs:   float = _float("GEMINI_RETRY_DELAY_S",    10.0)
     scraper_timeout_secs:      int   = _int("SCRAPER_TIMEOUT_S",         30)
 
+    # Chat
+    gemini_api_key:     str   = _str("GEMINI_API_KEY", "")
+    chat_history_limit: int   = _int("CHAT_HISTORY_LIMIT", 20)
+    chat_context_turns: int   = _int("CHAT_CONTEXT_TURNS", 6)
+
     # Environment
     env: str = _str("ENV", "production")
 
