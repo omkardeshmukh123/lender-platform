@@ -17,6 +17,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 type User = {
   id: string
   email: string
+  access_token?: string
 }
 
 type AuthContextType = {
@@ -46,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser({
           id: session.user.id,
           email: session.user.email || '',
+          access_token: session.access_token,
         })
       } else {
         setUser(null)
@@ -59,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser({
           id: session.user.id,
           email: session.user.email || '',
+          access_token: session.access_token,
         })
       } else {
         setUser(null)
