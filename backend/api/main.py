@@ -5,9 +5,7 @@ FastAPI application — Lender Platform public API.
 
   GET  /v1/lenders/search
   GET  /v1/lenders/{id}
-  GET  /v1/policies/filter
-  GET  /v1/loans/compare
-  POST /v1/loans/match
+  GET  /v1/lenders/stats
   GET/POST /v1/admin/*
   GET /health
   GET /schema-version
@@ -47,8 +45,9 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from limiter import limiter
-from routers import lenders, policies, loans
+from routers import lenders
 from routers import admin as admin_router
+from routers import chat as chat_router
 from middleware.logging import StructuredLoggingMiddleware
 from middleware.security import SecurityHeadersMiddleware
 from core.cache import create_redis_cache
@@ -141,47 +140,7 @@ async def lifespan(app: FastAPI):
 
     app.state.cache = await create_redis_cache()
 
-    # Listen for policy_updated notifications from DB trigger (migration 017)
-    # When a policy is approved, invalidate the loans_match cache immediately
-    _notify_conn: asyncpg.Connection | None = None
-    try:
-        _db_url = os.environ.get("DATABASE_URL")
-        if not _db_url:
-            raise RuntimeError("DATABASE_URL not set — cannot start policy notification listener")
-        _notify_conn = await asyncpg.connect(
-            _db_url,
-            statement_cache_size=0,
-        )
-
-        async def _on_policy_updated(conn, pid, channel, payload):
-            try:
-                import json as _json
-                data = _json.loads(payload)
-                logger.info(
-                    "policy_updated: policy_id=%s lender_id=%s loan_type=%s action=%s — invalidating match cache",
-                    data.get("policy_id"), data.get("lender_id"),
-                    data.get("loan_type"), data.get("action"),
-                )
-                await app.state.cache.delete_pattern("lp:loans_match:*")
-                await app.state.cache.delete_pattern("lp:policies_filter:*")
-                metrics.inc("cache.invalidation", tags={"trigger": "policy_updated"})
-            except Exception as exc:
-                logger.warning("policy_updated handler error: %s", exc)
-
-        await _notify_conn.add_listener("policy_updated", _on_policy_updated)
-        logger.info("Listening for policy_updated notifications on DB channel")
-    except Exception as exc:
-        logger.warning("Could not set up policy_updated listener: %s — cache invalidation on policy approval disabled", exc)
-        _notify_conn = None
-
     yield
-
-    if _notify_conn:
-        try:
-            await _notify_conn.remove_listener("policy_updated", _on_policy_updated)
-            await _notify_conn.close()
-        except Exception:
-            pass
 
     await app.state.db.close()
     logger.info("DB pool closed")
@@ -238,9 +197,8 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 _V1 = "/v1"
 app.include_router(lenders.router,      prefix=f"{_V1}/lenders",  tags=["Lenders"])
-app.include_router(policies.router,     prefix=f"{_V1}/policies", tags=["Policies"])
-app.include_router(loans.router,        prefix=f"{_V1}/loans",    tags=["Loans"])
 app.include_router(admin_router.router, prefix=f"{_V1}/admin",    tags=["Admin"])
+app.include_router(chat_router.router,  prefix=f"{_V1}/chat",     tags=["Chat"])
 
 
 @app.get("/health", tags=["Health"])
