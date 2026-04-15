@@ -24,6 +24,7 @@ import {
 import { LenderCard }    from '../components/LenderCard'
 import { StatsSection }  from '../components/StatsSection'
 import { Footer }        from '../components/Footer'
+import { ChatPanel }      from '../components/ChatPanel'
 
 // ─────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -163,6 +164,7 @@ export default function Dashboard() {
   const [page,          setPage]          = useState(0)
   const [filters,       setFilters]       = useState<MultiFilters>(DEFAULT_FILTERS)
   const [sidebarOpen,   setSidebarOpen]   = useState(false)
+  const [chatOpen,      setChatOpen]      = useState(false)
 
   const isFirstLoad  = useRef(true)
   const requestIdRef = useRef(0)
@@ -251,7 +253,7 @@ export default function Dashboard() {
       <Navbar authenticated user={user} onSignOut={signOut} />
       <Hero />
 
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0 relative">
 
         <SearchFilter
           filters={filters}
@@ -271,6 +273,18 @@ export default function Dashboard() {
         <main className="flex-1 min-w-0 py-8 px-4 sm:px-6 lg:px-8
                          bg-gradient-to-b from-gray-50 to-white">
 
+          {/* Desktop Ask AI button */}
+          <div className="hidden md:flex justify-end mb-4">
+            <button
+              onClick={() => setChatOpen(p => !p)}
+              className="inline-flex items-center gap-2 px-4 py-2
+                         bg-[#3B5CCC] text-white rounded-xl text-sm font-medium
+                         hover:bg-[#2d4aa8] transition-colors shadow-sm"
+            >
+              {chatOpen ? 'Close AI' : 'Ask AI'}
+            </button>
+          </div>
+
           <div className="flex items-center justify-between mb-6 md:hidden">
             <button
               type="button"
@@ -282,6 +296,16 @@ export default function Dashboard() {
             >
               <SlidersHorizontal className="w-4 h-4 text-[#3B5CCC]" />
               Filters
+            </button>
+            <button
+              type="button"
+              onClick={() => setChatOpen(p => !p)}
+              className="inline-flex items-center gap-2 px-4 py-2
+                         bg-[#3B5CCC] text-white rounded-xl
+                         text-sm font-medium
+                         hover:bg-[#2d4aa8] transition-colors shadow-sm"
+            >
+              Ask AI
             </button>
             <span className="text-sm text-gray-600">
               <span className="font-bold text-[#3B5CCC]">
@@ -342,7 +366,16 @@ export default function Dashboard() {
             <>
               <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
                 {transformedLenders.map((lender, index) => (
-                  <LenderCard key={lender.id} lender={lender} index={index} />
+                  <LenderCard
+                    key={lender.id}
+                    lender={lender}
+                    index={index}
+                    onTagClick={tag => {
+                      if (!filters.loanType.includes(tag)) {
+                        handleFilterChange('loanType', [...filters.loanType, tag])
+                      }
+                    }}
+                  />
                 ))}
               </div>
 
@@ -402,6 +435,18 @@ export default function Dashboard() {
           )}
 
         </main>
+
+        <ChatPanel
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+          onFiltersApplied={(f) => {
+            setFilters(f)
+            setPage(0)
+            isFirstLoad.current = false
+          }}
+          apiUrl={API_URL}
+          user={user}
+        />
       </div>
 
       <StatsSection totalLenders={totalCount} />
