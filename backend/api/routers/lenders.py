@@ -273,53 +273,6 @@ async def search_lenders(
     return result
 
 
-@router.get("/{lender_id}", response_model=LenderDetail, summary="Lender detail")
-@limiter.limit("200/minute")
-async def get_lender(
-    request: Request,
-    lender_id: int,
-    db: asyncpg.Pool = Depends(get_db),
-    cache=Depends(get_cache),
-):
-    if lender_id <= 0:
-        raise HTTPException(status_code=400, detail="Invalid lender_id")
-
-    cache_key = make_key("lender_detail", {"id": lender_id})
-    cached    = await cache.get(cache_key)
-    if cached is not None:
-        metrics.inc("cache.hit", tags={"endpoint": "lender_detail"})
-        return JSONResponse(cached, headers={"X-Cache": "HIT"})
-    metrics.inc("cache.miss", tags={"endpoint": "lender_detail"})
-
-    try:
-        async with db.acquire() as conn:
-            row = await conn.fetchrow(
-                """
-                SELECT id, company_name, company_type, rbi_category,
-                       aum_crores, aum_category, hq_state, hq_location,
-                       operating_intensity, pan_india, primary_loan_segments,
-                       operating_states, website, quality_score,
-                       employee_count, branch_count, established_year, is_listed,
-                       stock_symbol, phone, email,
-                       last_scraped_at, data_source, schema_version
-                FROM lenders
-                WHERE id = $1 AND approval_status = 'approved'
-                """,
-                lender_id,
-            )
-    except Exception as exc:
-        logger.error("get_lender DB error: id=%d | %s", lender_id, exc)
-        metrics.inc("db.error_count")
-        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
-
-    if not row:
-        raise HTTPException(status_code=404, detail="Lender not found")
-
-    result = _row_to_detail(row)
-    await cache.set(cache_key, result.model_dump(), ttl=CacheTTL.DETAIL)
-    return result
-
-
 @router.get("/stats", summary="Public platform stats (lender count, policies, states)")
 @limiter.limit("60/minute")
 async def get_public_stats(
@@ -367,4 +320,51 @@ async def get_public_stats(
         "company_types":     int(row["company_types_count"] or 0),
     }
     await cache.set(cache_key, result, ttl=CacheTTL.STATS)
+    return result
+
+
+@router.get("/{lender_id}", response_model=LenderDetail, summary="Lender detail")
+@limiter.limit("200/minute")
+async def get_lender(
+    request: Request,
+    lender_id: int,
+    db: asyncpg.Pool = Depends(get_db),
+    cache=Depends(get_cache),
+):
+    if lender_id <= 0:
+        raise HTTPException(status_code=400, detail="Invalid lender_id")
+
+    cache_key = make_key("lender_detail", {"id": lender_id})
+    cached    = await cache.get(cache_key)
+    if cached is not None:
+        metrics.inc("cache.hit", tags={"endpoint": "lender_detail"})
+        return JSONResponse(cached, headers={"X-Cache": "HIT"})
+    metrics.inc("cache.miss", tags={"endpoint": "lender_detail"})
+
+    try:
+        async with db.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT id, company_name, company_type, rbi_category,
+                       aum_crores, aum_category, hq_state, hq_location,
+                       operating_intensity, pan_india, primary_loan_segments,
+                       operating_states, website, quality_score,
+                       employee_count, branch_count, established_year, is_listed,
+                       stock_symbol, phone, email,
+                       last_scraped_at, data_source, schema_version
+                FROM lenders
+                WHERE id = $1 AND approval_status = 'approved'
+                """,
+                lender_id,
+            )
+    except Exception as exc:
+        logger.error("get_lender DB error: id=%d | %s", lender_id, exc)
+        metrics.inc("db.error_count")
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Lender not found")
+
+    result = _row_to_detail(row)
+    await cache.set(cache_key, result.model_dump(), ttl=CacheTTL.DETAIL)
     return result
