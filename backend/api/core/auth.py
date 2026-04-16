@@ -106,8 +106,16 @@ async def get_current_user(
     Sets request.state.user_id for structured log correlation.
     """
     if credentials is None or not credentials.credentials:
+        auth_header = request.headers.get("authorization", "")
+        logger.warning("auth: no credentials | auth_header_present=%s | path=%s",
+                       bool(auth_header), request.url.path)
         raise HTTPException(status_code=401, detail="Authentication required")
-    payload = _decode_token(credentials.credentials)
+    try:
+        payload = _decode_token(credentials.credentials)
+    except HTTPException as exc:
+        logger.warning("auth: token rejected | detail=%s | path=%s | token_prefix=%s",
+                       exc.detail, request.url.path, credentials.credentials[:20])
+        raise
     # Attach user_id to request state so middleware can include it in logs
     request.state.user_id = payload.get("sub")
     request.state.user    = payload
