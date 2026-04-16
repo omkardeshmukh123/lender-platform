@@ -79,7 +79,7 @@ def _decode_token(token: str) -> dict:
             token,
             _get_jwt_secret(),
             algorithms=["HS256"],
-            options={"require": ["sub", "exp", "role"]},
+            options={"require": ["sub", "exp"], "verify_aud": False},
         )
         return payload
     except jwt.ExpiredSignatureError:
