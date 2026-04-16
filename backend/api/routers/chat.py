@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.auth import get_current_user, AuthUser
+from core.auth import get_current_user
 from core.config import cfg
 from core.gemini import get_gemini_client
 from core.constants import VALID_LOAN_TYPES, VALID_COMPANY_TYPES, VALID_AUM_CATEGORIES

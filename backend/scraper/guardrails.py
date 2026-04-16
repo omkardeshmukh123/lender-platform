@@ -986,10 +986,17 @@ class Guardrails:
                 r: GuardrailResult, potential_pan: bool = False) -> tuple[list[str], bool]:
         if ctype in ('PSU Bank', 'Private Bank', 'Foreign Bank', 'Small Finance Bank'):
             return sorted(ALL_INDIA_STATES), True
-        if 'PAN_INDIA' in states or potential_pan:
+        # Structural evidence (branch_count > 200 OR employee_count > 5000) — always trust
+        if potential_pan:
             return sorted(ALL_INDIA_STATES), True
+        # "PAN_INDIA" is a Gemini/scraper text marker, not structural proof.
+        # Marketing copy like "We serve PAN India" triggers it on regional lenders.
+        # Only validate explicit state names; warn if only the marker was present.
+        claimed_pan = 'PAN_INDIA' in states
         valid: list[str] = []
         for s in states:
+            if s == 'PAN_INDIA':
+                continue  # handled via claimed_pan above
             s = str(s).strip()
             if s in STATE_SET:
                 valid.append(s)
@@ -999,6 +1006,10 @@ class Guardrails:
                 r.add(INFO, 'operating_states', f'Unknown state skipped: "{s}"')
         valid  = sorted(set(valid))
         is_pan = len(valid) >= len(ALL_INDIA_STATES)
+        if claimed_pan and not is_pan:
+            r.add(WARNING, 'operating_states',
+                  '"PAN_INDIA" claimed in text but no structural evidence (branch/employee count) '
+                  '— keeping only validated states; set pan_india_suspect=True for review')
         return valid, is_pan
 
     def _year(self, val: Any, r: GuardrailResult) -> Optional[int]:

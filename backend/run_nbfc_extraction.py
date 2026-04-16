@@ -570,6 +570,11 @@ def make_strict_prompt(nbfc_name, website, existing_summary, primary_focus,
         if states:
             verified.append(f'  operating_states: {states}')
 
+        # Context quality: count how many HIGH/MEDIUM fields were verified.
+        # If the website was blocked or thin, the scraper returns few fields.
+        # Gemini must not fill gaps from training data in that case — it hallucinates.
+        verified_count = len(verified)
+
         if verified:
             scraped_block = (
                 '\n\nPRE-VERIFIED DATA (scraped from company website — treat as FACTUAL):\n'
@@ -577,6 +582,18 @@ def make_strict_prompt(nbfc_name, website, existing_summary, primary_focus,
                 + '\n\nFor pre-verified fields above: return the same value in the JSON. '
                   'Focus your knowledge on the REMAINING fields (aum, revenue, rbi_category, '
                   'ticket_size, subsidiaries, primary_product, operating_intensity).'
+            )
+        else:
+            verified_count = 0
+
+        if verified_count == 0:
+            # Website was blocked, thin, or scraper failed entirely.
+            # No factual anchor — Gemini must not guess structural fields.
+            scraped_block += (
+                '\n\nWARNING: No website data was scraped for this lender. '
+                'Return null for: aum_crores, last_year_revenue, operating_states, '
+                'operating_intensity, hq_city, hq_state, phone, email, rbi_registration_number. '
+                'Only fill fields you can confirm from RBI/SEBI/MCA official registries.'
             )
 
     return f"""Extract data for: {nbfc_name} — an Indian NBFC.
@@ -1002,8 +1019,10 @@ def build_nbfc_lender(
         )
         if len(op_states) >= 20:
             intensity = "Pan India"; is_pan = True
-        elif _claimed_pan and len(op_states) >= 10:
-            # LLM/scraper claims pan-India AND has evidence in ≥ 10 states
+        elif _claimed_pan and len(op_states) >= 20:
+            # LLM/scraper claims pan-India AND actual validated states ≥ 20
+            # Threshold raised from 10 → 20: marketing text "PAN India" on regional
+            # lender sites was causing false positives (e.g. Cocta Finance → Telangana)
             intensity = "Pan India"; is_pan = True
         elif len(op_states) <= 1:
             intensity = "Single State"

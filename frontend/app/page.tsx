@@ -1,11 +1,10 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useAuth } from './components/AuthContext'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Search, Building2, Zap, ArrowRight, BadgeCheck } from 'lucide-react'
+import { Search, Building2, ArrowRight, BadgeCheck, Filter, ExternalLink } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -20,41 +19,21 @@ interface PlatformStats {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
-const QUICK_LOAN_TYPES = [
-  'MSME Loan', 'Personal Loan', 'Home Loan', 'Business Loan',
-  'Gold Loan', 'Vehicle Loan', 'Education Loan', 'Working Capital',
-]
-
 // ─────────────────────────────────────────────────────────────
 // COMPONENT
 // ─────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
-  const router = useRouter()
   const { user, loading: authLoading } = useAuth()
 
-  const [stats,         setStats]         = useState<PlatformStats | null>(null)
-  const [selectedType,  setSelectedType]  = useState('')
+  const [stats, setStats] = useState<PlatformStats | null>(null)
 
-  // Authenticated users: no redirect — let them use the landing page freely.
-  // Dashboard link in the nav is sufficient for navigation.
-
-  // Fetch live stats
   useEffect(() => {
     fetch(`${API_URL}/v1/lenders/stats`)
       .then(r => r.ok ? r.json() : null)
       .then((d: PlatformStats | null) => { if (d) setStats(d) })
-      .catch(() => {/* stats are decorative — silent fail */})
+      .catch(() => {})
   }, [])
-
-  const handleQuickMatch = (loanType?: string) => {
-    const type = loanType ?? selectedType
-    if (type) {
-      router.push(`/match?loan_type=${encodeURIComponent(type)}`)
-    } else {
-      router.push('/match')
-    }
-  }
 
   if (authLoading) {
     return (
@@ -81,8 +60,8 @@ export default function LandingPage() {
           <div className="flex items-center gap-3 sm:gap-5">
             {user ? (
               <>
-                <Link href="/match"     className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">
-                  Find My Loan
+                <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900 transition-colors hidden sm:block">
+                  Browse Lenders
                 </Link>
                 <Link href="/dashboard" className="bg-[#3B5CCC] text-white px-5 py-2 rounded-xl text-sm font-medium hover:bg-[#2d4aa8] transition-colors">
                   Dashboard
@@ -109,7 +88,7 @@ export default function LandingPage() {
       <section className="max-w-7xl mx-auto px-6 sm:px-8 py-16 sm:py-20">
         <div className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
 
-          {/* Left — copy + quick-match form */}
+          {/* Left — copy + CTA */}
           <div>
             <div className="inline-flex items-center gap-2 bg-blue-50 text-[#3B5CCC] text-xs font-semibold
                             px-3 py-1.5 rounded-full border border-blue-100 mb-5">
@@ -120,52 +99,34 @@ export default function LandingPage() {
             </div>
 
             <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 leading-tight mb-5">
-              Find the{' '}
-              <span className="text-[#3B5CCC]">right loan</span>
-              {' '}for your situation
+              India&apos;s most complete{' '}
+              <span className="text-[#3B5CCC]">NBFC &amp; bank</span>
+              {' '}directory
             </h1>
 
             <p className="text-lg text-gray-600 leading-relaxed mb-8">
-              Tell us what you need — we match you with eligible NBFCs and banks,
-              ranked by interest rate, FOIR fit, and match score. Free to use.
+              Search and filter{' '}
+              {lenderCount ? `${lenderCount.toLocaleString('en-IN')}` : 'hundreds of'}{' '}
+              RBI-registered NBFCs and banks by loan type, state, company size, and more.
+              Free to use.
             </p>
 
-            {/* Quick loan-type picker */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mb-6">
-              <p className="text-sm font-semibold text-gray-700 mb-3">What loan do you need?</p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {QUICK_LOAN_TYPES.map(type => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setSelectedType(prev => prev === type ? '' : type)}
-                    className={[
-                      'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
-                      selectedType === type
-                        ? 'bg-[#3B5CCC] text-white border-[#3B5CCC]'
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300',
-                    ].join(' ')}
-                  >
-                    {type}
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => handleQuickMatch()}
-                className="w-full inline-flex items-center justify-center gap-2
-                           bg-[#3B5CCC] text-white py-3 px-6 rounded-xl font-semibold text-sm
-                           hover:bg-[#2d4aa8] transition-all hover:shadow-lg hover:shadow-[#3B5CCC]/25
-                           hover:scale-[1.01] active:scale-[0.99]"
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2 bg-[#3B5CCC] text-white
+                           px-8 py-3.5 rounded-xl text-base font-semibold
+                           hover:bg-[#2d4aa8] transition-all hover:shadow-lg
+                           hover:shadow-[#3B5CCC]/25 hover:scale-[1.02]"
               >
                 <Search className="w-4 h-4" />
-                {selectedType ? `Find ${selectedType} lenders` : 'Find My Best Matches'}
+                Browse Lenders
                 <ArrowRight className="w-4 h-4" />
-              </button>
+              </Link>
             </div>
 
-            <p className="text-xs text-gray-400 text-center">
-              No CIBIL hit · No spam · 100% free
+            <p className="text-xs text-gray-400 mt-4">
+              Filter by loan type · state · AUM size · company type
             </p>
           </div>
 
@@ -231,27 +192,27 @@ export default function LandingPage() {
               <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Search className="w-6 h-6 text-[#3B5CCC]" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">1. Enter your profile</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">1. Search &amp; filter</h3>
               <p className="text-sm text-gray-500 leading-relaxed">
-                Loan type, amount, CIBIL score, employment, and state — takes 30 seconds.
+                Filter by loan type, state, AUM size, company type, and more — instantly.
               </p>
             </div>
 
             <div className="text-center">
               <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Zap className="w-6 h-6 text-[#3B5CCC]" />
+                <Filter className="w-6 h-6 text-[#3B5CCC]" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">2. We rank your matches</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">2. Compare lenders</h3>
               <p className="text-sm text-gray-500 leading-relaxed">
-                Scored on 6 dimensions: rate, credit margin, amount fit, FOIR, data quality, fees.
+                See contact info, operating states, loan products, and company details side by side.
               </p>
             </div>
 
             <div className="text-center">
               <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Building2 className="w-6 h-6 text-[#3B5CCC]" />
+                <ExternalLink className="w-6 h-6 text-[#3B5CCC]" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">3. Apply directly</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">3. Go direct</h3>
               <p className="text-sm text-gray-500 leading-relaxed">
                 One click to the lender&apos;s website. No middlemen, no commission, no credit hit.
               </p>
@@ -259,23 +220,15 @@ export default function LandingPage() {
           </div>
 
           <div className="text-center mt-10">
-            <button
-              type="button"
-              onClick={() => router.push('/match')}
+            <Link
+              href="/dashboard"
               className="inline-flex items-center gap-2 bg-[#3B5CCC] text-white px-8 py-3.5
                          rounded-xl text-base font-semibold hover:bg-[#2d4aa8] transition-all
                          hover:shadow-lg hover:shadow-[#3B5CCC]/25 hover:scale-[1.02]"
             >
-              Get Started — It&apos;s Free
+              Browse Lenders — It&apos;s Free
               <ArrowRight className="w-5 h-5" />
-            </button>
-            <p className="text-xs text-gray-400 mt-3">
-              Or{' '}
-              <Link href="/dashboard" className="text-[#3B5CCC] hover:underline">
-                browse all lenders
-              </Link>
-              {' '}without a profile
-            </p>
+            </Link>
           </div>
         </div>
       </section>

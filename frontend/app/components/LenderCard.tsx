@@ -33,11 +33,12 @@ interface Lender {
 }
 
 interface LenderCardProps {
-  lender: Lender
-  index?: number
+  lender:       Lender
+  index?:       number
+  onTagClick?:  (tag: string) => void
 }
 
-export function LenderCard({ lender, index = 0 }: LenderCardProps) {
+export function LenderCard({ lender, index = 0, onTagClick }: LenderCardProps) {
   const hasContactInfo = lender.website || lender.phone || lender.email
 
   // Safely build location string — avoid "N/A, N/A"
@@ -126,14 +127,20 @@ export function LenderCard({ lender, index = 0 }: LenderCardProps) {
         <div className="mb-4">
           <div className="flex flex-wrap gap-1.5">
             {visibleProducts.map((product, idx) => (
-              <span
+              <button
                 key={idx}
-                className="px-2.5 py-1 bg-blue-50 text-[#3B5CCC] text-xs font-medium
-                           rounded-md border border-blue-100
-                           hover:bg-blue-100 hover:border-blue-200 transition-all duration-200"
+                type="button"
+                onClick={() => onTagClick?.(product)}
+                title={onTagClick ? `Filter by ${product}` : product}
+                className={[
+                  'px-2.5 py-1 bg-blue-50 text-[#3B5CCC] text-xs font-medium',
+                  'rounded-md border border-blue-100',
+                  'hover:bg-blue-100 hover:border-blue-200 transition-all duration-200',
+                  onTagClick ? 'cursor-pointer' : 'cursor-default',
+                ].join(' ')}
               >
                 {product}
-              </span>
+              </button>
             ))}
             {extraCount > 0 && (
               <span className="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-medium

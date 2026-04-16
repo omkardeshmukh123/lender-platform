@@ -245,6 +245,20 @@ RBI_REG_PATTERNS = [
 ]
 
 
+# After extraction, candidates must match one of these real RBI formats.
+# This prevents partial-word grabs like "ISTERED" (from REGISTERED) or
+# "PORATE" (from CORPORATE) slipping through label-based patterns.
+_VALID_RBI_COMPILED = [
+    re.compile(r'^[NB][\.\-]\d{2}[\.\-]\d{4,6}$'),           # N.13.02437 / B-01.00001
+    re.compile(r'^\d{2}\.\d{5}$'),                             # 14.00123
+    re.compile(r'^[LUu]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}$'),   # CIN: L65993MH1983PLC342502
+    re.compile(r'^DNBS', re.IGNORECASE),                       # DNBS(PD)CC-14 style
+]
+
+def _is_valid_rbi_format(candidate: str) -> bool:
+    return any(p.match(candidate) for p in _VALID_RBI_COMPILED)
+
+
 def extract_rbi_registration(text: str) -> str:
     """
     NEW 1: Extract RBI registration number from full page text.
@@ -253,11 +267,11 @@ def extract_rbi_registration(text: str) -> str:
     for pattern in RBI_REG_PATTERNS:
         matches = re.findall(pattern, text, re.IGNORECASE)
         if matches:
-            # Take first match, clean it up
             raw = matches[0] if isinstance(matches[0], str) else matches[0]
             raw = raw.strip().upper()
-            # Minimum length sanity check
-            if len(raw) >= 6:
+            # Validate against known real RBI formats — reject partial words
+            # like "ISTERED" (REGISTERED) or "PORATE" (CORPORATE)
+            if _is_valid_rbi_format(raw):
                 return raw
     return ''
 
@@ -729,10 +743,22 @@ class TextExtractor:
             logger.debug(f'RBI registration found: {reg}')
 
     def _non_lender_check(self, text: str, result: ScrapedLender):
-        """NEW 2: Flag if page shows no lending signals at all."""
+        """NEW 2: Flag if page shows no lending signals at all.
+
+        Called once per scraped page. A SINGLE page with lending keywords
+        is enough to clear the flag — avoids false positives on sites
+        where the homepage is thin but product/loan pages have signals.
+        """
         if is_non_lending_company(text):
-            result.is_non_lender = True
-            logger.info(f'Non-lending company detected: {result.lender_name}')
+            # Only set True if no earlier page already cleared it
+            if not hasattr(result, '_lending_signal_found') or not result._lending_signal_found:
+                result.is_non_lender = True
+                logger.info(f'Non-lending page detected: {result.lender_name}')
+        else:
+            # This page has lending signals — company is definitely a lender
+            result.is_non_lender        = False
+            result._lending_signal_found = True
+            logger.debug(f'Lending signals confirmed: {result.lender_name}')
 
 
 # ─────────────────────────────────────────────────────────────
@@ -936,6 +962,19 @@ class SingleLenderScraper:
         emp_count    = result.employee_count.value or 0
         if state_count < SMALL_STATE_THRESHOLD and (branch_count > 200 or emp_count > 5000):
             result.potential_pan_india = True
+
+        # Final non-lender override: concrete extracted data beats per-page text check.
+        # If we found loan products or an RBI registration on any page, it's a lender.
+        if result.is_non_lender:
+            has_tags = bool(result.loan_tags.value)
+            has_rbi  = bool(result.rbi_registration.value)
+            has_states = bool(result.operating_states.value)
+            if has_tags or has_rbi or has_states:
+                result.is_non_lender = False
+                logger.info(
+                    f'Non-lender flag cleared for {result.lender_name} '
+                    f'— concrete evidence found (tags={has_tags} rbi={has_rbi} states={has_states})'
+                )
 
         return result
 
