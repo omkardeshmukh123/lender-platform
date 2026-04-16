@@ -10,7 +10,8 @@ import logging
 import os
 from typing import Optional
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
@@ -45,32 +46,32 @@ RULES:
 """
 
 _RESPONSE_SCHEMA = {
-    "type": "object",
+    "type": "OBJECT",
     "properties": {
         "intent": {
-            "type": "string",
+            "type": "STRING",
             "enum": ["filter", "compare", "qa"],
         },
-        "answer": {"type": "string"},
+        "answer": {"type": "STRING"},
         "filters": {
-            "type": "object",
+            "type": "OBJECT",
             "properties": {
-                "q":            {"type": "string"},
-                "loan_type":    {"type": "array", "items": {"type": "string"}},
-                "state":        {"type": "string"},
-                "company_type": {"type": "array", "items": {"type": "string"}},
-                "aum_category": {"type": "array", "items": {"type": "string"}},
-                "aum_min":      {"type": "number"},
-                "aum_max":      {"type": "number"},
-                "pan_india":    {"type": "boolean"},
-                "is_listed":    {"type": "boolean"},
-                "sort_by":      {"type": "string"},
-                "sort_dir":     {"type": "string", "enum": ["asc", "desc"]},
+                "q":            {"type": "STRING"},
+                "loan_type":    {"type": "ARRAY", "items": {"type": "STRING"}},
+                "state":        {"type": "STRING"},
+                "company_type": {"type": "ARRAY", "items": {"type": "STRING"}},
+                "aum_category": {"type": "ARRAY", "items": {"type": "STRING"}},
+                "aum_min":      {"type": "NUMBER"},
+                "aum_max":      {"type": "NUMBER"},
+                "pan_india":    {"type": "BOOLEAN"},
+                "is_listed":    {"type": "BOOLEAN"},
+                "sort_by":      {"type": "STRING"},
+                "sort_dir":     {"type": "STRING", "enum": ["asc", "desc"]},
             },
         },
         "compare_names": {
-            "type": "array",
-            "items": {"type": "string"},
+            "type": "ARRAY",
+            "items": {"type": "STRING"},
         },
     },
     "required": ["intent", "answer"],
@@ -78,23 +79,14 @@ _RESPONSE_SCHEMA = {
 
 
 class GeminiChatClient:
-    """Wraps google-generativeai for structured lender chat responses."""
+    """Wraps google-genai for structured lender chat responses."""
 
     def __init__(self, api_key: str) -> None:
         if not api_key:
             raise ValueError("GEMINI_API_KEY is required for the chat feature")
-        genai.configure(api_key=api_key)
-        self._model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
-            system_instruction=_SYSTEM_PROMPT,
-            generation_config=genai.GenerationConfig(
-                response_mime_type="application/json",
-                response_schema=_RESPONSE_SCHEMA,
-                temperature=0.3,
-                max_output_tokens=1024,
-            ),
-        )
-        logger.info("GeminiChatClient initialized (model=gemini-2.0-flash)")
+        self._client = genai.Client(api_key=api_key)
+        self._model = "gemini-2.0-flash"
+        logger.info("GeminiChatClient initialized (model=%s)", self._model)
 
     def parse_response(self, message: str, history: list[dict]) -> dict:
         """
@@ -102,9 +94,30 @@ class GeminiChatClient:
         Returns parsed dict with keys: intent, answer, filters, compare_names.
         history: list of {role: "user"|"model", parts: [str]} dicts
         """
-        contents = list(history) + [{"role": "user", "parts": [message]}]
+        contents: list = []
+        for h in history:
+            role = h.get("role", "user")
+            parts = h.get("parts", [])
+            text = parts[0] if parts else ""
+            contents.append(
+                types.Content(role=role, parts=[types.Part(text=str(text))])
+            )
+        contents.append(
+            types.Content(role="user", parts=[types.Part(text=message)])
+        )
+
         try:
-            response = self._model.generate_content(contents)
+            response = self._client.models.generate_content(
+                model=self._model,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    system_instruction=_SYSTEM_PROMPT,
+                    response_mime_type="application/json",
+                    response_schema=_RESPONSE_SCHEMA,
+                    temperature=0.3,
+                    max_output_tokens=1024,
+                ),
+            )
             raw = response.text
         except Exception as exc:
             logger.error("Gemini API error: %s", exc)
