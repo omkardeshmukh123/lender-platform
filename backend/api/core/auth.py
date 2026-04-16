@@ -4,11 +4,11 @@ backend/api/core/auth.py
 JWT authentication + role-based authorization.
 
 Strategy:
-  The frontend uses Supabase Auth (Next.js). When a user logs in,
-  Supabase issues a JWT signed with the project's JWT secret.
-  This module verifies that JWT in the Authorization header.
+  The frontend uses Supabase Auth (Next.js). Supabase now signs JWTs with
+  ES256 (asymmetric). We verify using Supabase's JWKS endpoint so we never
+  need to hard-code or rotate a shared secret.
 
-  No separate auth server needed — we just verify Supabase's tokens.
+  JWKS URI: {SUPABASE_URL}/auth/v1/.well-known/jwks.json
 
 Roles:
   - anon       (no token)     → public read-only access
@@ -50,6 +50,7 @@ import os
 from typing import Annotated, Optional
 
 import jwt
+from jwt import PyJWKClient
 from fastapi import Depends, HTTPException, Request, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.requests import Request  # noqa: F811 — explicit re-import for clarity
@@ -58,27 +59,35 @@ logger = logging.getLogger(__name__)
 
 _bearer = HTTPBearer(auto_error=False)
 
+# Module-level JWKS client — caches public keys in memory.
+# PyJWKClient fetches from Supabase's JWKS endpoint on first use, then caches.
+_jwks_client: Optional[PyJWKClient] = None
 
-def _get_jwt_secret() -> str:
-    secret = os.environ.get("SUPABASE_JWT_SECRET", "")
-    if not secret:
-        raise RuntimeError(
-            "SUPABASE_JWT_SECRET must be set. "
-            "Find it in Supabase dashboard → Project Settings → API → JWT Secret."
-        )
-    return secret
+
+def _get_jwks_client() -> PyJWKClient:
+    global _jwks_client
+    if _jwks_client is None:
+        supabase_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
+        if not supabase_url:
+            raise RuntimeError("SUPABASE_URL is not set")
+        jwks_uri = f"{supabase_url}/auth/v1/.well-known/jwks.json"
+        _jwks_client = PyJWKClient(jwks_uri, cache_keys=True)
+        logger.info("JWKS client initialised: %s", jwks_uri)
+    return _jwks_client
 
 
 def _decode_token(token: str) -> dict:
     """
-    Decode and verify a Supabase JWT.
+    Decode and verify a Supabase JWT via JWKS (supports ES256 and HS256).
     Raises HTTPException(401) on any verification failure.
     """
     try:
+        client = _get_jwks_client()
+        signing_key = client.get_signing_key_from_jwt(token)
         payload = jwt.decode(
             token,
-            _get_jwt_secret(),
-            algorithms=["HS256"],
+            signing_key.key,
+            algorithms=["ES256", "HS256"],
             options={"require": ["sub", "exp"], "verify_aud": False},
         )
         return payload
@@ -87,8 +96,10 @@ def _decode_token(token: str) -> dict:
     except jwt.InvalidTokenError as exc:
         raise HTTPException(status_code=401, detail=f"Invalid token: {exc}")
     except RuntimeError as exc:
-        # JWT secret not configured — fail secure
-        logger.error("JWT secret not configured: %s", exc)
+        logger.error("JWKS config error: %s", exc)
+        raise HTTPException(status_code=503, detail="Authentication service unavailable")
+    except Exception as exc:
+        logger.error("JWKS fetch/verify error: %s", exc)
         raise HTTPException(status_code=503, detail="Authentication service unavailable")
 
 
@@ -106,17 +117,8 @@ async def get_current_user(
     Sets request.state.user_id for structured log correlation.
     """
     if credentials is None or not credentials.credentials:
-        auth_header = request.headers.get("authorization", "")
-        logger.warning("auth: no credentials | auth_header_present=%s | path=%s",
-                       bool(auth_header), request.url.path)
         raise HTTPException(status_code=401, detail="Authentication required")
-    try:
-        payload = _decode_token(credentials.credentials)
-    except HTTPException as exc:
-        logger.warning("auth: token rejected | detail=%s | path=%s | token_prefix=%s",
-                       exc.detail, request.url.path, credentials.credentials[:20])
-        raise
-    # Attach user_id to request state so middleware can include it in logs
+    payload = _decode_token(credentials.credentials)
     request.state.user_id = payload.get("sub")
     request.state.user    = payload
     return payload

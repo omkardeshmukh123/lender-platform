@@ -91,16 +91,6 @@ def _init_sentry() -> None:
 
 def _validate_startup_config() -> None:
     errors = []
-    jwt_secret = os.environ.get("SUPABASE_JWT_SECRET", "")
-    if not jwt_secret:
-        errors.append(
-            "SUPABASE_JWT_SECRET is not set. "
-            "Find it: Supabase dashboard → Project Settings → API → JWT Secret."
-        )
-    elif len(jwt_secret) < 32:
-        errors.append(
-            f"SUPABASE_JWT_SECRET too short ({len(jwt_secret)} chars, need ≥ 32)."
-        )
     if not os.environ.get("DATABASE_URL"):
         errors.append("DATABASE_URL is not set.")
     supabase_url = os.environ.get("SUPABASE_URL", "")
