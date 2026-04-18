@@ -123,11 +123,26 @@ class GeminiChatClient:
             logger.error("Gemini API error: %s", exc)
             raise
 
+        # response.text is None when Gemini blocks the output (safety filter)
+        if not raw:
+            finish = None
+            try:
+                finish = response.candidates[0].finish_reason if response.candidates else None
+            except Exception:
+                pass
+            logger.warning("Gemini returned empty/blocked response (finish_reason=%s)", finish)
+            return {
+                "intent": "qa",
+                "answer": "I wasn't able to process that request. Please try rephrasing.",
+                "filters": {},
+                "compare_names": [],
+            }
+
         try:
             data = json.loads(raw)
-        except json.JSONDecodeError as exc:
-            logger.error("Gemini returned non-JSON: %s | raw=%s", exc, raw[:200])
-            return {"intent": "qa", "answer": raw, "filters": {}, "compare_names": []}
+        except (json.JSONDecodeError, TypeError) as exc:
+            logger.error("Gemini returned non-JSON: %s | raw=%s", exc, str(raw)[:200])
+            return {"intent": "qa", "answer": str(raw), "filters": {}, "compare_names": []}
 
         data.setdefault("filters", {})
         data.setdefault("compare_names", [])

@@ -182,12 +182,22 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
   const [loading,       setLoading]       = useState(false)
   const [sessionId,     setSessionId]     = useState<string>(() => generateUUID())
   const [historyLoaded, setHistoryLoaded] = useState(false)
+  const [aiAvailable,   setAiAvailable]   = useState<boolean | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef  = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    if (!open || historyLoaded || !user?.access_token) return
-    loadHistory()
+    if (!open || !user?.access_token) return
+    // Check if AI is configured on first open
+    if (aiAvailable === null) {
+      fetch(`${apiUrl}/v1/chat/ping`, {
+        headers: { Authorization: `Bearer ${user.access_token}` },
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => setAiAvailable(d?.ai_available ?? false))
+        .catch(() => setAiAvailable(false))
+    }
+    if (!historyLoaded) loadHistory()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
@@ -238,7 +248,24 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.access_token}` },
         body: JSON.stringify({ message: text, session_id: sessionId, history: historyPayload }),
       })
-      if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`)
+      if (!res.ok) {
+        const body = await res.text()
+        let errMsg = 'Sorry, something went wrong. Please try again.'
+        if (res.status === 503) {
+          if (body.includes('AI_NOT_CONFIGURED')) {
+            errMsg = 'The AI service is not configured on the server. Please contact support.'
+            setAiAvailable(false)
+          } else if (body.includes('AI_UNAVAILABLE')) {
+            errMsg = 'The AI service is temporarily unavailable. Please try again in a moment.'
+          }
+        } else if (res.status === 401) {
+          errMsg = 'Your session has expired. Please refresh the page and log in again.'
+        } else if (res.status === 429) {
+          errMsg = 'You\'re sending messages too fast. Please wait a moment.'
+        }
+        setMessages(prev => [...prev, { role: 'assistant', content: errMsg, intent: 'qa' }])
+        return
+      }
       const data = await res.json()
       const botMsg: ChatMessage = {
         role: 'assistant', content: data.answer, intent: data.intent, lenders: data.lenders,
@@ -248,7 +275,7 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
         onFiltersApplied(apiFiltersToMultiFilters(data.applied_filters))
       }
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I ran into an error. Please try again.', intent: 'qa' }])
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Unable to reach the server. Check your connection and try again.', intent: 'qa' }])
     } finally {
       setLoading(false)
     }
@@ -315,6 +342,12 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
           <div ref={bottomRef} />
         </div>
 
+        {aiAvailable === false && (
+          <div className="mx-3 mb-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+            AI is not configured on this server. Contact the admin to set up the Gemini API key.
+          </div>
+        )}
+
         <div className="border-t border-gray-200 p-3 flex-shrink-0">
           <div className="flex gap-2 items-end">
             <textarea
@@ -324,10 +357,11 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
               onKeyDown={handleKeyDown}
               placeholder="Ask about lenders…"
               rows={1}
-              className="flex-1 resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3B5CCC]/30 focus:border-[#3B5CCC] max-h-28 overflow-y-auto"
+              disabled={aiAvailable === false}
+              className="flex-1 resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3B5CCC]/30 focus:border-[#3B5CCC] max-h-28 overflow-y-auto disabled:bg-gray-50 disabled:text-gray-400"
               style={{ lineHeight: '1.4' }}
             />
-            <button onClick={sendMessage} disabled={!input.trim() || loading}
+            <button onClick={sendMessage} disabled={!input.trim() || loading || aiAvailable === false}
               className="p-2 rounded-xl bg-[#3B5CCC] text-white hover:bg-[#2d4aa8] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0">
               <Send className="w-4 h-4" />
             </button>

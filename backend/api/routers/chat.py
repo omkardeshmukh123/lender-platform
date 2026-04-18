@@ -280,6 +280,13 @@ def _format_history_for_gemini(history: list[HistoryMessage], max_turns: int) ->
 # Endpoints
 # ---------------------------------------------------------------------------
 
+@router.get("/ping")
+async def chat_ping(user: dict = Depends(get_current_user)):
+    """Returns whether the AI service is configured and reachable."""
+    import os
+    configured = bool(os.environ.get("GEMINI_API_KEY", ""))
+    return {"ai_available": configured}
+
 @router.post("", response_model=ChatResponse)
 @limiter.limit("10/minute")
 async def chat(
@@ -297,21 +304,25 @@ async def chat(
     except ValueError:
         raise HTTPException(status_code=422, detail="session_id must be a valid UUID")
 
+    # Session persistence is best-effort — if chat tables don't exist yet
+    # (migration 029 pending) we still serve the AI response.
+    session_ok = True
     try:
         await _ensure_session(db, body.session_id, user_id)
     except Exception as exc:
-        logger.error("chat: session upsert failed: %s", exc)
-        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
+        logger.warning("chat: session upsert failed (migration pending?): %s", exc)
+        session_ok = False
 
     gemini_history = _format_history_for_gemini(body.history, cfg.chat_context_turns)
     try:
         client = get_gemini_client()
         parsed = client.parse_response(body.message, gemini_history)
     except ValueError as exc:
-        raise HTTPException(status_code=503, detail=str(exc))
+        # API key not configured
+        raise HTTPException(status_code=503, detail="AI_NOT_CONFIGURED")
     except Exception as exc:
         logger.error("chat: Gemini error: %s", exc)
-        raise HTTPException(status_code=503, detail="AI service temporarily unavailable")
+        raise HTTPException(status_code=503, detail="AI_UNAVAILABLE")
 
     intent  = parsed.get("intent", "qa")
     answer  = parsed.get("answer", "")
@@ -331,10 +342,11 @@ async def chat(
         logger.error("chat: DB query failed: %s", exc)
         raise HTTPException(status_code=503, detail="Search temporarily unavailable")
 
-    try:
-        await _save_turn(db, body.session_id, body.message, answer, intent, applied_filters)
-    except Exception as exc:
-        logger.warning("chat: failed to save turn: %s", exc)
+    if session_ok:
+        try:
+            await _save_turn(db, body.session_id, body.message, answer, intent, applied_filters)
+        except Exception as exc:
+            logger.warning("chat: failed to save turn: %s", exc)
 
     return ChatResponse(
         answer=answer,
