@@ -1,7 +1,6 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
 
 export function Hero() {
   return (
@@ -16,24 +15,6 @@ export function Hero() {
             <p className="text-lg text-gray-600 leading-relaxed">
               Search and filter RBI-registered lenders by type, geography and size.
             </p>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/match"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-[#3B5CCC] text-white
-                           font-semibold rounded-xl hover:bg-[#2d4aa8] transition-all
-                           hover:shadow-lg hover:shadow-[#3B5CCC]/25 hover:scale-[1.02]"
-              >
-                Find My Match
-              </Link>
-              <a
-                href="#lenders"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white text-gray-700
-                           font-semibold rounded-xl border border-gray-200
-                           hover:border-[#3B5CCC]/40 hover:text-[#3B5CCC] transition-all"
-              >
-                Browse All
-              </a>
-            </div>
           </div>
           
           {/* Right side - Image */}
