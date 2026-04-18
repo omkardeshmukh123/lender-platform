@@ -23,6 +23,7 @@ interface Lender {
   aum:             string
   established:     string
   ticketSize:      string
+  businessSector?: string | null
   products:        string[]
   operatingStates?: string[]
   headquarters?:   string
@@ -124,13 +125,21 @@ export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onS
         )}
       </div>
 
-      {/* Ticket size */}
-      {lender.ticketSize && lender.ticketSize !== 'N/A' && (
-        <div className="mb-3 text-sm">
-          <span className="text-gray-500">Size: </span>
-          <span className="text-gray-900 font-medium">{lender.ticketSize}</span>
+      {/* Ticket size + sector */}
+      {(lender.ticketSize && lender.ticketSize !== 'N/A') || lender.businessSector ? (
+        <div className="mb-3 flex flex-wrap gap-2 text-xs">
+          {lender.ticketSize && lender.ticketSize !== 'N/A' && (
+            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md font-medium">
+              {lender.ticketSize}
+            </span>
+          )}
+          {lender.businessSector && (
+            <span className="px-2 py-0.5 bg-green-50 text-green-700 border border-green-100 rounded-md font-medium">
+              {lender.businessSector}
+            </span>
+          )}
         </div>
-      )}
+      ) : null}
 
       {/* Operating states coverage */}
       {lender.operatingStates && lender.operatingStates.length > 0 && (

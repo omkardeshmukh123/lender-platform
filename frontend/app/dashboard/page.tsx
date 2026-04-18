@@ -237,6 +237,7 @@ export default function Dashboard() {
     aum:             fmtAum(l.aum_crores),
     established:     l.established_year ? String(l.established_year) : 'N/A',
     ticketSize:      l.aum_category          || 'N/A',
+    businessSector:  l.business_sector       || null,
     products:        l.primary_loan_segments,
     operatingStates: l.operating_states,
     headquarters:    l.hq_location           || l.hq_state || 'N/A',
