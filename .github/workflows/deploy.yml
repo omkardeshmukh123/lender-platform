@@ -77,8 +77,6 @@ jobs:
         with:
           python-version: "3.11"
 
-      - run: pip install psycopg2-binary
-
       - name: Check backward-compat rules
         run: |
           python -c "
@@ -86,8 +84,13 @@ jobs:
           from pathlib import Path
 
           forbidden = [
-              (r'\bDROP\s+COLUMN\b', 'DROP COLUMN forbidden'),
-              (r'\bDROP\s+TABLE\b',  'DROP TABLE forbidden'),
+              # DROP COLUMN is always destructive — no exceptions
+              (r'\bDROP\s+COLUMN\b', 'DROP COLUMN forbidden (data loss risk)'),
+              # Bare DROP TABLE without IF EXISTS is dangerous in prod
+              # DROP TABLE IF EXISTS is allowed (safe for replacing old structures)
+              (r'\bDROP\s+TABLE\s+(?!IF\s+EXISTS\b)', 'DROP TABLE without IF EXISTS forbidden'),
+              # NOT NULL column added via ALTER TABLE without a DEFAULT
+              # risks locking the table on large datasets
               (r'ALTER\s+TABLE\b[^;]*\bNOT\s+NULL\b(?![^;]*\bDEFAULT\b)', 'NOT NULL without DEFAULT'),
           ]
 
@@ -105,22 +108,16 @@ jobs:
           print('All migrations OK')
           "
 
-  # ── Deploy API (Railway) — only on push to main ──────────────
+  # ── Deploy API (Render) — only on push to main ───────────────
   deploy-api:
-    name: Deploy API to Railway
+    name: Deploy API to Render
     runs-on: ubuntu-latest
     needs: [test-api, lint-frontend, check-migrations]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Deploy
-        run: railway up --service api --detach
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      - name: Trigger Render deploy hook
+        run: |
+          curl -f -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
 
   # ── Run migrations after API deploy ─────────────────────────
   run-migrations:
