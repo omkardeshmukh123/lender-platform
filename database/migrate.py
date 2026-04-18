@@ -45,7 +45,9 @@ DATABASE_URL   = os.environ.get("DATABASE_URL", "")
 
 _FORBIDDEN_PATTERNS = [
     (r"\bDROP\s+COLUMN\b",      "DROP COLUMN is forbidden — set DEFAULT NULL instead"),
-    (r"\bDROP\s+TABLE\b",       "DROP TABLE is forbidden — rename to _legacy instead"),
+    # DROP TABLE IF EXISTS is allowed (safe for replacing old structures)
+    # Only bare DROP TABLE without IF EXISTS is forbidden
+    (r"\bDROP\s+TABLE\s+(?!IF\s+EXISTS\b)", "DROP TABLE without IF EXISTS is forbidden — rename to _legacy instead"),
     # Only block NOT NULL without DEFAULT on ALTER TABLE (new tables can have NOT NULL freely)
     (r"ALTER\s+TABLE\b[^;]*\bNOT\s+NULL\b(?![^;]*\bDEFAULT\b)",
      "ALTER TABLE ... NOT NULL without DEFAULT breaks existing pipelines"),

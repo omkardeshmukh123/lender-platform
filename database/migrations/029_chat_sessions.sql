@@ -1,5 +1,6 @@
 -- database/migrations/029_chat_sessions.sql
 -- Chat history persistence for the AI chatbot
+-- Fully idempotent: safe to re-run if partially applied via SQL Editor.
 
 CREATE TABLE IF NOT EXISTS chat_sessions (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -28,10 +29,13 @@ CREATE INDEX IF NOT EXISTS idx_chat_sessions_user
 ALTER TABLE chat_sessions  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_messages  ENABLE ROW LEVEL SECURITY;
 
+-- Drop before create so this migration is safe to re-run
+DROP POLICY IF EXISTS chat_sessions_owner ON chat_sessions;
 CREATE POLICY chat_sessions_owner ON chat_sessions
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS chat_messages_owner ON chat_messages;
 CREATE POLICY chat_messages_owner ON chat_messages
   USING (
     session_id IN (
