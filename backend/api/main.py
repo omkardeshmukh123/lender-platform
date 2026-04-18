@@ -174,7 +174,7 @@ app.add_middleware(
     # Covers all Vercel preview deployments: lender-platform-*.vercel.app
     allow_origin_regex=r"https://lender-platform(-[a-z0-9]+)*(-omkars-projects-[a-z0-9]+)?\.vercel\.app",
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "OPTIONS", "HEAD"],
     allow_headers=["Content-Type", "Authorization", "X-Request-ID"],
     expose_headers=["X-Request-ID", "X-Cache"],
 )
