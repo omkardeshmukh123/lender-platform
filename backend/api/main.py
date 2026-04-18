@@ -191,6 +191,11 @@ app.include_router(admin_router.router, prefix=f"{_V1}/admin",    tags=["Admin"]
 app.include_router(chat_router.router,  prefix=f"{_V1}/chat",     tags=["Chat"])
 
 
+@app.get("/", tags=["Health"])
+async def root():
+    return {"status": "ok", "service": "MITRAM360 API", "version": "1.0.0"}
+
+
 @app.get("/health", tags=["Health"])
 async def health(request: Request):
     cache_ok = await app.state.cache.ping() if hasattr(app.state, "cache") else False
