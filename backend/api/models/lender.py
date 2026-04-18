@@ -31,6 +31,12 @@ class LenderDetail(LenderSummary):
     last_scraped_at: Optional[str] = None
     data_source: Optional[str] = None
     schema_version: Optional[int] = None
+    # MCA21 registry fields
+    cin: Optional[str] = None
+    company_status: Optional[str] = None
+    authorized_capital_lakhs: Optional[float] = None
+    paid_up_capital_lakhs: Optional[float] = None
+    mca21_status: Optional[str] = None
 
 
 class LenderSearchParams(BaseModel):

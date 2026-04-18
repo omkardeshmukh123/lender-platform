@@ -38,6 +38,12 @@ interface LenderDetail {
   quality_score: number | null
   last_scraped_at: string | null
   data_source: string | null
+  // MCA21
+  cin: string | null
+  company_status: string | null
+  authorized_capital_lakhs: number | null
+  paid_up_capital_lakhs: number | null
+  mca21_status: string | null
 }
 
 interface Policy {
@@ -416,6 +422,21 @@ export default function LenderDetailPage() {
           )}
         </div>
       </nav>
+
+      {/* MCA21 company status warning */}
+      {lender.company_status && ['struck_off', 'dormant', 'dissolved', 'converted'].includes(lender.company_status) && (
+        <div className={`border-b px-4 py-3 text-sm font-medium flex items-center gap-2 ${
+          lender.company_status === 'struck_off' || lender.company_status === 'dissolved'
+            ? 'bg-red-50 border-red-200 text-red-800'
+            : 'bg-amber-50 border-amber-200 text-amber-800'
+        }`}>
+          <Shield className="w-4 h-4 flex-shrink-0" />
+          {lender.company_status === 'struck_off' && 'MCA21 registry shows this company as struck off. Exercise caution before engaging.'}
+          {lender.company_status === 'dissolved' && 'MCA21 registry shows this company as dissolved.'}
+          {lender.company_status === 'dormant' && 'MCA21 registry shows this company as dormant.'}
+          {lender.company_status === 'converted' && 'MCA21 registry shows this company has been converted to another entity.'}
+        </div>
+      )}
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
 

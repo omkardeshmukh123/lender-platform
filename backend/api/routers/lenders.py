@@ -102,6 +102,11 @@ def _row_to_detail(row) -> LenderDetail:
         last_scraped_at=d["last_scraped_at"].isoformat() if d.get("last_scraped_at") else None,
         data_source=d.get("data_source"),
         schema_version=d.get("schema_version"),
+        cin=d.get("cin"),
+        company_status=d.get("company_status"),
+        authorized_capital_lakhs=d.get("authorized_capital_lakhs"),
+        paid_up_capital_lakhs=d.get("paid_up_capital_lakhs"),
+        mca21_status=d.get("mca21_status"),
     )
 
 
@@ -355,7 +360,9 @@ async def get_lender(
                        operating_states, website, quality_score,
                        employee_count, branch_count, established_year, is_listed,
                        stock_symbol, phone, email,
-                       last_scraped_at, data_source, schema_version
+                       last_scraped_at, data_source, schema_version,
+                       cin, company_status, authorized_capital_lakhs,
+                       paid_up_capital_lakhs, mca21_status
                 FROM lenders
                 WHERE id = $1 AND approval_status = 'approved'
                 """,
