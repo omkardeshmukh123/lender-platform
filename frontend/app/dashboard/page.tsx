@@ -51,6 +51,8 @@ const COMPANY_TYPES: string[] = [
 
 const LISTING_OPTIONS: string[] = ['All', 'Listed Only', 'Unlisted Only']
 
+const OPERATING_INTENSITIES: string[] = ['Pan India', 'Regional', 'Single State']
+
 // Static list of Indian states — doesn't change, no need for an API call
 const INDIA_STATES: string[] = [
   'All States',
@@ -137,9 +139,10 @@ async function fetchFromAPI(f: MultiFilters, pg: number): Promise<LenderSearchRe
   if (yr.min !== undefined) params.set('established_year_min', String(yr.min))
   if (yr.max !== undefined) params.set('established_year_max', String(yr.max))
 
-  f.loanType.forEach(t    => params.append('loan_type',    t))
-  f.companyType.forEach(t => params.append('company_type', t))
-  f.ticketSize.forEach(t  => params.append('aum_category', t))
+  f.loanType.forEach(t            => params.append('loan_type',           t))
+  f.companyType.forEach(t         => params.append('company_type',         t))
+  f.ticketSize.forEach(t          => params.append('aum_category',         t))
+  f.operatingIntensity.forEach(t  => params.append('operating_intensity',  t))
 
   params.set('page',  String(pg + 1))   // API is 1-indexed, our state is 0-indexed
   params.set('limit', String(PAGE_SIZE))
@@ -266,6 +269,7 @@ export default function Dashboard() {
           states={INDIA_STATES}
           ticketSizes={TICKET_SIZES}
           companyTypes={COMPANY_TYPES}
+          operatingIntensities={OPERATING_INTENSITIES}
           listingStatus={LISTING_OPTIONS}
           yearRanges={[...YEAR_RANGE_OPTIONS]}
           sidebar

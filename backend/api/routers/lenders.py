@@ -127,6 +127,7 @@ async def search_lenders(
     established_year_max: Optional[int] = Query(None, ge=1900, le=2100),
     pan_india: Optional[bool] = Query(None),
     is_listed: Optional[bool] = Query(None),
+    operating_intensity: Optional[List[str]] = Query(None),
     sort_by: str = Query("aum_crores"),
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
     page: int = Query(1, ge=1, le=500),
@@ -165,6 +166,7 @@ async def search_lenders(
         "established_year_min": established_year_min,
         "established_year_max": established_year_max,
         "pan_india": pan_india, "is_listed": is_listed,
+        "operating_intensity": sorted(operating_intensity or []),
         "sort_by": sort_by, "sort_dir": sort_dir,
         "page": page, "limit": limit,
     }
@@ -242,6 +244,11 @@ async def search_lenders(
     if is_listed is not None:
         conditions.append(f"is_listed = ${idx}")
         params.append(is_listed)
+        idx += 1
+
+    if operating_intensity:
+        conditions.append(f"operating_intensity = ANY(${idx}::text[])")
+        params.append(operating_intensity)
         idx += 1
 
     where    = " AND ".join(conditions)

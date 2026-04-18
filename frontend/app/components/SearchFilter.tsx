@@ -62,6 +62,7 @@ export interface MultiFilters {
   state:                string     // single e.g. "Maharashtra" | "All States"
   ticketSize:           string[]   // multi  e.g. ["Small", "Mid"]
   companyType:          string[]   // multi  e.g. ["NBFC", "PSU Bank"]
+  operatingIntensity:   string[]   // multi  e.g. ["Pan India", "Regional"]
   listingStatus:        string     // single "All" | "Listed Only" | "Unlisted Only"
   establishedYearRange: string     // single from YEAR_RANGE_OPTIONS
   sortField:            SortField
@@ -75,6 +76,7 @@ export const DEFAULT_FILTERS: MultiFilters = {
   state:                'All States',
   ticketSize:           [],
   companyType:          [],
+  operatingIntensity:   [],
   listingStatus:        'All',
   establishedYearRange: 'All Years',
   sortField:            '',
@@ -97,8 +99,9 @@ export interface SearchFilterProps {
   loanTypes:      string[]   // Do NOT include an "All" prefix item
   states:         string[]   // MUST include "All States" as first item
   ticketSizes:    string[]   // e.g. ['Micro','Small','Mid','Large']
-  companyTypes:   string[]   // e.g. ['NBFC','Private Bank',...]
-  listingStatus:  string[]   // ['All','Listed Only','Unlisted Only']
+  companyTypes:          string[]   // e.g. ['NBFC','Private Bank',...]
+  operatingIntensities?: string[]   // e.g. ['Pan India','Regional','Single State']
+  listingStatus:         string[]   // ['All','Listed Only','Unlisted Only']
   yearRanges?:    string[]   // defaults to YEAR_RANGE_OPTIONS
   /** Render as a left sidebar instead of a horizontal bar (default: false) */
   sidebar?:       boolean
@@ -448,6 +451,13 @@ function ActiveFilterTags({
     onRemove: () => onFilterChange('companyType', filters.companyType.filter(x => x !== t)),
   }))
 
+  // Operating intensity tags
+  filters.operatingIntensity.forEach(t => tags.push({
+    key:      `intensity-${t}`,
+    label:    `Coverage: ${t}`,
+    onRemove: () => onFilterChange('operatingIntensity', filters.operatingIntensity.filter(x => x !== t)),
+  }))
+
   // State tag
   if (filters.state && filters.state !== 'All States') {
     tags.push({
@@ -526,6 +536,7 @@ export function SearchFilter({
   states,
   ticketSizes,
   companyTypes,
+  operatingIntensities = ['Pan India', 'Regional', 'Single State'],
   listingStatus,
   yearRanges = [...YEAR_RANGE_OPTIONS],
   sidebar = false,
@@ -569,6 +580,7 @@ export function SearchFilter({
     onFilterChange('state',                'All States')
     onFilterChange('ticketSize',           [])
     onFilterChange('companyType',          [])
+    onFilterChange('operatingIntensity',   [])
     onFilterChange('listingStatus',        'All')
     onFilterChange('establishedYearRange', 'All Years')
     onFilterChange('sortField',            '')
@@ -591,6 +603,7 @@ export function SearchFilter({
     filters.loanType.length +
     filters.ticketSize.length +
     filters.companyType.length +
+    filters.operatingIntensity.length +
     (filters.state                !== 'All States'            ? 1 : 0) +
     (filters.listingStatus        !== 'All'                   ? 1 : 0) +
     (filters.establishedYearRange !== 'All Years'             ? 1 : 0) +
@@ -776,6 +789,14 @@ export function SearchFilter({
                 onChange={v => onFilterChange('companyType', v)}
                 placeholder="All Types"
               />
+              <MultiSelectDropdown
+                id="filter-intensity"
+                label="Coverage"
+                options={operatingIntensities}
+                selected={filters.operatingIntensity}
+                onChange={v => onFilterChange('operatingIntensity', v)}
+                placeholder="All Coverage"
+              />
               <SingleSelect
                 id="filter-listing"
                 label="Listing Status"
@@ -826,8 +847,8 @@ export function SearchFilter({
 
           <div className="mb-5">{filterHeader}</div>
 
-          {/* Filter row — 6 columns on large screens */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-5">
+          {/* Filter row — 7 columns on large screens */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 mb-5">
             <MultiSelectDropdown
               id="filter-loan-type"
               label="Loan Type"
@@ -858,6 +879,14 @@ export function SearchFilter({
               selected={filters.companyType}
               onChange={v => onFilterChange('companyType', v)}
               placeholder="All Types"
+            />
+            <MultiSelectDropdown
+              id="filter-intensity"
+              label="Coverage"
+              options={operatingIntensities}
+              selected={filters.operatingIntensity}
+              onChange={v => onFilterChange('operatingIntensity', v)}
+              placeholder="All Coverage"
             />
             <SingleSelect
               id="filter-listing"
