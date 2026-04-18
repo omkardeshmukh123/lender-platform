@@ -12,7 +12,7 @@
  */
 
 import Link from 'next/link'
-import { MapPin, Calendar, TrendingUp, Users, Phone, Mail, Globe, ArrowRight } from 'lucide-react'
+import { MapPin, Calendar, TrendingUp, Users, Phone, Mail, Globe, ArrowRight, Bookmark, BookmarkCheck } from 'lucide-react'
 
 interface Lender {
   id:              string
@@ -36,9 +36,11 @@ interface LenderCardProps {
   lender:       Lender
   index?:       number
   onTagClick?:  (tag: string) => void
+  isSaved?:     boolean
+  onSave?:      () => void
 }
 
-export function LenderCard({ lender, index = 0, onTagClick }: LenderCardProps) {
+export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onSave }: LenderCardProps) {
   const hasContactInfo = lender.website || lender.phone || lender.email
 
   // Safely build location string — avoid "N/A, N/A"
@@ -59,18 +61,37 @@ export function LenderCard({ lender, index = 0, onTagClick }: LenderCardProps) {
                     transition-all duration-300 ease-out
                     hover:-translate-y-1.5 hover:shadow-lg hover:border-[#3B5CCC]/20">
 
-      {/* Header: name + company type badge */}
-      <div className="flex items-start justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 flex-1 pr-2 leading-tight">
+      {/* Header: name + company type badge + save */}
+      <div className="flex items-start justify-between mb-4 gap-2">
+        <h3 className="text-lg font-semibold text-gray-900 flex-1 leading-tight">
           {lender.name || 'Unknown Lender'}
         </h3>
-        {lender.companyType && lender.companyType !== 'N/A' && (
-          <span className="px-2.5 py-1 text-xs font-semibold
-                           bg-blue-50 text-[#3B5CCC] rounded-lg border border-blue-100
-                           whitespace-nowrap flex-shrink-0">
-            {lender.companyType}
-          </span>
-        )}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {lender.companyType && lender.companyType !== 'N/A' && (
+            <span className="px-2.5 py-1 text-xs font-semibold
+                             bg-blue-50 text-[#3B5CCC] rounded-lg border border-blue-100
+                             whitespace-nowrap">
+              {lender.companyType}
+            </span>
+          )}
+          {onSave && (
+            <button
+              type="button"
+              onClick={e => { e.preventDefault(); onSave() }}
+              title={isSaved ? 'Remove from shortlist' : 'Add to shortlist'}
+              className={[
+                'p-1.5 rounded-lg transition-all',
+                isSaved
+                  ? 'text-[#3B5CCC] bg-blue-50 hover:bg-blue-100'
+                  : 'text-gray-400 hover:text-[#3B5CCC] hover:bg-blue-50',
+              ].join(' ')}
+            >
+              {isSaved
+                ? <BookmarkCheck className="w-4 h-4" />
+                : <Bookmark className="w-4 h-4" />}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Key info rows */}

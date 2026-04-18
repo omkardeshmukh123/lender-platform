@@ -2,16 +2,18 @@
 
 import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
-import { User, LogOut } from 'lucide-react'
+import { User, LogOut, Bookmark } from 'lucide-react'
 import Image from 'next/image'
 
 interface NavbarProps {
   authenticated?: boolean
   user?: any
   onSignOut?: () => void
+  savedCount?: number
+  onSavedClick?: () => void
 }
 
-export function Navbar({ authenticated = false, user, onSignOut }: NavbarProps) {
+export function Navbar({ authenticated = false, user, onSignOut, savedCount = 0, onSavedClick }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -74,6 +76,21 @@ export function Navbar({ authenticated = false, user, onSignOut }: NavbarProps) 
 
           {/* Right: Profile or Auth buttons */}
           {authenticated && user ? (
+            <div className="flex items-center gap-2">
+              {onSavedClick && (
+                <button
+                  onClick={onSavedClick}
+                  title="Shortlisted lenders"
+                  className="relative p-2 rounded-lg text-gray-500 hover:text-[#3B5CCC] hover:bg-blue-50 transition-all"
+                >
+                  <Bookmark className="w-5 h-5" />
+                  {savedCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#3B5CCC] text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+                      {savedCount > 9 ? '9+' : savedCount}
+                    </span>
+                  )}
+                </button>
+              )}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -100,6 +117,7 @@ export function Navbar({ authenticated = false, user, onSignOut }: NavbarProps) 
                   </div>
                 </div>
               )}
+            </div>
             </div>
           ) : (
             <div className="flex items-center gap-3">

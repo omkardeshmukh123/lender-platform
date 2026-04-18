@@ -2,6 +2,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { ReactNode } from 'react'
 import { AuthProvider } from './components/AuthContext'
+import { SaveProvider } from './components/SaveContext'
 
 export const metadata: Metadata = {
   title: 'MITRAM360 — Lender Discovery Platform',
@@ -18,7 +19,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AuthProvider>
-          {children}
+          <SaveProvider>
+            {children}
+          </SaveProvider>
         </AuthProvider>
       </body>
     </html>

@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { SlidersHorizontal } from 'lucide-react'
 import { useAuth } from '../components/AuthContext'
+import { useSaved, SavedLender } from '../components/SaveContext'
 import { Navbar }        from '../components/Navbar'
 import { Hero }          from '../components/Hero'
 import {
@@ -154,6 +155,7 @@ async function fetchFromAPI(f: MultiFilters, pg: number): Promise<LenderSearchRe
 
 export default function Dashboard() {
   const { user, signOut, loading: authLoading } = useAuth()
+  const { saved, count: savedCount, isSaved, toggle: toggleSave } = useSaved()
   const router = useRouter()
 
   const [lenders,       setLenders]       = useState<LenderSummary[]>([])
@@ -165,6 +167,7 @@ export default function Dashboard() {
   const [filters,       setFilters]       = useState<MultiFilters>(DEFAULT_FILTERS)
   const [sidebarOpen,   setSidebarOpen]   = useState(false)
   const [chatOpen,      setChatOpen]      = useState(false)
+  const [savedOpen,     setSavedOpen]     = useState(false)
 
   const isFirstLoad  = useRef(true)
   const requestIdRef = useRef(0)
@@ -250,7 +253,7 @@ export default function Dashboard() {
   // ── Render ──────────────────────────────────────────────────
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-white">
-      <Navbar authenticated user={user} onSignOut={signOut} />
+      <Navbar authenticated user={user} onSignOut={signOut} savedCount={savedCount} onSavedClick={() => setSavedOpen(o => !o)} />
       <Hero />
 
       <div className="flex flex-1 min-h-0 relative">
@@ -370,6 +373,17 @@ export default function Dashboard() {
                     key={lender.id}
                     lender={lender}
                     index={index}
+                    isSaved={isSaved(lender.id)}
+                    onSave={() => toggleSave({
+                      id:          lender.id,
+                      name:        lender.name,
+                      companyType: lender.companyType,
+                      aum:         lender.aum,
+                      products:    lender.products,
+                      website:     lender.website,
+                      phone:       lender.phone,
+                      email:       lender.email,
+                    })}
                     onTagClick={tag => {
                       if (!filters.loanType.includes(tag)) {
                         handleFilterChange('loanType', [...filters.loanType, tag])
@@ -447,6 +461,71 @@ export default function Dashboard() {
           apiUrl={API_URL}
           user={user}
         />
+
+        {/* Saved lenders drawer */}
+        {savedOpen && (
+          <aside className="fixed inset-y-0 right-0 z-40 w-80 bg-white border-l border-gray-200 shadow-xl flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div>
+                <h2 className="font-semibold text-gray-900">Shortlist</h2>
+                <p className="text-xs text-gray-400 mt-0.5">{savedCount} lender{savedCount !== 1 ? 's' : ''} saved</p>
+              </div>
+              <button
+                onClick={() => setSavedOpen(false)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto py-3 px-4 space-y-3">
+              {saved.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-sm text-gray-400">No lenders saved yet.</p>
+                  <p className="text-xs text-gray-300 mt-1">Click the bookmark icon on any card.</p>
+                </div>
+              ) : saved.map(l => (
+                <div key={l.id} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{l.name}</p>
+                      <p className="text-xs text-gray-400">{l.companyType}{l.aum ? ` · ${l.aum}` : ''}</p>
+                    </div>
+                    <button
+                      onClick={() => toggleSave(l)}
+                      className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0 p-0.5"
+                      title="Remove"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {l.products && l.products.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {l.products.slice(0, 3).map(p => (
+                        <span key={p} className="px-1.5 py-0.5 bg-blue-50 text-[#3B5CCC] text-[10px] rounded-md">{p}</span>
+                      ))}
+                      {l.products.length > 3 && (
+                        <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[10px] rounded-md">+{l.products.length - 3}</span>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <a href={`/lender/${l.id}`}
+                       className="flex-1 text-center py-1.5 text-xs font-medium text-[#3B5CCC] bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                      Details
+                    </a>
+                    {l.website && (
+                      <a href={l.website} target="_blank" rel="noopener noreferrer"
+                         className="flex-1 text-center py-1.5 text-xs font-medium text-white bg-[#3B5CCC] rounded-lg hover:bg-[#2d4aa8] transition-colors">
+                        Apply
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </aside>
+        )}
       </div>
 
       <StatsSection totalLenders={totalCount} />
