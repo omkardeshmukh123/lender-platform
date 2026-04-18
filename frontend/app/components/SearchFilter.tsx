@@ -63,6 +63,7 @@ export interface MultiFilters {
   ticketSize:           string[]   // multi  e.g. ["Small", "Mid"]
   companyType:          string[]   // multi  e.g. ["NBFC", "PSU Bank"]
   operatingIntensity:   string[]   // multi  e.g. ["Pan India", "Regional"]
+  businessSector:       string[]   // multi  e.g. ["MSME", "Housing"]
   listingStatus:        string     // single "All" | "Listed Only" | "Unlisted Only"
   establishedYearRange: string     // single from YEAR_RANGE_OPTIONS
   sortField:            SortField
@@ -77,6 +78,7 @@ export const DEFAULT_FILTERS: MultiFilters = {
   ticketSize:           [],
   companyType:          [],
   operatingIntensity:   [],
+  businessSector:       [],
   listingStatus:        'All',
   establishedYearRange: 'All Years',
   sortField:            '',
@@ -101,6 +103,7 @@ export interface SearchFilterProps {
   ticketSizes:    string[]   // e.g. ['Micro','Small','Mid','Large']
   companyTypes:          string[]   // e.g. ['NBFC','Private Bank',...]
   operatingIntensities?: string[]   // e.g. ['Pan India','Regional','Single State']
+  businessSectors?:      string[]   // e.g. ['MSME','Housing','Gold',...]
   listingStatus:         string[]   // ['All','Listed Only','Unlisted Only']
   yearRanges?:    string[]   // defaults to YEAR_RANGE_OPTIONS
   /** Render as a left sidebar instead of a horizontal bar (default: false) */
@@ -451,6 +454,13 @@ function ActiveFilterTags({
     onRemove: () => onFilterChange('companyType', filters.companyType.filter(x => x !== t)),
   }))
 
+  // Business sector tags
+  filters.businessSector.forEach(t => tags.push({
+    key:      `sector-${t}`,
+    label:    `Sector: ${t}`,
+    onRemove: () => onFilterChange('businessSector', filters.businessSector.filter(x => x !== t)),
+  }))
+
   // Operating intensity tags
   filters.operatingIntensity.forEach(t => tags.push({
     key:      `intensity-${t}`,
@@ -537,6 +547,7 @@ export function SearchFilter({
   ticketSizes,
   companyTypes,
   operatingIntensities = ['Pan India', 'Regional', 'Single State'],
+  businessSectors = ['MSME', 'Housing', 'Gold', 'Vehicle', 'Microfinance', 'Agriculture', 'Retail'],
   listingStatus,
   yearRanges = [...YEAR_RANGE_OPTIONS],
   sidebar = false,
@@ -581,6 +592,7 @@ export function SearchFilter({
     onFilterChange('ticketSize',           [])
     onFilterChange('companyType',          [])
     onFilterChange('operatingIntensity',   [])
+    onFilterChange('businessSector',       [])
     onFilterChange('listingStatus',        'All')
     onFilterChange('establishedYearRange', 'All Years')
     onFilterChange('sortField',            '')
@@ -604,6 +616,7 @@ export function SearchFilter({
     filters.ticketSize.length +
     filters.companyType.length +
     filters.operatingIntensity.length +
+    filters.businessSector.length +
     (filters.state                !== 'All States'            ? 1 : 0) +
     (filters.listingStatus        !== 'All'                   ? 1 : 0) +
     (filters.establishedYearRange !== 'All Years'             ? 1 : 0) +
@@ -790,6 +803,14 @@ export function SearchFilter({
                 placeholder="All Types"
               />
               <MultiSelectDropdown
+                id="filter-sector"
+                label="Sector"
+                options={businessSectors}
+                selected={filters.businessSector}
+                onChange={v => onFilterChange('businessSector', v)}
+                placeholder="All Sectors"
+              />
+              <MultiSelectDropdown
                 id="filter-intensity"
                 label="Coverage"
                 options={operatingIntensities}
@@ -847,8 +868,8 @@ export function SearchFilter({
 
           <div className="mb-5">{filterHeader}</div>
 
-          {/* Filter row — 7 columns on large screens */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 mb-5">
+          {/* Filter row — 8 columns on large screens */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-8 gap-4 mb-5">
             <MultiSelectDropdown
               id="filter-loan-type"
               label="Loan Type"
@@ -879,6 +900,14 @@ export function SearchFilter({
               selected={filters.companyType}
               onChange={v => onFilterChange('companyType', v)}
               placeholder="All Types"
+            />
+            <MultiSelectDropdown
+              id="filter-sector"
+              label="Sector"
+              options={businessSectors}
+              selected={filters.businessSector}
+              onChange={v => onFilterChange('businessSector', v)}
+              placeholder="All Sectors"
             />
             <MultiSelectDropdown
               id="filter-intensity"

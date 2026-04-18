@@ -13,6 +13,7 @@ class LenderSummary(BaseModel):
     hq_state: Optional[str] = None
     hq_location: Optional[str] = None
     operating_intensity: Optional[str] = None
+    business_sector: Optional[str] = None
     pan_india: bool = False
     primary_loan_segments: List[str] = Field(default_factory=list)
     operating_states: List[str] = Field(default_factory=list)

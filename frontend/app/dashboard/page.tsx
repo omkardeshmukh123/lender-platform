@@ -78,6 +78,7 @@ interface LenderSummary {
   hq_state:              string | null
   hq_location:           string | null
   operating_intensity:   string | null
+  business_sector:       string | null
   pan_india:             boolean
   primary_loan_segments: string[]   // already parsed array from API
   operating_states:      string[]   // already parsed array from API
@@ -143,6 +144,7 @@ async function fetchFromAPI(f: MultiFilters, pg: number): Promise<LenderSearchRe
   f.companyType.forEach(t         => params.append('company_type',         t))
   f.ticketSize.forEach(t          => params.append('aum_category',         t))
   f.operatingIntensity.forEach(t  => params.append('operating_intensity',  t))
+  f.businessSector.forEach(t      => params.append('business_sector',      t))
 
   params.set('page',  String(pg + 1))   // API is 1-indexed, our state is 0-indexed
   params.set('limit', String(PAGE_SIZE))
@@ -270,6 +272,7 @@ export default function Dashboard() {
           ticketSizes={TICKET_SIZES}
           companyTypes={COMPANY_TYPES}
           operatingIntensities={OPERATING_INTENSITIES}
+          businessSectors={['MSME', 'Housing', 'Gold', 'Vehicle', 'Microfinance', 'Agriculture', 'Retail']}
           listingStatus={LISTING_OPTIONS}
           yearRanges={[...YEAR_RANGE_OPTIONS]}
           sidebar

@@ -60,6 +60,7 @@ def _row_to_summary(row) -> LenderSummary:
         hq_state=d.get("hq_state"),
         hq_location=hq_city,
         operating_intensity=d.get("operating_intensity"),
+        business_sector=d.get("business_sector"),
         pan_india=bool(d.get("pan_india", False)),
         primary_loan_segments=_parse_jsonb(d.get("primary_loan_segments")),
         operating_states=_parse_jsonb(d.get("operating_states")),
@@ -87,6 +88,7 @@ def _row_to_detail(row) -> LenderDetail:
         hq_location=hq_city,
         hq_state=d.get("hq_state"),
         operating_intensity=d.get("operating_intensity"),
+        business_sector=d.get("business_sector"),
         pan_india=bool(d.get("pan_india", False)),
         primary_loan_segments=_parse_jsonb(d.get("primary_loan_segments")),
         operating_states=_parse_jsonb(d.get("operating_states")),
@@ -128,6 +130,7 @@ async def search_lenders(
     pan_india: Optional[bool] = Query(None),
     is_listed: Optional[bool] = Query(None),
     operating_intensity: Optional[List[str]] = Query(None),
+    business_sector: Optional[List[str]] = Query(None),
     sort_by: str = Query("aum_crores"),
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
     page: int = Query(1, ge=1, le=500),
@@ -167,6 +170,7 @@ async def search_lenders(
         "established_year_max": established_year_max,
         "pan_india": pan_india, "is_listed": is_listed,
         "operating_intensity": sorted(operating_intensity or []),
+        "business_sector": sorted(business_sector or []),
         "sort_by": sort_by, "sort_dir": sort_dir,
         "page": page, "limit": limit,
     }
@@ -251,6 +255,11 @@ async def search_lenders(
         params.append(operating_intensity)
         idx += 1
 
+    if business_sector:
+        conditions.append(f"business_sector = ANY(${idx}::text[])")
+        params.append(business_sector)
+        idx += 1
+
     where    = " AND ".join(conditions)
     sort_sql = f"ORDER BY {sort_by} {sort_dir.upper()} NULLS LAST"
     offset   = (page - 1) * limit
@@ -262,7 +271,7 @@ async def search_lenders(
                 f"""
                 SELECT id, company_name, company_type, rbi_category,
                        aum_crores, aum_category, hq_state, hq_location,
-                       operating_intensity, pan_india, primary_loan_segments,
+                       operating_intensity, business_sector, pan_india, primary_loan_segments,
                        operating_states, website, quality_score,
                        employee_count, established_year, is_listed, phone, email
                 FROM lenders
@@ -363,7 +372,7 @@ async def get_lender(
                 """
                 SELECT id, company_name, company_type, rbi_category,
                        aum_crores, aum_category, hq_state, hq_location,
-                       operating_intensity, pan_india, primary_loan_segments,
+                       operating_intensity, business_sector, pan_india, primary_loan_segments,
                        operating_states, website, quality_score,
                        employee_count, branch_count, established_year, is_listed,
                        stock_symbol, phone, email,
