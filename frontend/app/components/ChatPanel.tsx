@@ -71,6 +71,8 @@ function apiFiltersToMultiFilters(f: ApiFilters): MultiFilters {
     state:                f.state ?? 'All States',
     ticketSize:           f.aum_category ?? [],
     companyType:          f.company_type ?? [],
+    operatingIntensity:   [],
+    businessSector:       [],
     listingStatus,
     establishedYearRange: 'All Years',
     sortField:            (f.sort_by as MultiFilters['sortField']) ?? '',
