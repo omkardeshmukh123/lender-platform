@@ -48,6 +48,8 @@ def _parse_jsonb(val) -> list:
 
 def _row_to_summary(row) -> LenderSummary:
     d = dict(row)
+    hq_location = d.get("hq_location") or ""
+    hq_city = hq_location.split(",")[0].strip() or None
     return LenderSummary(
         id=d["id"],
         company_name=d["company_name"],
@@ -56,7 +58,7 @@ def _row_to_summary(row) -> LenderSummary:
         aum_crores=d.get("aum_crores"),
         aum_category=d.get("aum_category"),
         hq_state=d.get("hq_state"),
-        hq_location=d.get("hq_location"),
+        hq_location=hq_city,
         operating_intensity=d.get("operating_intensity"),
         pan_india=bool(d.get("pan_india", False)),
         primary_loan_segments=_parse_jsonb(d.get("primary_loan_segments")),
@@ -73,6 +75,8 @@ def _row_to_summary(row) -> LenderSummary:
 
 def _row_to_detail(row) -> LenderDetail:
     d = dict(row)
+    hq_location = d.get("hq_location") or ""
+    hq_city = hq_location.split(",")[0].strip() or None
     return LenderDetail(
         id=d["id"],
         company_name=d["company_name"],
@@ -80,7 +84,7 @@ def _row_to_detail(row) -> LenderDetail:
         rbi_category=d.get("rbi_category"),
         aum_crores=d.get("aum_crores"),
         aum_category=d.get("aum_category"),
-        hq_location=d.get("hq_location"),
+        hq_location=hq_city,
         hq_state=d.get("hq_state"),
         operating_intensity=d.get("operating_intensity"),
         pan_india=bool(d.get("pan_india", False)),

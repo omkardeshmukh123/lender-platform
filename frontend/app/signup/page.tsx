@@ -5,13 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useAuth } from '../components/AuthContext'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '../lib/supabase'
 import { ArrowLeft, Mail, Lock, Eye, EyeOff, Phone, AlertCircle, CheckCircle2 } from 'lucide-react'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-)
 
 export default function SignUp() {
   const [email, setEmail] = useState('')

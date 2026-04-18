@@ -3,15 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '../lib/supabase'
 import { ArrowLeft, Mail, AlertCircle, CheckCircle2 } from 'lucide-react'
-
-const _url = process.env.NEXT_PUBLIC_SUPABASE_URL
-const _key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-if (!_url || !_key) {
-  throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY')
-}
-const supabase = createClient(_url, _key)
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')

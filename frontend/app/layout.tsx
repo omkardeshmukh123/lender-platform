@@ -4,8 +4,9 @@ import { ReactNode } from 'react'
 import { AuthProvider } from './components/AuthContext'
 
 export const metadata: Metadata = {
-  title: 'Lender Discovery Platform',
-  description: 'Find the right lender for your needs - NBFCs, Banks, and more',
+  title: 'MITRAM360 — Lender Discovery Platform',
+  description: 'Find the right NBFC or bank for your financing needs across India.',
+  icons: { icon: '/logo.png', apple: '/logo.png' },
 }
 
 export default function RootLayout({

@@ -12,7 +12,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '../lib/supabase'
 import {
   CheckCircle, XCircle, Clock, AlertTriangle,
   RefreshCw, Building2, ChevronLeft, ChevronRight,
@@ -45,9 +45,7 @@ interface PipelineRun {
   error_message: string | null
 }
 
-const API_URL    = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
-const SUPA_URL   = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SUPA_KEY   = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 // ─────────────────────────────────────────────────────────────
 // HELPERS
@@ -95,8 +93,7 @@ export default function AdminPage() {
 
   // ── Auth ────────────────────────────────────────────────────
   useEffect(() => {
-    const supa = createClient(SUPA_URL, SUPA_KEY)
-    supa.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data }) => {
       const session = data.session
       if (!session) {
         router.replace('/login?redirect=/admin')
