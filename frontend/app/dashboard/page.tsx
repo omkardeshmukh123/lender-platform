@@ -1,12 +1,6 @@
 'use client'
 
-/**
- * app/dashboard/page.tsx
- * =======================
- * Data source: FastAPI  GET /lenders/search
- * Auth: Supabase (unchanged — only used for login/session, not data)
- */
-
+import { Suspense } from 'react'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SlidersHorizontal } from 'lucide-react'
@@ -196,7 +190,7 @@ function filtersToParams(f: MultiFilters, pg: number): string {
 // COMPONENT
 // ─────────────────────────────────────────────────────────────
 
-export default function Dashboard() {
+function DashboardContent() {
   const { user, signOut, loading: authLoading } = useAuth()
   const { saved, count: savedCount, isSaved, toggle: toggleSave } = useSaved()
   const router = useRouter()
@@ -583,5 +577,17 @@ export default function Dashboard() {
       <StatsSection totalLenders={totalCount} />
       <Footer />
     </div>
+  )
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B5CCC]" />
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   )
 }
