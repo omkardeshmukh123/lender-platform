@@ -78,29 +78,40 @@ def _get_jwks_client() -> PyJWKClient:
 
 def _decode_token(token: str) -> dict:
     """
-    Decode and verify a Supabase JWT via JWKS (supports ES256 and HS256).
+    Decode and verify a Supabase JWT.
+    Strategy:
+      1. Try JWKS (ES256) — used by Supabase Auth user tokens.
+      2. Fallback to HS256 with SUPABASE_JWT_SECRET — used by anon/service-role
+         tokens and locally minted test tokens.
     Raises HTTPException(401) on any verification failure.
     """
+    decode_opts = {"require": ["sub", "exp"], "verify_aud": False}
+
+    # ── Strategy 1: JWKS (ES256) ──────────────────────────────
     try:
         client = _get_jwks_client()
         signing_key = client.get_signing_key_from_jwt(token)
-        payload = jwt.decode(
-            token,
-            signing_key.key,
-            algorithms=["ES256", "HS256"],
-            options={"require": ["sub", "exp"], "verify_aud": False},
-        )
-        return payload
+        return jwt.decode(token, signing_key.key, algorithms=["ES256", "HS256"], options=decode_opts)
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError as exc:
         raise HTTPException(status_code=401, detail=f"Invalid token: {exc}")
-    except RuntimeError as exc:
-        logger.error("JWKS config error: %s", exc)
-        raise HTTPException(status_code=503, detail="Authentication service unavailable")
-    except Exception as exc:
-        logger.error("JWKS fetch/verify error: %s", exc)
-        raise HTTPException(status_code=503, detail="Authentication service unavailable")
+    except Exception:
+        pass  # fall through to HS256 fallback
+
+    # ── Strategy 2: HS256 with SUPABASE_JWT_SECRET ────────────
+    hs_secret = os.environ.get("SUPABASE_JWT_SECRET", "")
+    if hs_secret:
+        try:
+            return jwt.decode(token, hs_secret, algorithms=["HS256"], options=decode_opts)
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="Token expired")
+        except jwt.InvalidTokenError as exc:
+            raise HTTPException(status_code=401, detail=f"Invalid token: {exc}")
+        except Exception as exc:
+            logger.error("HS256 fallback verify error: %s", exc)
+
+    raise HTTPException(status_code=503, detail="Authentication service unavailable")
 
 
 async def get_current_user(

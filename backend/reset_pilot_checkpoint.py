@@ -18,6 +18,8 @@ CHECKPOINTS = [
     ROOT / 'data' / 'output' / '.checkpoint.json',
     ROOT / 'data' / 'output' / '.rbi_checkpoint.json',
     ROOT / 'data' / 'output' / '.policy_checkpoint.json',
+    ROOT / 'backend' / '.mca21_checkpoint.json',
+    ROOT / 'backend' / '.enrich_policies_checkpoint.json',
 ]
 
 def main():
@@ -30,18 +32,17 @@ def main():
     print("  " + "=" * 40)
 
     for path in CHECKPOINTS:
-        if path.exists():
-            try:
-                data = json.loads(path.read_text())
-                count = len(data.get('processed_ids', data.get('processed', [])))
-                print(f"  {'RESET' if args.confirm else 'WOULD RESET'}: {path.name}  ({count} entries)")
-                if args.confirm:
-                    path.unlink()
-                    print(f"    ✓ Deleted")
-            except Exception as e:
-                print(f"  ERROR reading {path.name}: {e}")
-        else:
+        try:
+            data = json.loads(path.read_text())
+            count = len(data.get('processed_ids', data.get('processed', [])))
+            print(f"  {'RESET' if args.confirm else 'WOULD RESET'}: {path.name}  ({count} entries)")
+            if args.confirm:
+                path.unlink(missing_ok=True)
+                print(f"    ✓ Deleted")
+        except FileNotFoundError:
             print(f"  SKIP (not found): {path.name}")
+        except Exception as e:
+            print(f"  ERROR reading {path.name}: {e}")
 
     if not args.confirm:
         print("\n  Dry run — no files changed.")

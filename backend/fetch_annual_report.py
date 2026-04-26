@@ -31,6 +31,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urljoin, urlparse
 
+import requests
+from bs4 import BeautifulSoup
+
 # ── env ───────────────────────────────────────────────────────────────────────
 _ENV = Path(__file__).resolve().parent.parent / '.env'
 try:
@@ -111,9 +114,6 @@ def _parse_number(s: str) -> Optional[float]:
 
 def _find_annual_report_url(website: str, session) -> Optional[str]:
     """Scrape lender website for annual report PDF link."""
-    import requests
-    from bs4 import BeautifulSoup
-
     candidates = [
         website.rstrip('/') + path for path in [
             '/investor-relations', '/investors', '/annual-report',
@@ -221,7 +221,7 @@ def _extract_fpc_rates(text: str) -> List[Dict[str, Any]]:
     if not fpc_start:
         return []
 
-    section = text[fpc_start.start():fpc_start.start() + 5000]
+    section = text[fpc_start.start():fpc_start.start() + 15000]
     results = []
     current_loan_type = None
 
@@ -285,7 +285,6 @@ def _get_supabase():
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def run(args: argparse.Namespace) -> None:
-    import requests
     from requests.adapters import HTTPAdapter
     from urllib3.util.retry import Retry
 
@@ -391,31 +390,33 @@ def run(args: argparse.Namespace) -> None:
             log.info(f"    FPC rates: {[r['loan_type'] for r in fpc]}")
             for r in fpc:
                 policy_upserts.append({
-                    'lender_id':         lid,
-                    'lender_name':       name,
-                    'loan_type':         r['loan_type'],
-                    'interest_rate_min': r['interest_rate_min'],
-                    'interest_rate_max': r['interest_rate_max'],
-                    'data_source':       'annual_report_fpc',
-                    'completeness_score': 0.4,
+                    'lender_id':              lid,
+                    'lender_name':            name,
+                    'loan_type':              r['loan_type'],
+                    'product_name':           'FPC Rate',
+                    'product_name_normalized': 'fpc_rate',
+                    'interest_rate_min':      r['interest_rate_min'],
+                    'interest_rate_max':      r['interest_rate_max'],
+                    'data_source':            'annual_report_fpc',
+                    'completeness_score':     0.4,
                 })
 
         time.sleep(1)   # polite crawling
 
     # ── Write to DB ────────────────────────────────────────────────────────────
     if not args.dry_run:
-        for i in range(0, len(lender_updates), BATCH_SIZE):
-            batch = lender_updates[i:i + BATCH_SIZE]
+        for row in lender_updates:
+            lid = row.pop('id')
             try:
-                supa.table('lenders').upsert(batch, on_conflict='id').execute()
+                supa.table('lenders').update(row).eq('id', lid).execute()
             except Exception as e:
-                log.error(f"Lender upsert batch {i//BATCH_SIZE} failed: {e}")
+                log.error(f"Lender update failed for id={lid}: {e}")
 
         for i in range(0, len(policy_upserts), BATCH_SIZE):
             batch = policy_upserts[i:i + BATCH_SIZE]
             try:
                 supa.table('policies').upsert(
-                    batch, on_conflict='lender_id,loan_type'
+                    batch, on_conflict='lender_id,product_name_normalized,loan_type'
                 ).execute()
             except Exception as e:
                 log.error(f"Policy upsert batch {i//BATCH_SIZE} failed: {e}")

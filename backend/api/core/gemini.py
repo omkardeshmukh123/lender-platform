@@ -85,7 +85,7 @@ class GeminiChatClient:
         if not api_key:
             raise ValueError("GEMINI_API_KEY is required for the chat feature")
         self._client = genai.Client(api_key=api_key)
-        self._model = "gemini-2.0-flash"
+        self._model = "gemini-2.5-flash"
         logger.info("GeminiChatClient initialized (model=%s)", self._model)
 
     def parse_response(self, message: str, history: list[dict]) -> dict:

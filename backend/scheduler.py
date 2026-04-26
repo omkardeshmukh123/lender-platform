@@ -34,7 +34,7 @@ CLI:
   python scheduler.py --set-schedule      # initialise next_scrape_at (run once)
 """
 
-import os, sys, json, time, signal, random, hashlib, logging, argparse
+import os, sys, json, time, signal, random, hashlib, logging, argparse, platform
 from logging.handlers import RotatingFileHandler
 from pathlib          import Path
 from datetime         import datetime, timedelta
@@ -59,7 +59,7 @@ try:
 except ImportError:
     pass
 
-SUPABASE_URL = os.getenv('NEXT_PUBLIC_SUPABASE_URL', '').rstrip('/')
+SUPABASE_URL = os.getenv('SUPABASE_URL', os.getenv('NEXT_PUBLIC_SUPABASE_URL', '')).rstrip('/')
 SUPABASE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
 GEMINI_KEY   = os.getenv('GEMINI_API_KEY', '')
 
@@ -164,12 +164,30 @@ class LockFile:
                 pid = int(self.path.read_text().strip())
                 # Check if that PID is still alive
                 try:
-                    os.kill(pid, 0)
-                    logging.error(
-                        f"Scheduler already running (PID {pid}). "
-                        f"If stale, delete: {self.path}"
-                    )
-                    return False
+                    if platform.system() == 'Windows':
+                        try:
+                            import psutil
+                            alive = psutil.pid_exists(pid)
+                        except ImportError:
+                            # psutil unavailable — release stale lock to avoid blocking forever
+                            alive = False
+                    else:
+                        try:
+                            os.kill(pid, 0)
+                            alive = True
+                        except (OSError, ProcessLookupError):
+                            alive = False
+
+                    if alive:
+                        logging.error(
+                            f"Scheduler already running (PID {pid}). "
+                            f"If stale, delete: {self.path}"
+                        )
+                        return False
+                    else:
+                        # PID dead — stale lock
+                        logging.warning(f"Removing stale lock for PID {pid}")
+                        self.path.unlink(missing_ok=True)
                 except (OSError, ProcessLookupError):
                     # PID dead — stale lock
                     logging.warning(f"Removing stale lock for PID {pid}")
@@ -221,6 +239,8 @@ class SupabaseClient:
                 logging.warning(f"{label} connection error attempt {attempt}: {e}")
             except requests.exceptions.Timeout:
                 logging.warning(f"{label} timeout attempt {attempt}")
+            except ValueError as e:
+                logging.warning(f"{label} response decode error attempt {attempt}: {e}")
 
             if attempt < DB_MAX_RETRIES:
                 time.sleep(delay)
@@ -325,7 +345,7 @@ def _load_pipeline():
         _build_guardrails_input = build_guardrails_input
         _RateLimiter            = RateLimiter
         _Guardrails             = Guardrails
-    except Exception as e:
+    except BaseException as e:
         logging.error(f"Pipeline import failed: {e}")
         return False
 
@@ -339,12 +359,13 @@ def _load_pipeline():
     return True
 
 
-# Shared rate limiter and scraper instance (reused across all lenders in a run)
-_rl      = None
-_scraper = None
+# Shared rate limiter, scraper, and guardrails instance (reused across all lenders in a run)
+_rl         = None
+_scraper    = None
+_guardrails = None
 
 def _get_shared_resources():
-    global _rl, _scraper
+    global _rl, _scraper, _guardrails
     if _rl is None and _RateLimiter:
         _rl = _RateLimiter()
     if _scraper is None and _SingleLenderScraper:
@@ -352,7 +373,12 @@ def _get_shared_resources():
             _scraper = _SingleLenderScraper(use_stealth=False)
         except Exception:
             pass
-    return _rl, _scraper
+    if _guardrails is None and _Guardrails:
+        try:
+            _guardrails = _Guardrails()
+        except Exception:
+            pass
+    return _rl, _scraper, _guardrails
 
 
 def re_extract_lender(lender: dict) -> Optional[dict]:
@@ -363,7 +389,7 @@ def re_extract_lender(lender: dict) -> Optional[dict]:
     if not _load_pipeline():
         return None
 
-    rl, scraper = _get_shared_resources()
+    rl, scraper, guardrails = _get_shared_resources()
     if rl is None:
         logging.error("Rate limiter unavailable")
         return None
@@ -424,7 +450,7 @@ def re_extract_lender(lender: dict) -> Optional[dict]:
         extracted = _merge_scraper_data(scraped, extracted)
 
     # Phase 4: Guardrails
-    gr = _Guardrails().run(
+    gr = guardrails.run(
         _build_guardrails_input(lender, extracted, scraped, 'scheduler')
     )
     if not gr.is_valid:

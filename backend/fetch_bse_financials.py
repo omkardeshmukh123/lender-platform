@@ -180,7 +180,6 @@ def _extract_aum_from_result(result: Dict) -> Optional[float]:
     aum_keys = [
         'NetAdvances', 'Advances', 'ADVANCES', 'LoanBook',
         'NetLoansAndAdvances', 'LoansAndAdvances',
-        'TotalAssets',   # fallback — less precise
     ]
     for key in aum_keys:
         val = result.get(key)
@@ -323,8 +322,9 @@ def run(args: argparse.Namespace) -> None:
             updates.append(update)
             stats['updated'] += 1
 
-        done.add(str(lid))
-        _save_checkpoint(done)
+        if not args.dry_run:
+            done.add(str(lid))
+            _save_checkpoint(done)
         time.sleep(0.5)   # polite — BSE rate limits aggressively
 
     # ── Write ──────────────────────────────────────────────────────────────────

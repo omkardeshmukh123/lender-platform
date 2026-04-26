@@ -206,27 +206,26 @@ async def _search_lenders(db: asyncpg.Pool, filters: dict) -> list[LenderResult]
 
 
 async def _fetch_lenders_by_name(db: asyncpg.Pool, names: list[str]) -> list[LenderResult]:
-    results: list[LenderResult] = []
+    if not names:
+        return []
+    patterns = [f"%{n.replace(chr(92), chr(92)*2).replace('%', r'\%').replace('_', r'\_')}%" for n in names[:3]]
     async with db.acquire() as conn:
-        for name in names[:3]:
-            name_esc = name.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-            row = await conn.fetchrow(
-                """
-                SELECT id, company_name, company_type, rbi_category,
-                       aum_crores, aum_category, hq_state, hq_location,
-                       pan_india, primary_loan_segments, operating_states,
-                       website, quality_score, employee_count,
-                       established_year, is_listed, phone, email
-                FROM lenders
-                WHERE company_name ILIKE $1 AND approval_status = 'approved'
-                ORDER BY quality_score DESC NULLS LAST
-                LIMIT 1
-                """,
-                f"%{name_esc}%",
-            )
-            if row:
-                results.append(_row_to_lender(row))
-    return results
+        rows = await conn.fetch(
+            """
+            SELECT DISTINCT ON (company_name) id, company_name, company_type, rbi_category,
+                   aum_crores, aum_category, hq_state, hq_location,
+                   pan_india, primary_loan_segments, operating_states,
+                   website, quality_score, employee_count,
+                   established_year, is_listed, phone, email
+            FROM lenders
+            WHERE approval_status = 'approved'
+              AND company_name ILIKE ANY($1::text[])
+            ORDER BY company_name, quality_score DESC NULLS LAST
+            LIMIT 3
+            """,
+            patterns,
+        )
+    return [_row_to_lender(r) for r in rows]
 
 
 async def _ensure_session(db: asyncpg.Pool, session_id: str, user_id: str) -> None:
@@ -251,18 +250,19 @@ async def _save_turn(
 ) -> None:
     import json as _json
     async with db.acquire() as conn:
-        await conn.execute(
-            "INSERT INTO chat_messages (session_id, role, content) VALUES ($1::uuid, 'user', $2)",
-            session_id, user_msg,
-        )
-        await conn.execute(
-            """
-            INSERT INTO chat_messages (session_id, role, content, intent, filters_used)
-            VALUES ($1::uuid, 'assistant', $2, $3, $4::jsonb)
-            """,
-            session_id, assistant_msg, intent,
-            _json.dumps(filters_used) if filters_used else None,
-        )
+        async with conn.transaction():
+            await conn.execute(
+                "INSERT INTO chat_messages (session_id, role, content) VALUES ($1::uuid, 'user', $2)",
+                session_id, user_msg,
+            )
+            await conn.execute(
+                """
+                INSERT INTO chat_messages (session_id, role, content, intent, filters_used)
+                VALUES ($1::uuid, 'assistant', $2, $3, $4::jsonb)
+                """,
+                session_id, assistant_msg, intent,
+                _json.dumps(filters_used) if filters_used else None,
+            )
 
 
 def _format_history_for_gemini(history: list[HistoryMessage], max_turns: int) -> list[dict]:
@@ -281,7 +281,8 @@ def _format_history_for_gemini(history: list[HistoryMessage], max_turns: int) ->
 # ---------------------------------------------------------------------------
 
 @router.get("/ping")
-async def chat_ping(user: dict = Depends(get_current_user)):
+@limiter.limit("20/minute")
+async def chat_ping(request: Request, user: dict = Depends(get_current_user)):
     """Returns whether the AI service is configured and reachable."""
     import os
     configured = bool(os.environ.get("GEMINI_API_KEY", ""))

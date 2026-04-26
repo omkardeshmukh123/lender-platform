@@ -52,18 +52,6 @@ CHECKPOINT_FILE = OUTPUT_DIR / '.rbi_checkpoint.json'
 
 GEMINI_KEY = os.getenv('GEMINI_API_KEY', '').strip()
 
-# ── Pre-flight checks ────────────────────────────────────────
-if not RBI_DIR.exists():
-    print(f"\n❌  ERROR: RBI input directory not found: {RBI_DIR}")
-    print(f"   Expected directory with CSV files per bank category.")
-    print(f"   Expected location: {RBI_DIR.resolve()}\n")
-    sys.exit(1)
-
-if not GEMINI_KEY:
-    print("\n❌  ERROR: GEMINI_API_KEY is not set.")
-    print("   Add it to your .env file: GEMINI_API_KEY=your-key-here\n")
-    sys.exit(1)
-
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
 
@@ -790,7 +778,9 @@ def build_lender(name: str, ctype: str, data: dict,
         is_pan    = (ctype == 'Private Bank' and len(op_states) >= 20)
         if is_pan:
             intensity = 'Pan India'
-        elif len(op_states) <= 1:
+        elif len(op_states) == 0:
+            intensity = None
+        elif len(op_states) == 1:
             intensity = 'Single State'
         else:
             intensity = 'Regional'
@@ -1021,7 +1011,7 @@ def assign_rbi_status(name: str) -> tuple:  # (status, merge_note)
     """
     name_lower = name.lower()
     for fragment, rec in _BANK_STATUS_DB.items():
-        if fragment in name_lower:
+        if re.search(r'\b' + re.escape(fragment) + r'\b', name_lower):
             status      = rec.get('status', 'unknown')
             merged_into = rec.get('merged_into', '')
             eff_date    = rec.get('effective_date', '')
@@ -1273,6 +1263,12 @@ def main(limit: int | None = None, retry_failed: bool = False):
     logging.info("=" * 70)
     logging.info("RBI BANKS EXTRACTION — PRODUCTION")
     logging.info("=" * 70)
+
+    if not RBI_DIR.exists():
+        print(f"\n❌  ERROR: RBI input directory not found: {RBI_DIR}")
+        print(f"   Expected directory with CSV files per bank category.")
+        print(f"   Expected location: {RBI_DIR.resolve()}\n")
+        sys.exit(1)
 
     if not GEMINI_KEY:
         logging.error("GEMINI_API_KEY not set")

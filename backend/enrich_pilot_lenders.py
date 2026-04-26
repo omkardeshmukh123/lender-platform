@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import psycopg2
+import psycopg2.errors
 from psycopg2.extras import RealDictCursor, Json
 import requests
 
@@ -153,6 +154,8 @@ def _is_empty(val: Any) -> bool:
     if val is None:
         return True
     if isinstance(val, (list,)) and len(val) == 0:
+        return True
+    if isinstance(val, dict) and len(val) == 0:
         return True
     if isinstance(val, str) and val.strip() == '':
         return True
@@ -598,13 +601,14 @@ def merge_enrichment(
         # operating states
         raw_states = scraper.get('operating_states', [])
         if raw_states:
-            fill('operating_states', raw_states)
-            if not _is_empty(raw_states):
-                is_pan = (
-                    'PAN_INDIA' in raw_states
-                    or len([s for s in raw_states if s in ALL_INDIA_STATES]) >= 20
-                )
-                fill('pan_india', is_pan)
+            if 'PAN_INDIA' in raw_states:
+                fill('operating_states', sorted(ALL_INDIA_STATES))
+                fill('pan_india', True)
+            else:
+                fill('operating_states', raw_states)
+                if not _is_empty(raw_states):
+                    is_pan = len([s for s in raw_states if s in ALL_INDIA_STATES]) >= 20
+                    fill('pan_india', is_pan)
 
         # hq_location (city)
         hq_city = scraper.get('hq_city') or scraper.get('location')
@@ -768,25 +772,54 @@ def upsert_record(conn, record: Dict, dry_run: bool = False) -> str:
         RETURNING (xmax = 0) AS was_inserted
     """
 
-    with conn.cursor() as cur:
-        cur.execute(sql, values)
-        row = cur.fetchone()
-    conn.commit()
+    def _execute(exclude_fields=None):
+        _fields = [f for f in fields if f not in (exclude_fields or [])]
+        _set    = ', '.join(f'{f} = EXCLUDED.{f}' for f in _fields) + ', last_scraped_at = NOW()'
+        _cols   = 'company_name, ' + ', '.join(_fields) + ', last_scraped_at'
+        _ph     = '%s, ' + ', '.join(['%s'] * len(_fields)) + ', NOW()'
+        _vals   = [name] + [_coerce_for_db(f, record.get(f)) for f in _fields]
+        _sql    = f"""
+            INSERT INTO lenders ({_cols})
+            VALUES ({_ph})
+            ON CONFLICT (company_name) DO UPDATE SET {_set}
+            RETURNING (xmax = 0) AS was_inserted
+        """
+        fresh = get_db()
+        try:
+            with fresh.cursor() as cur:
+                cur.execute(_sql, _vals)
+                row = cur.fetchone()
+            fresh.commit()
+            return row
+        finally:
+            fresh.close()
+
+    # Always open a fresh connection per upsert — avoids PgBouncer idle-timeout drops
+    try:
+        row = _execute()
+    except psycopg2.errors.UniqueViolation:
+        # RBI registration number conflicts with another lender — retry without it
+        log.warning('  [upsert] unique conflict on rbi_registration_number — retrying without it')
+        row = _execute(exclude_fields=['rbi_registration_number'])
     return 'inserted' if (row and row[0]) else 'updated'
 
 
-def approve_pilots(conn, names: List[str], dry_run: bool = False):
+def approve_pilots(names: List[str], dry_run: bool = False):
     """Set approval_status = 'approved' for the given lender names."""
     if dry_run:
         log.info('[dry-run] would approve %d lenders', len(names))
         return
-    with conn.cursor() as cur:
-        cur.execute(
-            "UPDATE lenders SET approval_status = 'approved' WHERE company_name = ANY(%s)",
-            (names,)
-        )
-        updated = cur.rowcount
-    conn.commit()
+    fresh = get_db()
+    try:
+        with fresh.cursor() as cur:
+            cur.execute(
+                "UPDATE lenders SET approval_status = 'approved' WHERE company_name = ANY(%s)",
+                (names,)
+            )
+            updated = cur.rowcount
+        fresh.commit()
+    finally:
+        fresh.close()
     log.info('Approved %d lenders', updated)
 
 
@@ -933,7 +966,7 @@ def main():
     if args.approve and results:
         approved_names = [r['company_name'] for r in results]
         log.info('\nApproving %d lenders...', len(approved_names))
-        approve_pilots(conn, approved_names, dry_run=args.dry_run)
+        approve_pilots(approved_names, dry_run=args.dry_run)
 
     conn.close()
 

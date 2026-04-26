@@ -57,18 +57,6 @@ CHECKPOINT_FILE = OUTPUT_DIR / '.checkpoint.json'
 GEMINI_KEY = os.getenv('GEMINI_API_KEY', '')
 GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
 
-# ── Pre-flight checks ────────────────────────────────────────
-if not INPUT_CSV.exists():
-    print(f"\n❌  ERROR: Input file not found: {INPUT_CSV}")
-    print(f"   Create this file with columns: id,company_name,original_website,business_summary,primary_focus")
-    print(f"   Expected location: {INPUT_CSV.resolve()}\n")
-    sys.exit(1)
-
-if not GEMINI_KEY:
-    print("\n❌  ERROR: GEMINI_API_KEY is not set.")
-    print("   Add it to your .env file: GEMINI_API_KEY=your-key-here\n")
-    sys.exit(1)
-
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 WORKING_MODELS = [
@@ -943,9 +931,11 @@ def verify_extracted_data(
         verified_fields.append('rbi_category')
         confidence += 0.15
     
-    # 4. AUM reasonableness
+    # 4. AUM reasonableness — only boost confidence when AUM came from the scraper,
+    # not from Gemini (which may hallucinate figures).
     aum = extracted.get('aum_crores')
-    if aum and validate_aum(aum):
+    financial_source = extracted.get('financial_source', '')
+    if aum and validate_aum(aum) and financial_source in ('scraper_high', 'scraper_med'):
         verified_fields.append('aum')
         confidence += 0.20
     
@@ -1309,6 +1299,7 @@ _RBI_CATEGORY_RULES: Dict = {
     },
     'NBFC-AA': {
         'max_aum':            None,
+        'forbidden_all':      True,  # Account Aggregators cannot lend at all
         'forbidden_segments': ['Personal Loan', 'MSME Loan', 'Home Loan',
                                'Business Loan', 'Vehicle Loan', 'Gold Loan',
                                'Education Loan', 'Micro Loan', 'Microfinance'],
@@ -1373,6 +1364,12 @@ def _validate_regulatory_classification(
     if not rules:
         return []
     violations: List[str] = []
+    if rules.get('forbidden_all') and any(segments):
+        violations.append(
+            f"{rbi_category} (Account Aggregator) cannot offer any loan products; "
+            f"found: {segments}"
+        )
+        return violations  # no need to check further
     max_aum = rules.get('max_aum')
     if max_aum and aum_crores and aum_crores > max_aum:
         violations.append(
@@ -1489,6 +1486,12 @@ def main(limit: int | None = None, retry_failed: bool = False):
     logging.info("="*70)
     
     # Validate environment
+    if not INPUT_CSV.exists():
+        print(f"\n❌  ERROR: Input file not found: {INPUT_CSV}")
+        print(f"   Create this file with columns: id,company_name,original_website,business_summary,primary_focus")
+        print(f"   Expected location: {INPUT_CSV.resolve()}\n")
+        sys.exit(1)
+
     if not GEMINI_KEY:
         logging.error("GEMINI_API_KEY not found")
         print("\n" + "="*70)

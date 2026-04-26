@@ -66,20 +66,6 @@ GEMINI_MODEL  = 'gemini-2.5-flash'
 SUPABASE_URL  = os.getenv('SUPABASE_URL', '').strip()
 SUPABASE_KEY  = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '').strip()
 
-# ── Pre-flight checks ────────────────────────────────────────
-if not GEMINI_KEY:
-    print("\n❌  ERROR: GEMINI_API_KEY is not set in .env\n")
-    sys.exit(1)
-
-_any_input = INPUT_CSV.exists() or RBI_CSV.exists()
-if not _any_input:
-    print(f"\n❌  ERROR: No input file found.")
-    print(f"   Expected one of:")
-    print(f"     {INPUT_CSV}")
-    print(f"     {RBI_CSV}")
-    print(f"   Run run_nbfc_extraction.py or run_rbi_extraction.py first.\n")
-    sys.exit(1)
-
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── Supabase client (optional — falls back to CSV-only if not configured) ──
@@ -600,10 +586,11 @@ def validate_policy_logic(p: 'Policy') -> Tuple[bool, str]:
             return False, f'min_age {p.min_age} > max_age {p.max_age}'
 
     # Realistic floor for India retail lending (RBI regulated).
-    # Exception: Consumer Durable Loan — zero-cost EMI schemes exist.
+    # Exceptions: Consumer Durable Loan (zero-cost EMI) and Agriculture Loan
+    # (government-subsidised Kisan Credit Card / subvention schemes can reach 4%).
     if (p.interest_rate_min is not None
-            and p.interest_rate_min < 5.0
-            and p.loan_type != 'Consumer Durable Loan'):
+            and p.interest_rate_min < 4.0
+            and p.loan_type not in ('Consumer Durable Loan', 'Agriculture Loan')):
         return False, f'interest_rate_min {p.interest_rate_min}% unrealistic for India'
 
     # NOTE: missing underwriting signals (no rate/score/tenure) is NOT a hard reject.
@@ -646,7 +633,8 @@ def _safe_float(v) -> Optional[float]:
     if v is None or v == '': return None
     try:
         s = str(v).replace(',', '').replace('₹', '').strip()
-        return float(re.sub(r'[^\d.]', '', s)) or None
+        x = float(re.sub(r'[^\d.]', '', s))
+        return x if s else None
     except: return None
 
 def _safe_int(v) -> Optional[int]:
@@ -1051,8 +1039,9 @@ class Checkpoint:
         """Mark a transient failure — excluded from retry on normal restart but
         cleared by remove_failed() when --retry-failed is used."""
         self.done.add(lid)
+        if lid not in self.failed:
+            self.stats['lenders_failed'] += 1
         self.failed.add(lid)
-        self.stats['lenders_failed'] += 1
         if len(self.done) % 10 == 0:
             self.save()
 

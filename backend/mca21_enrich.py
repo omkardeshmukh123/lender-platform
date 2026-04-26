@@ -86,7 +86,7 @@ _HEADERS = {
 }
 
 # CIN regex: L/U + 5 digits + 2 letters + 4 digits + PLC/PTC/LLC/GOI + 6 digits
-_CIN_RE = re.compile(r'\b[LU]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}\b')
+_CIN_RE = re.compile(r'\b[LU]\d{5}[A-Z]{2}\d{4}[A-Z]{2,3}\d{6}\b')
 _CAPITAL_RE = re.compile(r'[\d,]+(?:\.\d+)?')
 
 
@@ -171,12 +171,21 @@ def _search_zaubacorp(company_name: str) -> Optional[Dict[str, Any]]:
     soup = BeautifulSoup(resp.text, 'html.parser')
 
     # Find the first result link — table row with a CIN-like href
+    # Also validate the result name matches the queried company name
+    _NAME_SIMILARITY_THRESHOLD = 0.4
     best_cin  = None
     best_href = None
     for a in soup.select('table a[href]'):
         href = a['href']
         cin_m = _CIN_RE.search(href)
         if cin_m:
+            result_name = a.get_text(strip=True)
+            if result_name and _name_similarity(company_name, result_name) < _NAME_SIMILARITY_THRESHOLD:
+                log.debug(
+                    f"  Skipping CIN {cin_m.group()} — name mismatch: "
+                    f"'{result_name}' vs '{company_name}'"
+                )
+                continue
             best_cin  = cin_m.group()
             best_href = f"https://www.zaubacorp.com{href}" if href.startswith('/') else href
             break
@@ -291,7 +300,11 @@ def fetch_lenders(
 
 
 def update_lender(supa, lender_id: int, data: Dict[str, Any], dry_run: bool) -> None:
-    data['mca21_status']    = 'enriched'
+    has_useful_data = (
+        data.get('company_status') is not None
+        or data.get('paid_up_capital_lakhs') is not None
+    )
+    data['mca21_status']    = 'enriched' if has_useful_data else 'partial'
     data['mca21_enriched_at'] = datetime.utcnow().isoformat()
 
     if dry_run:

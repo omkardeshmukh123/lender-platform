@@ -181,7 +181,8 @@ def upsert_enriched(conn, record: Dict, dry_run: bool = False) -> str:
     """
     UPDATE only the enrichable fields for an existing lender.
     Never touches approval_status.
-    Returns 'updated' | 'dry_run'.
+    Returns 'updated' | 'no_change' | 'dry_run'.
+    Opens a fresh DB connection per call to survive PgBouncer idle-timeout drops.
     """
     if dry_run:
         return 'dry_run'
@@ -197,36 +198,45 @@ def upsert_enriched(conn, record: Dict, dry_run: bool = False) -> str:
         'cin', 'company_status', 'authorized_capital_lakhs', 'paid_up_capital_lakhs',
         'quality_score', 'data_source', 'extraction_status',
     ]
-    # Only update fields that are non-null in the enriched record
-    update_pairs = []
-    values = []
-    for f in fields:
-        val = record.get(f)
-        if not _is_empty(val):
-            update_pairs.append(f'{f} = %s')
-            values.append(_coerce(f, val))
 
-    # mca21_status and mca21_enriched_at are always written when present
-    if record.get('mca21_status') and record['mca21_status'] != 'not_enriched':
-        update_pairs.append('mca21_status = %s')
-        values.append(record['mca21_status'])
-        update_pairs.append('mca21_enriched_at = NOW()')
+    def _build_and_run(exclude=()):
+        pairs, vals = [], []
+        for f in fields:
+            if f in exclude:
+                continue
+            val = record.get(f)
+            if not _is_empty(val):
+                pairs.append(f'{f} = %s')
+                vals.append(_coerce(f, val))
+        if record.get('mca21_status') and record['mca21_status'] != 'not_enriched':
+            pairs.append('mca21_status = %s')
+            vals.append(record['mca21_status'])
+            pairs.append('mca21_enriched_at = NOW()')
+        if not pairs:
+            return 'no_change'
+        pairs.append('last_scraped_at = NOW()')
+        sql = f"UPDATE lenders SET {', '.join(pairs)} WHERE id = %s"
+        vals.append(record['id'])
+        fresh = get_db()
+        try:
+            with fresh.cursor() as cur:
+                cur.execute(sql, vals)
+            fresh.commit()
+        finally:
+            fresh.close()
+        return 'updated'
 
-    if not update_pairs:
-        return 'no_change'
-
-    update_pairs.append('last_scraped_at = NOW()')
-    sql = f"UPDATE lenders SET {', '.join(update_pairs)} WHERE id = %s"
-    values.append(record['id'])
-
-    with conn.cursor() as cur:
-        cur.execute(sql, values)
-    conn.commit()
-    return 'updated'
+    try:
+        return _build_and_run()
+    except Exception as exc:
+        if 'rbi_reg' in str(exc).lower() or 'unique' in str(exc).lower():
+            log.warning('  [upsert] rbi_registration_number conflict — retrying without it')
+            return _build_and_run(exclude=('rbi_registration_number',))
+        raise
 
 
 def insert_lender(conn, record: Dict, dry_run: bool = False) -> str:
-    """Insert a lender that doesn't exist in DB yet."""
+    """Insert a lender that doesn't exist in DB yet. Fresh connection per call."""
     if dry_run:
         return 'dry_run'
 
@@ -249,9 +259,13 @@ def insert_lender(conn, record: Dict, dry_run: bool = False) -> str:
         VALUES ({placeholders})
         ON CONFLICT (company_name) DO NOTHING
     """
-    with conn.cursor() as cur:
-        cur.execute(sql, values)
-    conn.commit()
+    fresh = get_db()
+    try:
+        with fresh.cursor() as cur:
+            cur.execute(sql, values)
+        fresh.commit()
+    finally:
+        fresh.close()
     return 'inserted'
 
 
@@ -523,7 +537,7 @@ def _token_similarity(a: str, b: str) -> float:
     return len(ta & tb) / max(len(ta), len(tb))
 
 
-def rbi_lookup(name: str, threshold: float = 0.55) -> Dict[str, Optional[str]]:
+def rbi_lookup(name: str, threshold: float = 0.60) -> Dict[str, Optional[str]]:
     """Find best RBI match for a company name. Returns enrichment dict."""
     entries = load_rbi_nbfc_list()
     if not entries:
@@ -627,8 +641,20 @@ def _screener_search(name: str, session: requests.Session) -> Optional[str]:
             timeout=15,
         )
         if resp.status_code == 403:
-            log.debug('  [screener] 403 on search — CSRF issue')
-            return None
+            log.warning('  [screener] 403 on search — CSRF expired, refreshing and retrying')
+            global _screener_csrf
+            _screener_csrf = None
+            csrf = _get_screener_csrf(session)
+            if csrf:
+                search_headers['X-CSRFToken'] = csrf
+            resp = session.get(
+                'https://www.screener.in/api/company/search/',
+                params={'q': name, 'v': '3'},
+                headers=search_headers,
+                timeout=15,
+            )
+            if not resp.ok:
+                return None
         if not resp.ok:
             return None
         data = resp.json()
@@ -733,11 +759,19 @@ def screener_enrich(name: str, session: requests.Session) -> Dict[str, Any]:
                 return _parse_screener_number(text)
         return None
 
-    revenue      = None
-    total_assets = None
+    revenue    = None
+    loan_book  = None  # NBFC/bank loan book (AUM proxy) — loan-specific labels first
+    total_assets = None  # fallback only if no loan book line found
+
+    # Labels that represent the actual loan book for NBFCs and banks
+    _LOAN_BOOK_LABELS = {
+        'loans', 'advances', 'net advances', 'loans and advances',
+        'net loans', 'loan book', 'net receivables',
+        'receivables under financing activities',
+        'net receivables under financing activities',
+    }
 
     for table in soup.find_all('table'):
-        table_text = table.get_text().lower()
         rows = table.find_all('tr')
         if len(rows) < 2:
             continue
@@ -755,7 +789,6 @@ def screener_enrich(name: str, session: requests.Session) -> Dict[str, Any]:
                 'revenue', 'net revenue', 'revenue from operations',
                 'sales', 'net sales', 'total revenue',
             ):
-                # Detect quarterly: header months vary (not all the same)
                 header_cells = rows[0].find_all(['th', 'td'])
                 month_names = re.findall(
                     r'(jan|feb|apr|may|jun|jul|aug|oct|nov|dec)',
@@ -767,7 +800,13 @@ def screener_enrich(name: str, session: requests.Session) -> Dict[str, Any]:
                 if val and val > 0:
                     revenue = val
 
-            # Total Assets from balance sheet
+            # Loan book — preferred AUM proxy for NBFCs and banks
+            if loan_book is None and label in _LOAN_BOOK_LABELS:
+                val = _last_val(cells)
+                if val and val > 0:
+                    loan_book = val
+
+            # Total assets — fallback only when no loan book line exists
             if total_assets is None and label == 'total assets':
                 val = _last_val(cells)
                 if val and val > 0:
@@ -775,8 +814,14 @@ def screener_enrich(name: str, session: requests.Session) -> Dict[str, Any]:
 
     if revenue:
         result['last_year_revenue'] = revenue
-    if total_assets:
-        result['aum_crores'] = total_assets  # total assets ≈ loan book for NBFCs/banks
+    # Use loan book (actual AUM) over total assets; total assets inflates AUM for NBFCs/banks
+    aum = loan_book or total_assets
+    if aum:
+        result['aum_crores'] = aum
+        if loan_book:
+            log.debug('  [screener] aum from loan book: %.0f Cr', loan_book)
+        else:
+            log.debug('  [screener] aum from total assets (no loan book row found): %.0f Cr', total_assets)
 
     # ── Established year from About section ────────────────────
     about_section = soup.find(id=re.compile(r'about', re.I)) or \
@@ -1234,9 +1279,14 @@ def merge(
             pass
 
     # ── Recompute quality_score ───────────────────────────────
-    r['quality_score']      = _compute_quality(r)
-    r['data_source']        = 'scraper+gemini'  # keep existing enum value
-    r['extraction_status']  = 'success'
+    r['quality_score']     = _compute_quality(r)
+    _sources = []
+    if rbi:      _sources.append('rbi')
+    if mca21 and mca21.get('mca21_status') == 'enriched': _sources.append('mca21')
+    if screener: _sources.append('screener')
+    if scraper:  _sources.append('scraper')
+    r['data_source']       = '+'.join(_sources) if _sources else 'manual'
+    r['extraction_status'] = 'success'
 
     return r
 

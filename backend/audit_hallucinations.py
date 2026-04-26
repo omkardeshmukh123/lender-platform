@@ -85,7 +85,7 @@ CIBIL_MAX  = 900
 AGE_MIN    = 18
 AGE_MAX    = 80
 FEE_MAX    = 10.0    # % processing fee — RBI guideline area
-AMOUNT_MAX = 1_000_000  # Lakhs = ₹10,000 Cr — no single retail policy exceeds this
+AMOUNT_MAX = 10_000_000  # Lakhs = ₹1 lakh Cr — absolute ceiling to catch extreme hallucinations
 
 # Per-loan-type interest rate ranges (from guardrails.py _LOAN_TYPE_RATE_RANGES)
 LOAN_TYPE_RATE: Dict[str, Tuple[float, float]] = {
@@ -148,9 +148,10 @@ def _inverted(a: Any, b: Any) -> bool:
 # ── Policy audit ──────────────────────────────────────────────────────────────
 
 class PolicyStats:
-    total = 0
-    flagged = 0
-    nulled: Dict[str, int] = {}
+    def __init__(self):
+        self.total = 0
+        self.flagged = 0
+        self.nulled: Dict[str, int] = {}
 
     def record(self, field: str):
         self.nulled[field] = self.nulled.get(field, 0) + 1
@@ -220,9 +221,11 @@ def audit_policies(supa, dry_run: bool) -> PolicyStats:
                 if ir_min is not None and float(ir_min) < lt_lo * 0.8:
                     flag('interest_rate_min',
                          f'{ir_min}% far below {loan_type} floor {lt_lo}% — likely hallucinated')
+                    ir_min = None
                 if ir_max is not None and float(ir_max) > lt_hi * 1.20:
                     flag('interest_rate_max',
                          f'{ir_max}% significantly above {loan_type} ceiling {lt_hi}% — likely hallucinated')
+                    ir_max = None
 
             # ── Loan amounts ───────────────────────────────────
             la_min = row.get('loan_amount_min')
@@ -291,9 +294,10 @@ def audit_policies(supa, dry_run: bool) -> PolicyStats:
 # ── Lender audit ──────────────────────────────────────────────────────────────
 
 class LenderStats:
-    total = 0
-    flagged = 0
-    nulled: Dict[str, int] = {}
+    def __init__(self):
+        self.total = 0
+        self.flagged = 0
+        self.nulled: Dict[str, int] = {}
 
     def record(self, field: str):
         self.nulled[field] = self.nulled.get(field, 0) + 1

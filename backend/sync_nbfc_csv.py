@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+from datetime import datetime
 import json
 import logging
 import os
@@ -201,7 +202,7 @@ def parse_cin(cin: str) -> Dict[str, Any]:
     year_str = cin[8:12]
     try:
         yr = int(year_str)
-        if 1850 <= yr <= 2026:
+        if 1850 <= yr <= datetime.now().year:
             result['established_year'] = yr
     except ValueError:
         pass
@@ -736,59 +737,59 @@ def main():
     if not args.skip_nbfc_csv:
         log.info('=== Source B: nbfc_names.csv ===')
 
-    for i, csv_row in enumerate(csv_rows, 1):
-        csv_name = csv_row.get('company_name', '').strip()
-        if not csv_name:
-            continue
+        for i, csv_row in enumerate(csv_rows, 1):
+            csv_name = csv_row.get('company_name', '').strip()
+            if not csv_name:
+                continue
 
-        # Fuzzy match CSV name → DB record
-        best_score = 0.0
-        best_db    = None
-        for db_rec in db_lenders:
-            score = name_similarity(csv_name, db_rec['company_name'])
-            if score > best_score:
-                best_score = score
-                best_db = db_rec
+            # Fuzzy match CSV name → DB record
+            best_score = 0.0
+            best_db    = None
+            for db_rec in db_lenders:
+                score = name_similarity(csv_name, db_rec['company_name'])
+                if score > best_score:
+                    best_score = score
+                    best_db = db_rec
 
-        if best_score < args.threshold or not best_db:
-            log.debug('[%d] no match for "%s" (best=%.2f)', i, csv_name, best_score)
-            stats['unmatched'] += 1
-            continue
+            if best_score < args.threshold or not best_db:
+                log.debug('[%d] no match for "%s" (best=%.2f)', i, csv_name, best_score)
+                stats['unmatched'] += 1
+                continue
 
-        stats['matched'] += 1
-        log.debug('[%d/%d] "%s" → "%s" (%.2f)',
-                  i, len(csv_rows), csv_name, best_db['company_name'], best_score)
+            stats['matched'] += 1
+            log.debug('[%d/%d] "%s" → "%s" (%.2f)',
+                      i, len(csv_rows), csv_name, best_db['company_name'], best_score)
 
-        updates, filled = enrich_from_csv_row(csv_row, best_db)
+            updates, filled = enrich_from_csv_row(csv_row, best_db)
 
-        if not updates:
-            stats['no_change'] += 1
-            continue
+            if not updates:
+                stats['no_change'] += 1
+                continue
 
-        # Track what was filled
-        if 'cin' in filled:            stats['cin_found']   += 1
-        if 'rbi_registration_number' in filled: stats['cor_found'] += 1
-        if 'aum_crores' in filled:     stats['aum_found']   += 1
-        if 'email' in filled:          stats['email_found'] += 1
+            # Track what was filled
+            if 'cin' in filled:            stats['cin_found']   += 1
+            if 'rbi_registration_number' in filled: stats['cor_found'] += 1
+            if 'aum_crores' in filled:     stats['aum_found']   += 1
+            if 'email' in filled:          stats['email_found'] += 1
 
-        if filled:
-            log.info('[%d] %-55s filled: %s', i, best_db['company_name'][:55],
-                     ', '.join(filled))
+            if filled:
+                log.info('[%d] %-55s filled: %s', i, best_db['company_name'][:55],
+                         ', '.join(filled))
 
-        # Handle mca21_enriched_at sentinel
-        mca21_at = updates.pop('mca21_enriched_at', None)
+            # Handle mca21_enriched_at sentinel
+            mca21_at = updates.pop('mca21_enriched_at', None)
 
-        action = apply_update(conn, best_db['id'], updates, args.dry_run)
-        stats[action] = stats.get(action, 0) + 1
+            action = apply_update(conn, best_db['id'], updates, args.dry_run)
+            stats[action] = stats.get(action, 0) + 1
 
-        # Write mca21_enriched_at separately (uses NOW())
-        if mca21_at and not args.dry_run and action == 'updated':
-            with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE lenders SET mca21_enriched_at = NOW() WHERE id = %s",
-                    (best_db['id'],)
-                )
-            conn.commit()
+            # Write mca21_enriched_at separately (uses NOW())
+            if mca21_at and not args.dry_run and action == 'updated':
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE lenders SET mca21_enriched_at = NOW() WHERE id = %s",
+                        (best_db['id'],)
+                    )
+                conn.commit()
 
     # Auto-approve
     newly_approved = 0

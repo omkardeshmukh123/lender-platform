@@ -157,6 +157,17 @@ _STATE_CANONICAL: Dict[str, str] = {
     'chandigarh': 'Chandigarh',
 }
 
+_INDIA_STATES_CANONICAL: Dict[str, str] = {s.lower(): s for s in [
+    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+    'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
+    'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
+    'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
+    'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+    'Delhi', 'Jammu & Kashmir', 'Jammu and Kashmir', 'Ladakh', 'Puducherry',
+    'Chandigarh', 'Dadra and Nagar Haveli', 'Daman and Diu', 'Lakshadweep',
+    'Andaman and Nicobar Islands',
+]}
+
 def _extract_hq_state(hq_location: Optional[str]) -> Optional[str]:
     if not hq_location:
         return None
@@ -164,8 +175,8 @@ def _extract_hq_state(hq_location: Optional[str]) -> Optional[str]:
     # Try last part as state
     for part in reversed(parts):
         low = part.lower()
-        if low in _INDIA_STATES:
-            return part.title()
+        if low in _INDIA_STATES_CANONICAL:
+            return _INDIA_STATES_CANONICAL[low]
         # Check canonical city → state map
         if low in _STATE_CANONICAL:
             return _STATE_CANONICAL[low]
@@ -176,7 +187,7 @@ def _extract_hq_state(hq_location: Optional[str]) -> Optional[str]:
 def _should_be_pan_india(states: list, current: bool) -> bool:
     if current:
         return True
-    return len(states) >= 20
+    return len(states) >= _TOTAL_INDIAN_STATES // 2
 
 
 # ── Supabase helpers ──────────────────────────────────────────────────────────
@@ -272,7 +283,7 @@ def run(args: argparse.Namespace) -> None:
                 stats['hq_state'] += 1
 
         # pan_india
-        if not pan and _should_be_pan_india(states, pan):
+        if (not pan or args.force) and _should_be_pan_india(states, pan):
             update['pan_india'] = True
             stats['pan_india'] += 1
 
