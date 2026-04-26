@@ -208,7 +208,7 @@ async def _search_lenders(db: asyncpg.Pool, filters: dict) -> list[LenderResult]
 async def _fetch_lenders_by_name(db: asyncpg.Pool, names: list[str]) -> list[LenderResult]:
     if not names:
         return []
-    patterns = [f"%{n.replace(chr(92), chr(92)*2).replace('%', r'\%').replace('_', r'\_')}%" for n in names[:3]]
+    patterns = ["%" + n.replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_") + "%" for n in names[:3]]
     async with db.acquire() as conn:
         rows = await conn.fetch(
             """
