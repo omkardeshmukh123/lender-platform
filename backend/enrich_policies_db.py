@@ -148,9 +148,13 @@ def _completeness(p: Dict[str, Any]) -> float:
 
 
 def _policy_to_db_row(policy_dict: Dict[str, Any], lender_id: int) -> Dict[str, Any]:
-    row: Dict[str, Any] = {'lender_id': lender_id, 'approval_status': 'pending'}
+    # approval_status is intentionally excluded so that upsert does not overwrite
+    # a manually approved policy — the DB default ('pending') applies on INSERT only.
+    row: Dict[str, Any] = {'lender_id': lender_id}
     for k, v in policy_dict.items():
         if k not in _DB_POLICY_COLS:
+            continue
+        if k == 'approval_status':
             continue
         if k in _ARRAY_COLS:
             if isinstance(v, list):
@@ -167,6 +171,13 @@ def _policy_to_db_row(policy_dict: Dict[str, Any], lender_id: int) -> Dict[str, 
             row[k] = v.isoformat()
         else:
             row[k] = v
+
+    row['product_name_normalized'] = (row.get('product_name') or '').lower().strip().replace(' ', '_')
+
+    # Enforce chk_interest_rate_floor: min rate must be >= 5.0 unless NULL or Consumer Durable
+    ir_min = row.get('interest_rate_min')
+    if ir_min is not None and row.get('loan_type') != 'Consumer Durable Loan' and ir_min < 5.0:
+        row['interest_rate_min'] = None
 
     row['completeness_score'] = _completeness(row)
     return row
@@ -186,6 +197,7 @@ def fetch_approved_lenders(
         .select('id, company_name, website, primary_loan_segments')
         .eq('approval_status', 'approved')
         .not_.is_('website', 'null')
+        .neq('website', '')
     )
     if name_filter:
         query = query.ilike('company_name', f'%{name_filter}%')
@@ -241,11 +253,22 @@ def upsert_policies(supa, rows: List[Dict[str, Any]], dry_run: bool) -> int:
         try:
             supa.table('policies').upsert(
                 batch,
-                on_conflict='lender_id,product_name,loan_type',
+                on_conflict='lender_id,product_name_normalized,loan_type',
             ).execute()
             total += len(batch)
         except Exception as exc:
-            log.error(f"Upsert failed for batch starting at {i}: {exc}")
+            exc_str = str(exc)
+            if '23505' in exc_str and 'policies_lender_loan_type_uidx' in exc_str:
+                # Partial index conflicts with old rows lacking product_name_normalized.
+                # Fall back: update each row individually by (lender_id, loan_type).
+                for row in batch:
+                    try:
+                        supa.table('policies').update(row).eq('lender_id', row['lender_id']).eq('loan_type', row['loan_type']).execute()
+                        total += 1
+                    except Exception as row_exc:
+                        log.error(f"Row update fallback failed for lender={row.get('lender_id')} loan_type={row.get('loan_type')}: {row_exc}")
+            else:
+                log.error(f"Upsert failed for batch starting at {i}: {exc}")
     return total
 
 

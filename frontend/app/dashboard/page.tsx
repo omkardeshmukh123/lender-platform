@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { SlidersHorizontal } from 'lucide-react'
 import { useAuth } from '../components/AuthContext'
 import { useSaved, SavedLender } from '../components/SaveContext'
@@ -155,6 +155,44 @@ async function fetchFromAPI(f: MultiFilters, pg: number): Promise<LenderSearchRe
 }
 
 // ─────────────────────────────────────────────────────────────
+// URL ↔ FILTER HELPERS  (persist filters across navigation)
+// ─────────────────────────────────────────────────────────────
+
+function filtersFromParams(params: URLSearchParams): MultiFilters {
+  return {
+    search:               params.get('q')    ?? DEFAULT_FILTERS.search,
+    loanType:             params.getAll('lt'),
+    state:                params.get('state') ?? DEFAULT_FILTERS.state,
+    ticketSize:           params.getAll('ts'),
+    companyType:          params.getAll('ct'),
+    operatingIntensity:   params.getAll('oi'),
+    businessSector:       params.getAll('bs'),
+    listingStatus:        params.get('ls')   ?? DEFAULT_FILTERS.listingStatus,
+    establishedYearRange: params.get('yr')   ?? DEFAULT_FILTERS.establishedYearRange,
+    sortField:            (params.get('sf')  ?? DEFAULT_FILTERS.sortField)     as SortField,
+    sortDirection:        (params.get('sd')  ?? DEFAULT_FILTERS.sortDirection) as SortDirection,
+  }
+}
+
+function filtersToParams(f: MultiFilters, pg: number): string {
+  const p = new URLSearchParams()
+  if (f.search.trim())                                      p.set('q',     f.search.trim())
+  f.loanType.forEach(v           => p.append('lt', v))
+  if (f.state && f.state !== DEFAULT_FILTERS.state)         p.set('state', f.state)
+  f.ticketSize.forEach(v         => p.append('ts', v))
+  f.companyType.forEach(v        => p.append('ct', v))
+  f.operatingIntensity.forEach(v => p.append('oi', v))
+  f.businessSector.forEach(v     => p.append('bs', v))
+  if (f.listingStatus !== DEFAULT_FILTERS.listingStatus)    p.set('ls', f.listingStatus)
+  if (f.establishedYearRange !== DEFAULT_FILTERS.establishedYearRange) p.set('yr', f.establishedYearRange)
+  if (f.sortField)                                          p.set('sf', f.sortField)
+  if (f.sortDirection !== DEFAULT_FILTERS.sortDirection)    p.set('sd', f.sortDirection)
+  if (pg > 0)                                               p.set('pg', String(pg))
+  const qs = p.toString()
+  return qs ? `/dashboard?${qs}` : '/dashboard'
+}
+
+// ─────────────────────────────────────────────────────────────
 // COMPONENT
 // ─────────────────────────────────────────────────────────────
 
@@ -162,20 +200,26 @@ export default function Dashboard() {
   const { user, signOut, loading: authLoading } = useAuth()
   const { saved, count: savedCount, isSaved, toggle: toggleSave } = useSaved()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [lenders,       setLenders]       = useState<LenderSummary[]>([])
   const [totalCount,    setTotalCount]    = useState(0)
   const [loading,       setLoading]       = useState(true)
   const [filterLoading, setFilterLoading] = useState(false)
   const [apiError,      setApiError]      = useState<string | null>(null)
-  const [page,          setPage]          = useState(0)
-  const [filters,       setFilters]       = useState<MultiFilters>(DEFAULT_FILTERS)
+  const [page,          setPage]          = useState(() => Number(searchParams.get('pg') ?? 0))
+  const [filters,       setFilters]       = useState<MultiFilters>(() => filtersFromParams(searchParams))
   const [sidebarOpen,   setSidebarOpen]   = useState(false)
   const [chatOpen,      setChatOpen]      = useState(false)
   const [savedOpen,     setSavedOpen]     = useState(false)
 
   const isFirstLoad  = useRef(true)
   const requestIdRef = useRef(0)
+
+  // ── Sync filters + page into URL (restores state on back-nav) ──
+  useEffect(() => {
+    router.replace(filtersToParams(filters, page), { scroll: false })
+  }, [filters, page, router])
 
   // ── Auth guard ──────────────────────────────────────────────
   useEffect(() => {
