@@ -11,7 +11,7 @@ import json
 import logging
 import os
 from collections import Counter
-from typing import Optional
+from typing import Iterator, Optional
 
 from google import genai
 from google.genai import types
@@ -313,6 +313,115 @@ class GeminiChatClient:
         except Exception as exc:
             logger.error("Gemini answer generation error: %s", exc)
             raise
+
+    # ------------------------------------------------------------------
+    # Pass 2 — streaming variant
+    # ------------------------------------------------------------------
+
+    def generate_grounded_answer_stream(
+        self,
+        question: str,
+        intent: str,
+        lenders: list[dict],
+        history: list[dict],
+        note: str = "",
+    ) -> Iterator[str]:
+        """Streaming version of generate_grounded_answer. Yields text tokens."""
+        if intent == "greeting":
+            yield (
+                "Hi! I'm the MITRAM360 AI assistant. I can help you:\n"
+                "- **Find lenders** by loan type, state, AUM, sector, or company type\n"
+                "- **Compare** two or three lenders side-by-side\n"
+                "- **Look up details** for a specific lender (HQ, contact, products)\n"
+                "- **Explain** lending concepts and lender types\n\n"
+                "Try: \"Show NBFCs in Maharashtra\" or \"What is a Small Finance Bank?\""
+            )
+            return
+
+        if intent == "out_of_scope":
+            yield "I'm focused on Indian lenders and lending. Ask me about loan types, lender categories, or specific companies in our database."
+            return
+
+        if intent == "concept":
+            contents = self._build_contents(history[-(4 * 2):], question)
+            stream = self._client.models.generate_content_stream(
+                model=self._model,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    system_instruction=_CONCEPT_SYSTEM_PROMPT,
+                    temperature=0.3,
+                    max_output_tokens=400,
+                ),
+            )
+            for chunk in stream:
+                if chunk.text:
+                    yield chunk.text
+            return
+
+        if not lenders:
+            if intent in ("compare", "lender_detail"):
+                yield (
+                    "I couldn't find that lender in our database yet — they may not be listed. "
+                    "Try browsing our full catalogue or compare other lenders."
+                )
+            elif intent == "qa":
+                yield (
+                    "I couldn't find relevant lenders for that question. "
+                    "Try asking about a specific lender, loan type, or state — "
+                    "e.g. \"Show NBFCs in Maharashtra\" or \"Tell me about Bajaj Finance\"."
+                )
+            else:
+                yield "No results found. Try broadening your search — remove a filter or try a different state."
+            return
+
+        top_names = [
+            l.get("company_name") or l.get("name", "")
+            for l in lenders[:3]
+            if l.get("company_name") or l.get("name")
+        ]
+        name_hint = f"\nTop lender names for your suggestions: {', '.join(top_names)}" if top_names else ""
+
+        if intent == "filter":
+            slim         = [_slim_record(l) for l in lenders]
+            total        = len(lenders)
+            type_counts  = Counter(l.get("company_type") for l in lenders if l.get("company_type"))
+            state_counts = Counter(l.get("hq_state")     for l in lenders if l.get("hq_state"))
+            top_types    = ", ".join(f"{t}({c})" for t, c in type_counts.most_common(4))
+            top_states   = ", ".join(f"{s}({c})" for s, c in state_counts.most_common(4))
+            prefix = (
+                f"{note + chr(10) if note else ''}"
+                f"Stats — Total: {total}, By type: {top_types}, By HQ state: {top_states}.{name_hint}\n\n"
+            )
+            context = slim
+        else:
+            prefix  = f"{note}\n\n{name_hint}\n\n" if (note or name_hint) else ""
+            context = lenders
+
+        records_json = json.dumps(context, indent=2, default=str)
+        prompt = (
+            f"{prefix}"
+            f"Database records:\n{records_json}\n\n"
+            f"User question: {question}\n\n"
+            "Answer in natural language using ONLY the records above. Follow all tone and formatting rules."
+        )
+
+        history_contents = self._build_contents(history[-(6 * 2):], None)
+        contents = history_contents + [
+            types.Content(role="user", parts=[types.Part(text=prompt)])
+        ]
+
+        stream = self._client.models.generate_content_stream(
+            model=self._model,
+            contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction=_ANSWER_SYSTEM_PROMPT,
+                temperature=0.3,
+                max_output_tokens=800,
+            ),
+        )
+        for chunk in stream:
+            if chunk.text:
+                yield chunk.text
 
     # ------------------------------------------------------------------
     # Shared helpers

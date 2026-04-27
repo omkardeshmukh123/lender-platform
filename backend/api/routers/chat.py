@@ -12,6 +12,7 @@ from typing import Any, Optional
 
 import asyncpg
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 import sys
@@ -94,6 +95,13 @@ class ChatResponse(BaseModel):
     unmatched_names:   list[str] = Field(default_factory=list)
     suggested_actions: list[str] = Field(default_factory=list)
     session_id:        str
+    message_id:        Optional[int] = None
+
+
+class FeedbackRequest(BaseModel):
+    session_id: str = Field(..., description="UUID of the chat session")
+    message_id: int = Field(..., description="ID of the assistant message being rated")
+    rating:     str = Field(..., description="'up' or 'down'")
 
 
 class HistoryResponse(BaseModel):
@@ -439,7 +447,7 @@ async def _save_turn(
     assistant_msg: str,
     intent: str,
     filters_used: Optional[dict],
-) -> None:
+) -> Optional[int]:
     import json as _json
     async with db.acquire() as conn:
         async with conn.transaction():
@@ -447,14 +455,16 @@ async def _save_turn(
                 "INSERT INTO chat_messages (session_id, role, content) VALUES ($1::uuid, 'user', $2)",
                 session_id, user_msg,
             )
-            await conn.execute(
+            row = await conn.fetchrow(
                 """
                 INSERT INTO chat_messages (session_id, role, content, intent, filters_used)
                 VALUES ($1::uuid, 'assistant', $2, $3, $4::jsonb)
+                RETURNING id
                 """,
                 session_id, assistant_msg, intent,
                 _json.dumps(filters_used) if filters_used else None,
             )
+            return int(row["id"]) if row else None
 
 
 def _format_history_for_gemini(history: list[HistoryMessage], max_turns: int) -> list[dict]:
@@ -613,9 +623,10 @@ async def chat(
         logger.error("chat: answer generation failed: %s", exc)
         raise HTTPException(status_code=503, detail="AI_UNAVAILABLE")
 
+    message_id = None
     if session_ok:
         try:
-            await _save_turn(db, body.session_id, body.message, answer, intent, applied_filters)
+            message_id = await _save_turn(db, body.session_id, body.message, answer, intent, applied_filters)
         except Exception as exc:
             logger.warning("chat: failed to save turn: %s", exc)
 
@@ -629,6 +640,7 @@ async def chat(
         unmatched_names=unmatched_names,
         suggested_actions=suggested_actions,
         session_id=body.session_id,
+        message_id=message_id,
     )
 
 
@@ -693,3 +705,216 @@ async def get_history(
         for r in rows
     ]
     return HistoryResponse(session_id=str(sid), messages=messages)
+
+
+# ---------------------------------------------------------------------------
+# Streaming endpoint (SSE)
+# ---------------------------------------------------------------------------
+
+@router.post("/stream")
+@limiter.limit("20/minute")
+async def chat_stream(
+    request: Request,
+    body: ChatRequest,
+    db: asyncpg.Pool = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """SSE streaming version of /v1/chat. Yields meta → token* → done events."""
+    import json as _json
+
+    user_id = user.get("sub", "")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid user token")
+
+    try:
+        uuid.UUID(body.session_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="session_id must be a valid UUID")
+
+    session_ok = True
+    try:
+        await _ensure_session(db, body.session_id, user_id)
+    except Exception as exc:
+        logger.warning("chat_stream: session upsert failed: %s", exc)
+        session_ok = False
+
+    gemini_history    = _format_history_for_gemini(body.history, cfg.chat_context_turns)
+    classified_msg    = _inject_lender_context(body.message, body.last_lender_names)
+
+    try:
+        client = get_gemini_client()
+        parsed = await asyncio.get_event_loop().run_in_executor(
+            None, client.parse_intent, classified_msg, gemini_history
+        )
+    except ValueError:
+        raise HTTPException(status_code=503, detail="AI_NOT_CONFIGURED")
+    except Exception as exc:
+        logger.error("chat_stream: intent parse error: %s", exc)
+        raise HTTPException(status_code=503, detail="AI_UNAVAILABLE")
+
+    intent        = parsed.get("intent", "qa")
+    filters       = parsed.get("filters") or {}
+    compare_names = parsed.get("compare_names") or []
+    detail_names  = parsed.get("detail_names") or []
+
+    if intent == "filter" and body.last_filters:
+        filters = _merge_filters(body.last_filters, filters)
+
+    lenders: list[LenderResult] = []
+    applied_filters: Optional[dict] = None
+    broadening_note = ""
+    unmatched_names: list[str] = []
+
+    if intent not in ("greeting", "out_of_scope", "concept"):
+        try:
+            if intent == "filter" and filters:
+                lenders = await _search_lenders(db, filters)
+                applied_filters = filters
+                if not lenders:
+                    broad_filters = dict(filters)
+                    dropped: list[str] = []
+                    for key in _BROADENING_DROP_ORDER:
+                        if key in broad_filters:
+                            del broad_filters[key]
+                            dropped.append(key)
+                            lenders = await _search_lenders(db, broad_filters)
+                            if lenders:
+                                applied_filters = broad_filters
+                                broadening_note = (
+                                    f"No exact match with all filters — dropped {', '.join(dropped)} "
+                                    f"to show nearby results."
+                                )
+                                break
+            elif intent == "compare" and compare_names:
+                lenders = await _fetch_lenders_by_name(db, compare_names)
+                unmatched_names = _compute_unmatched_names(compare_names, lenders)
+            elif intent == "lender_detail" and detail_names:
+                lenders = await _fetch_lenders_by_name(db, detail_names[:1])
+            elif intent == "qa":
+                lenders = await _search_lenders_for_qa(db, body.message)
+        except Exception as exc:
+            logger.error("chat_stream: DB query failed: %s", exc)
+            raise HTTPException(status_code=503, detail="Search temporarily unavailable")
+
+    lender_dicts      = [l.model_dump() for l in lenders]
+    suggested_actions = _generate_suggestions(intent, lenders, applied_filters or {})
+
+    async def event_gen():
+        meta = {
+            "type":              "meta",
+            "intent":            intent,
+            "lenders":           lender_dicts,
+            "applied_filters":   applied_filters,
+            "unmatched_names":   unmatched_names,
+            "suggested_actions": suggested_actions,
+            "session_id":        body.session_id,
+        }
+        yield f"data: {_json.dumps(meta)}\n\n"
+
+        full_parts: list[str] = []
+        had_error = False
+        loop  = asyncio.get_event_loop()
+        queue: asyncio.Queue = asyncio.Queue()
+
+        def _worker():
+            try:
+                for token in client.generate_grounded_answer_stream(
+                    body.message, intent, lender_dicts, gemini_history,
+                    note=broadening_note,
+                ):
+                    loop.call_soon_threadsafe(queue.put_nowait, ("t", token))
+            except Exception as exc:
+                loop.call_soon_threadsafe(queue.put_nowait, ("e", str(exc)))
+            finally:
+                loop.call_soon_threadsafe(queue.put_nowait, ("d", None))
+
+        future = loop.run_in_executor(None, _worker)
+
+        while True:
+            kind, val = await queue.get()
+            if kind == "t":
+                full_parts.append(val)
+                yield f"data: {_json.dumps({'type': 'token', 'text': val})}\n\n"
+            elif kind == "e":
+                had_error = True
+                logger.error("chat_stream: answer error: %s", val)
+                break
+            else:
+                break
+
+        await future
+
+        if had_error:
+            yield f"data: {_json.dumps({'type': 'error', 'message': 'Answer generation failed'})}\n\n"
+
+        message_id = None
+        if session_ok and full_parts and not had_error:
+            try:
+                message_id = await _save_turn(
+                    db, body.session_id, body.message,
+                    "".join(full_parts), intent, applied_filters,
+                )
+            except Exception as exc:
+                logger.warning("chat_stream: save failed: %s", exc)
+
+        yield f"data: {_json.dumps({'type': 'done', 'message_id': message_id})}\n\n"
+
+    return StreamingResponse(
+        event_gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control":     "no-cache",
+            "X-Accel-Buffering": "no",
+            "Content-Encoding":  "identity",
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Feedback endpoint
+# ---------------------------------------------------------------------------
+
+@router.post("/feedback")
+@limiter.limit("60/minute")
+async def chat_feedback(
+    request: Request,
+    body: FeedbackRequest,
+    db: asyncpg.Pool = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """Record a thumbs-up/down rating for an assistant message."""
+    user_id = user.get("sub", "")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid user token")
+    if body.rating not in ("up", "down"):
+        raise HTTPException(status_code=422, detail="rating must be 'up' or 'down'")
+    try:
+        uuid.UUID(body.session_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="session_id must be a valid UUID")
+
+    try:
+        async with db.acquire() as conn:
+            owner = await conn.fetchval(
+                "SELECT user_id FROM chat_sessions WHERE id = $1::uuid",
+                body.session_id,
+            )
+            if not owner or str(owner) != user_id:
+                raise HTTPException(status_code=404, detail="Session not found")
+
+            await conn.execute(
+                """
+                INSERT INTO chat_feedback (session_id, message_id, rating, user_id)
+                VALUES ($1::uuid, $2, $3, $4::uuid)
+                ON CONFLICT (user_id, message_id)
+                DO UPDATE SET rating = EXCLUDED.rating, created_at = now()
+                """,
+                body.session_id, body.message_id, body.rating, user_id,
+            )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("chat_feedback: DB error: %s", exc)
+        raise HTTPException(status_code=503, detail="Feedback service temporarily unavailable")
+
+    return {"ok": True}

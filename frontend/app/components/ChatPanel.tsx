@@ -5,6 +5,7 @@ import {
   X, Send, RotateCcw, Sparkles,
   Globe, Phone, Mail, MapPin, Building2,
   Copy, Check, ExternalLink, ChevronRight,
+  ThumbsUp, ThumbsDown,
 } from 'lucide-react'
 import { MultiFilters, DEFAULT_FILTERS } from './SearchFilter'
 
@@ -52,6 +53,7 @@ interface ChatMessage {
   lenders?:           LenderResult[]
   unmatched_names?:   string[]
   suggested_actions?: string[]
+  message_id?:        number
 }
 
 interface ChatPanelProps {
@@ -284,8 +286,24 @@ function FilterMiniCards({ lenders }: { lenders: LenderResult[] }) {
   )
 }
 
-function BotBubble({ msg, onSuggestion }: { msg: ChatMessage; onSuggestion: (s: string) => void }) {
+function BotBubble({
+  msg,
+  onSuggestion,
+  onFeedback,
+}: {
+  msg:          ChatMessage
+  onSuggestion: (s: string) => void
+  onFeedback?:  (rating: 'up' | 'down', messageId?: number) => void
+}) {
+  const [feedback, setFeedback] = useState<'up' | 'down' | null>(null)
   const hasUnmatched = msg.intent === 'compare' && msg.unmatched_names && msg.unmatched_names.length > 0
+
+  const handleFeedback = (rating: 'up' | 'down') => {
+    if (feedback) return
+    setFeedback(rating)
+    onFeedback?.(rating, msg.message_id)
+  }
+
   return (
     <div className="flex gap-2.5 items-start animate-fade-in-up">
       <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
@@ -321,6 +339,22 @@ function BotBubble({ msg, onSuggestion }: { msg: ChatMessage; onSuggestion: (s: 
             ))}
           </div>
         )}
+        <div className="mt-1.5 flex items-center gap-0.5 px-1">
+          <button
+            onClick={() => handleFeedback('up')}
+            title="Helpful"
+            className={`p-1 rounded transition-colors ${feedback === 'up' ? 'text-green-500' : 'text-gray-300 hover:text-gray-500'}`}
+          >
+            <ThumbsUp className="w-3 h-3" />
+          </button>
+          <button
+            onClick={() => handleFeedback('down')}
+            title="Not helpful"
+            className={`p-1 rounded transition-colors ${feedback === 'down' ? 'text-red-400' : 'text-gray-300 hover:text-gray-500'}`}
+          >
+            <ThumbsDown className="w-3 h-3" />
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -414,10 +448,30 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
           content: m.content,
           intent:  m.intent as ChatMessage['intent'],
         })))
+        // Restore last applied filters so multi-turn refinement survives a page reload
+        const lastFilterMsg = [...data.messages].reverse().find(
+          (m: { role: string; filters_used?: ApiFilters | null }) =>
+            m.role === 'assistant' && m.filters_used
+        )
+        if (lastFilterMsg?.filters_used) {
+          setLastAppliedFilters(lastFilterMsg.filters_used)
+          onFiltersApplied(apiFiltersToMultiFilters(lastFilterMsg.filters_used))
+        }
       }
       setHistoryLoaded(true)
     } catch { /* non-fatal */ }
-  }, [apiUrl, user?.access_token])
+  }, [apiUrl, user?.access_token, onFiltersApplied])
+
+  const sendFeedback = useCallback(async (rating: 'up' | 'down', messageId?: number) => {
+    if (!messageId || !user?.access_token) return
+    try {
+      await fetch(`${apiUrl}/v1/chat/feedback`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.access_token}` },
+        body:    JSON.stringify({ session_id: sessionId, message_id: messageId, rating }),
+      })
+    } catch { /* non-fatal */ }
+  }, [apiUrl, user?.access_token, sessionId])
 
   const sendMessage = useCallback(async (text?: string) => {
     const msg = (text ?? input).trim()
@@ -426,21 +480,23 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
     setMessages(prev => [...prev, { role: 'user', content: msg }])
     setInput('')
     setLoading(true)
-    // Force-scroll when the user deliberately sends a message
     setTimeout(() => scrollToBottom(true), 50)
 
     const historyPayload = messages.slice(-12).map(m => ({ role: m.role, content: m.content }))
 
     try {
-      const res = await fetch(`${apiUrl}/v1/chat`, {
-        method: 'POST',
+      const res = await fetch(`${apiUrl}/v1/chat/stream`, {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.access_token}` },
-        body: JSON.stringify({
-          message: msg, session_id: sessionId,
-          history: historyPayload, last_filters: lastAppliedFilters,
+        body:    JSON.stringify({
+          message:           msg,
+          session_id:        sessionId,
+          history:           historyPayload,
+          last_filters:      lastAppliedFilters,
           last_lender_names: lastLenderNames.length ? lastLenderNames : undefined,
         }),
       })
+
       if (!res.ok) {
         const body = await res.text()
         let errMsg = 'Sorry, something went wrong. Please try again.'
@@ -459,29 +515,87 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
         setMessages(prev => [...prev, { role: 'assistant', content: errMsg, intent: 'qa' }])
         return
       }
-      const data = await res.json()
-      setMessages(prev => [...prev, {
-        role: 'assistant', content: data.answer, intent: data.intent,
-        lenders: data.lenders, unmatched_names: data.unmatched_names,
-        suggested_actions: data.suggested_actions,
-      }])
-      if (data.lenders?.length) setLastLenderNames(data.lenders.slice(0, 3).map((l: LenderResult) => l.company_name))
-      if (data.intent === 'filter' && data.applied_filters) {
-        setLastAppliedFilters(data.applied_filters)
-        onFiltersApplied(apiFiltersToMultiFilters(data.applied_filters))
+
+      // Consume SSE stream
+      const reader  = res.body!.getReader()
+      const decoder = new TextDecoder()
+      let buffer       = ''
+      let assistantIdx = -1
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const events = buffer.split('\n\n')
+        buffer = events.pop()!  // keep any incomplete trailing event
+
+        for (const event of events) {
+          const line = event.trim()
+          if (!line.startsWith('data: ')) continue
+          try {
+            const data = JSON.parse(line.slice(6))
+
+            if (data.type === 'meta') {
+              const newMsg: ChatMessage = {
+                role:              'assistant',
+                content:           '',
+                intent:            data.intent,
+                lenders:           data.lenders           ?? [],
+                unmatched_names:   data.unmatched_names   ?? [],
+                suggested_actions: data.suggested_actions ?? [],
+              }
+              setMessages(prev => {
+                assistantIdx = prev.length
+                return [...prev, newMsg]
+              })
+              if (data.lenders?.length) {
+                setLastLenderNames(data.lenders.slice(0, 3).map((l: LenderResult) => l.company_name))
+              }
+              if (data.intent === 'filter' && data.applied_filters) {
+                setLastAppliedFilters(data.applied_filters)
+                onFiltersApplied(apiFiltersToMultiFilters(data.applied_filters))
+              }
+
+            } else if (data.type === 'token' && assistantIdx >= 0) {
+              setMessages(prev => {
+                const updated = [...prev]
+                const cur = updated[assistantIdx]
+                if (cur) updated[assistantIdx] = { ...cur, content: cur.content + data.text }
+                return updated
+              })
+              scrollToBottom()
+
+            } else if (data.type === 'done' && assistantIdx >= 0 && data.message_id) {
+              setMessages(prev => {
+                const updated = [...prev]
+                const cur = updated[assistantIdx]
+                if (cur) updated[assistantIdx] = { ...cur, message_id: data.message_id }
+                return updated
+              })
+
+            } else if (data.type === 'error' && assistantIdx >= 0) {
+              setMessages(prev => {
+                const updated = [...prev]
+                const cur = updated[assistantIdx]
+                if (cur) updated[assistantIdx] = { ...cur, content: 'Sorry, something went wrong. Please try again.' }
+                return updated
+              })
+            }
+          } catch { /* ignore malformed events */ }
+        }
       }
     } catch {
       setMessages(prev => [...prev, {
-        role: 'assistant',
+        role:    'assistant',
         content: 'Unable to reach the server. Check your connection and try again.',
-        intent: 'qa',
+        intent:  'qa',
       }])
     } finally {
       setLoading(false)
-      // Scroll after response arrives — only if user is near bottom
       setTimeout(() => scrollToBottom(), 80)
     }
-  }, [input, loading, user?.access_token, messages, sessionId, apiUrl, onFiltersApplied, lastAppliedFilters, scrollToBottom])
+  }, [input, loading, user?.access_token, messages, sessionId, apiUrl, onFiltersApplied, lastAppliedFilters, lastLenderNames, scrollToBottom])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() }
@@ -578,7 +692,7 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
           {messages.map((msg, i) =>
             msg.role === 'user'
               ? <UserBubble key={i} content={msg.content} />
-              : <BotBubble  key={i} msg={msg} onSuggestion={s => sendMessage(s)} />
+              : <BotBubble  key={i} msg={msg} onSuggestion={s => sendMessage(s)} onFeedback={sendFeedback} />
           )}
           {loading && <TypingIndicator />}
           {/* Sentinel — never used for scrollIntoView anymore */}
