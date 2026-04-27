@@ -118,7 +118,7 @@ STRICT RULES — follow without exception:
 3. If a field is null or missing in the records, say "not available in our database" for that field.
 4. If no records are provided and intent is not "concept", say: "I couldn't find that information in our database."
 5. Be concise and direct — 1 to 4 sentences for detail/qa questions.
-6. For HQ / location questions: use hq_location and hq_state fields.
+6. For HQ / location questions: use hq_location and hq_state fields. IMPORTANT: The state filter searches by where lenders *operate* (pan_india or operating_states), NOT by headquarters state. Never say "no lenders with headquarters in X" when a state filter was used — the results may be pan-India lenders that operate there.
 7. For contact questions: use phone, email, website fields.
 8. Do not speculate or infer beyond what the records contain.
 9. For filter summaries: use the aggregate stats (total, type breakdown, state breakdown) from the prompt header. List top 3–5 lenders by AUM with their type and HQ state as a bullet list.

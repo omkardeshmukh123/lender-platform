@@ -157,15 +157,25 @@ def _merge_filters(base: Optional[dict], override: dict) -> dict:
     return merged
 
 
+_NAME_STOP = {
+    "the", "and", "of", "a", "an", "ltd", "limited", "pvt", "private", "india", "indian",
+    "finance", "financial", "capital", "credit", "services", "bank", "banking",
+    "investment", "investments", "holdings", "group", "enterprises", "solutions",
+    "microfinance", "leasing", "asset", "assets", "management", "fund", "funds",
+}
+
+
 def _compute_unmatched_names(requested: list[str], found: list[LenderResult]) -> list[str]:
-    """Return requested names that have no close match in found results."""
+    """Return requested names with no distinctive-word match in found results."""
     found_names = [l.company_name.lower() for l in found]
     unmatched = []
     for name in requested:
-        name_lower = name.lower()
-        # A name is matched if any significant word appears in any found company name
-        words = [w for w in name_lower.split() if len(w) > 2]
-        if not any(any(w in fn for w in words) for fn in found_names):
+        # Use only distinctive words (exclude generic finance terms)
+        words = [w for w in name.lower().split() if len(w) > 2 and w not in _NAME_STOP]
+        if not words:
+            # Fall back to all words if everything was generic
+            words = [w for w in name.lower().split() if len(w) > 2]
+        if not words or not any(any(w in fn for w in words) for fn in found_names):
             unmatched.append(name)
     return unmatched
 
@@ -294,12 +304,22 @@ async def _fetch_lenders_by_name(db: asyncpg.Pool, names: list[str]) -> list[Len
     if rows:
         return [_row_to_lender(r) for r in rows]
 
-    # Tier 2: word-level fallback — each significant word matched individually
-    _STOP = {"the", "and", "of", "a", "an", "ltd", "limited", "pvt", "private", "india", "indian"}
+    # Tier 2: word-level fallback — only distinctive words (exclude generic finance terms)
+    _STOP = {
+        "the", "and", "of", "a", "an", "ltd", "limited", "pvt", "private", "india", "indian",
+        "finance", "financial", "capital", "credit", "services", "bank", "banking",
+        "investment", "investments", "holdings", "group", "enterprises", "solutions",
+        "microfinance", "leasing", "asset", "assets", "management", "fund", "funds",
+    }
     word_patterns: list[str] = []
     for name in names[:3]:
         words = [w for w in name.lower().split() if len(w) > 2 and w not in _STOP]
         word_patterns.extend([f"%{_esc(w)}%" for w in words[:3]])
+    # If all words were generic (e.g. "XYZ Finance" → only "xyz"), still try them
+    if not word_patterns:
+        for name in names[:3]:
+            words = [w for w in name.lower().split() if len(w) > 2]
+            word_patterns.extend([f"%{_esc(w)}%" for w in words[:2]])
 
     if not word_patterns:
         return []

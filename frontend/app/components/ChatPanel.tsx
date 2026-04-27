@@ -349,9 +349,9 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  useEffect(() => {
+  const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, loading])
+  }, [])
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 100)
@@ -384,6 +384,7 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
     setMessages(prev => [...prev, { role: 'user', content: msg }])
     setInput('')
     setLoading(true)
+    setTimeout(scrollToBottom, 50)
 
     const historyPayload = messages.slice(-12).map(m => ({ role: m.role, content: m.content }))
 
