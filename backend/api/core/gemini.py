@@ -31,7 +31,7 @@ Intents:
 - "filter"        — user wants to search/list lenders by criteria (loan type, state, AUM, company type, sector, etc.)
 - "compare"       — user wants to compare 2–3 specific named lenders side-by-side
 - "lender_detail" — user asks about a single specific named lender (HQ, location, contact, products, AUM, website, etc.)
-- "concept"       — definitional/educational question about lending terms, types, or regulations (e.g. "What is NBFC?", "Difference between NBFC and bank?")
+- "concept"       — definitional/educational question about lending terms, types, or regulations
 - "qa"            — factual question about lenders in India with no specific lender named and no clear filter criteria
 - "greeting"      — greetings, thanks, small talk, or questions about the assistant's capabilities
 - "out_of_scope"  — completely unrelated to lending/finance in India
@@ -57,7 +57,11 @@ RULES:
 - "greeting"      → leave all fields empty.
 - "out_of_scope"  → leave all fields empty.
 
-EXAMPLES (intent classification):
+PRONOUN RESOLUTION: If the message contains vague references ("that one", "the first one",
+"it", "those", "them", "the second"), look at recent conversation history to resolve which
+lender is meant, then classify accordingly (e.g. resolve to lender_detail or compare).
+
+EXAMPLES:
 "What NBFCs are in Gujarat?"                    → filter, {company_type:["NBFC"], state:"Gujarat"}
 "Who offers agriculture loans?"                 → filter, {loan_type:["Agriculture Loan"]}
 "Show me large AUM lenders in Mumbai"           → filter, {aum_category:["Large"], state:"Maharashtra"}
@@ -66,9 +70,7 @@ EXAMPLES (intent classification):
 "Regional lenders in Rajasthan"                 → filter, {state:"Rajasthan", operating_intensity:["Regional"]}
 "Compare Bajaj and Muthoot"                     → compare, compare_names:["Bajaj Finance","Muthoot Finance"]
 "Tell me about HDFC Bank"                       → lender_detail, detail_names:["HDFC Bank"]
-"What is an NBFC?"                              → concept
-"Difference between NBFC-MFI and Small Finance Bank?" → concept
-"What is FOIR?"                                 → concept
+"What is an NBFC?" / "Difference between NBFC-MFI and bank?" → concept
 "Which lenders have highest AUM?"               → qa
 "Hello" / "Thanks" / "What can you do?"        → greeting
 "Who won the cricket match?"                    → out_of_scope
@@ -111,27 +113,38 @@ _INTENT_SCHEMA = {
 
 _ANSWER_SYSTEM_PROMPT = """\
 You are the AI assistant for MITRAM360, an Indian lender discovery platform.
+Write like a knowledgeable colleague — warm, direct, and genuinely useful. Never sound like a data dump.
 
-STRICT RULES — follow without exception:
-1. Answer ONLY from the database records provided in the prompt — unless intent is "concept".
-2. NEVER use your training knowledge to make factual claims about specific lenders, rates, or locations.
-3. If a field is null or missing in the records, say "not available in our database" for that field.
-4. If no records are provided and intent is not "concept", say: "I couldn't find that information in our database."
-5. Be concise and direct — 1 to 4 sentences for detail/qa questions.
-6. For HQ / location questions: use hq_location and hq_state fields. IMPORTANT: The state filter searches by where lenders *operate* (pan_india or operating_states), NOT by headquarters state. Never say "no lenders with headquarters in X" when a state filter was used — the results may be pan-India lenders that operate there.
-7. For contact questions: use phone, email, website fields.
-8. Do not speculate or infer beyond what the records contain.
-9. For filter summaries: use the aggregate stats (total, type breakdown, state breakdown) from the prompt header. List top 3–5 lenders by AUM with their type and HQ state as a bullet list.
+TONE:
+- Start answers immediately. No "Sure!", "Of course!", or restating the question.
+- Write in natural flowing sentences. Never output raw key:value pairs.
+- Be concise: 2-4 sentences for detail/qa, a short paragraph for filter summaries.
+
+FORMATTING RULES:
+1. Answer ONLY from the database records in the prompt — unless intent is "concept".
+2. NEVER make factual claims about specific lenders from training knowledge.
+3. If a field is null/missing: say "not listed" (brief, not "not available in our database").
+4. Format AUM as ₹X,XXX Cr — Indian comma format, no decimals, ₹ prefix. Example: ₹92,164 Cr not 92164.0.
+5. State filter = operating coverage (pan_india OR operating_states), NOT headquarters.
+   Never say "no lenders headquartered in X" — the results may be pan-India lenders operating there.
+6. For compare: one bullet per lender — "**[Name]** — [Type], ₹X,XXX Cr, HQ [City], [key segments]"
+   Never use flowing prose for compare. Always use bullets.
+7. For filter results: open with count + context, name top 3 by AUM inline with ₹ and city.
+   Example: "Found 20 NBFCs operating in Maharashtra. Biggest: **IIFL Finance** (₹92,164 Cr, Mumbai),
+   **Kotak Mahindra Prime** (₹30,000 Cr, Mumbai), and **SBFC Finance** (₹7,200 Cr)."
+8. For empty/not-found: be specific — "I couldn't find [exact name] in our database yet —
+   they may not be listed. Try [concrete alternative]."
+9. End every filter or qa answer with a contextual suggestion using ACTUAL lender names from the results:
+   _"Want details? Try: 'Tell me about [Name1]' or 'Compare [Name1] and [Name2]'"_
 10. If the user writes in Hindi or Hinglish, reply in Hinglish.
-11. For compare intent: format the answer as one bullet block per lender — name, type, AUM, HQ, key loan segments. Never use flowing prose for compare answers.
-12. After every filter or qa answer, suggest one follow-up action in italics: e.g. _Want details on any of these? Ask me: "Tell me about [lender name]"_
 """
 
 _CONCEPT_SYSTEM_PROMPT = """\
 You are a knowledgeable assistant for MITRAM360, an Indian lender discovery platform.
 Answer the user's conceptual question about Indian lending, financial regulations, or lender types
-using accurate general knowledge. Be concise (3–6 sentences). Use simple language.
+using accurate general knowledge. Be concise (3–5 sentences). Use simple, jargon-free language.
 Do not make claims about specific lenders in the MITRAM360 database.
+End with one practical tip relevant to lender discovery.
 If the user writes in Hindi or Hinglish, reply in Hinglish.
 """
 
@@ -150,7 +163,6 @@ class GeminiChatClient:
 
     def parse_intent(self, message: str, history: list[dict]) -> dict:
         """Classify intent and extract entities. Returns no answer text."""
-        # Only last 2 turns needed for intent — trimming cuts token cost ~70% on long sessions
         contents = self._build_contents(history[-(2 * 2):], message)
         try:
             response = self._client.models.generate_content(
@@ -196,11 +208,8 @@ class GeminiChatClient:
         history: list[dict],
         note: str = "",
     ) -> str:
-        """Generate an answer strictly from the provided DB records.
+        """Generate a natural-language answer from the provided DB records."""
 
-        `note` is an optional one-line prefix injected before DB records
-        (e.g. "No exact match — showing broadened results.").
-        """
         # --- Static / no-DB intents ---
         if intent == "greeting":
             return (
@@ -208,14 +217,14 @@ class GeminiChatClient:
                 "- **Find lenders** by loan type, state, AUM, sector, or company type\n"
                 "- **Compare** two or three lenders side-by-side\n"
                 "- **Look up details** for a specific lender (HQ, contact, products)\n"
-                "- **Explain** lending terms and lender types\n\n"
+                "- **Explain** lending concepts and lender types\n\n"
                 "Try: \"Show NBFCs in Maharashtra\" or \"What is a Small Finance Bank?\""
             )
 
         if intent == "out_of_scope":
-            return "I can only help with questions about lenders and lending in India. Try asking about loan types, states, or specific lenders."
+            return "I'm focused on Indian lenders and lending. Ask me about loan types, lender categories, or specific companies in our database."
 
-        # --- Concept: use general knowledge, not DB records ---
+        # --- Concept: general knowledge, not DB ---
         if intent == "concept":
             contents = self._build_contents(history[-(4 * 2):], question)
             try:
@@ -234,32 +243,43 @@ class GeminiChatClient:
                 logger.error("Gemini concept answer error: %s", exc)
                 raise
 
-        # --- Grounded intents need DB records ---
+        # --- Grounded intents ---
         if not lenders:
+            if intent in ("compare", "lender_detail"):
+                return (
+                    "I couldn't find that lender in our database yet — they may not be listed. "
+                    "Try browsing our full catalogue or compare other lenders."
+                )
             if intent == "qa":
                 return (
-                    "I can only answer questions based on lenders in our database. "
-                    "Try asking about a specific lender, loan type, or state — for example: "
-                    "\"Where is Bajaj Finance HQ?\" or \"Show NBFCs in Maharashtra\"."
+                    "I couldn't find relevant lenders for that question. "
+                    "Try asking about a specific lender, loan type, or state — "
+                    "e.g. \"Show NBFCs in Maharashtra\" or \"Tell me about Bajaj Finance\"."
                 )
-            return "I couldn't find that information in our database."
+            return "No results found. Try broadening your search — remove a filter or try a different state."
+
+        # Extract top names for contextual suggestions in the prompt
+        top_names = [
+            l.get("company_name") or l.get("name", "")
+            for l in lenders[:3]
+            if l.get("company_name") or l.get("name")
+        ]
+        name_hint = f"\nTop lender names for your suggestions: {', '.join(top_names)}" if top_names else ""
 
         if intent == "filter":
-            slim = [_slim_record(l) for l in lenders]
-            total = len(lenders)
+            slim   = [_slim_record(l) for l in lenders]
+            total  = len(lenders)
             type_counts  = Counter(l.get("company_type") for l in lenders if l.get("company_type"))
             state_counts = Counter(l.get("hq_state")     for l in lenders if l.get("hq_state"))
             top_types    = ", ".join(f"{t}({c})" for t, c in type_counts.most_common(4))
             top_states   = ", ".join(f"{s}({c})" for s, c in state_counts.most_common(4))
             prefix = (
                 f"{note + chr(10) if note else ''}"
-                f"Total matching lenders: {total}. "
-                f"By type: {top_types}. "
-                f"By HQ state: {top_states}.\n\n"
+                f"Stats — Total: {total}, By type: {top_types}, By HQ state: {top_states}.{name_hint}\n\n"
             )
             context = slim
         else:
-            prefix  = f"{note}\n\n" if note else ""
+            prefix  = f"{note}\n\n{name_hint}\n\n" if (note or name_hint) else ""
             context = lenders
 
         records_json = json.dumps(context, indent=2, default=str)
@@ -267,7 +287,7 @@ class GeminiChatClient:
             f"{prefix}"
             f"Database records:\n{records_json}\n\n"
             f"User question: {question}\n\n"
-            "Answer using ONLY the records above."
+            "Answer in natural language using ONLY the records above. Follow all tone and formatting rules."
         )
 
         history_contents = self._build_contents(history[-(6 * 2):], None)
@@ -281,7 +301,7 @@ class GeminiChatClient:
                 contents=contents,
                 config=types.GenerateContentConfig(
                     system_instruction=_ANSWER_SYSTEM_PROMPT,
-                    temperature=0.2,
+                    temperature=0.3,
                     max_output_tokens=800,
                 ),
             )
@@ -316,23 +336,23 @@ class GeminiChatClient:
 
 def _slim_record(l: dict) -> dict:
     return {
-        "name":               l.get("company_name"),
-        "type":               l.get("company_type"),
-        "rbi_category":       l.get("rbi_category"),
-        "aum_crores":         l.get("aum_crores"),
-        "hq_state":           l.get("hq_state"),
-        "hq_location":        l.get("hq_location"),
-        "pan_india":          l.get("pan_india"),
-        "loan_segments":      l.get("primary_loan_segments"),
-        "operating_intensity":l.get("operating_intensity"),
-        "business_sector":    l.get("business_sector"),
-        "established":        l.get("established_year"),
-        "employees":          l.get("employee_count"),
-        "is_listed":          l.get("is_listed"),
-        "quality_score":      l.get("quality_score"),
-        "website":            l.get("website"),
-        "phone":              l.get("phone"),
-        "email":              l.get("email"),
+        "name":                l.get("company_name"),
+        "type":                l.get("company_type"),
+        "rbi_category":        l.get("rbi_category"),
+        "aum_crores":          l.get("aum_crores"),
+        "hq_state":            l.get("hq_state"),
+        "hq_location":         l.get("hq_location"),
+        "pan_india":           l.get("pan_india"),
+        "loan_segments":       l.get("primary_loan_segments"),
+        "operating_intensity": l.get("operating_intensity"),
+        "business_sector":     l.get("business_sector"),
+        "established":         l.get("established_year"),
+        "employees":           l.get("employee_count"),
+        "is_listed":           l.get("is_listed"),
+        "quality_score":       l.get("quality_score"),
+        "website":             l.get("website"),
+        "phone":               l.get("phone"),
+        "email":               l.get("email"),
     }
 
 

@@ -46,11 +46,12 @@ interface ApiFilters {
 }
 
 interface ChatMessage {
-  role:             'user' | 'assistant'
-  content:          string
-  intent?:          'filter' | 'compare' | 'lender_detail' | 'concept' | 'qa' | 'greeting' | 'out_of_scope'
-  lenders?:         LenderResult[]
-  unmatched_names?: string[]
+  role:               'user' | 'assistant'
+  content:            string
+  intent?:            'filter' | 'compare' | 'lender_detail' | 'concept' | 'qa' | 'greeting' | 'out_of_scope'
+  lenders?:           LenderResult[]
+  unmatched_names?:   string[]
+  suggested_actions?: string[]
 }
 
 interface ChatPanelProps {
@@ -93,20 +94,42 @@ function apiFiltersToMultiFilters(f: ApiFilters): MultiFilters {
   }
 }
 
-function Markdown({ text }: { text: string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|\n)/g)
+function Inline({ text }: { text: string }) {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g)
   return (
     <>
-      {parts.map((part, i) => {
-        if (part.startsWith('**') && part.endsWith('**'))
-          return <strong key={i}>{part.slice(2, -2)}</strong>
-        if (part.startsWith('*') && part.endsWith('*'))
-          return <em key={i}>{part.slice(1, -1)}</em>
-        if (part === '\n') return <br key={i} />
-        return <span key={i}>{part}</span>
+      {parts.map((p, i) => {
+        if (p.startsWith('**') && p.endsWith('**')) return <strong key={i}>{p.slice(2, -2)}</strong>
+        if (p.startsWith('*') && p.endsWith('*'))   return <em key={i}>{p.slice(1, -1)}</em>
+        return <span key={i}>{p}</span>
       })}
     </>
   )
+}
+
+function Markdown({ text }: { text: string }) {
+  const lines = text.split('\n')
+  const out: React.ReactNode[] = []
+  let i = 0
+  while (i < lines.length) {
+    const line = lines[i]
+    if (/^[-*]\s+/.test(line)) {
+      const items: string[] = []
+      while (i < lines.length && /^[-*]\s+/.test(lines[i]))
+        items.push(lines[i++].replace(/^[-*]\s+/, ''))
+      out.push(<ul key={out.length} className="list-disc list-inside space-y-0.5 my-1 pl-1">{items.map((it, j) => <li key={j}><Inline text={it} /></li>)}</ul>)
+    } else if (/^\d+\.\s+/.test(line)) {
+      const items: string[] = []
+      while (i < lines.length && /^\d+\.\s+/.test(lines[i]))
+        items.push(lines[i++].replace(/^\d+\.\s+/, ''))
+      out.push(<ol key={out.length} className="list-decimal list-inside space-y-0.5 my-1 pl-1">{items.map((it, j) => <li key={j}><Inline text={it} /></li>)}</ol>)
+    } else if (line.trim() === '') {
+      out.push(<br key={out.length} />); i++
+    } else {
+      out.push(<p key={out.length} className="leading-relaxed"><Inline text={line} /></p>); i++
+    }
+  }
+  return <>{out}</>
 }
 
 function LenderDetailCard({ lender }: { lender: LenderResult }) {
@@ -261,17 +284,17 @@ function FilterMiniCards({ lenders }: { lenders: LenderResult[] }) {
   )
 }
 
-function BotBubble({ msg }: { msg: ChatMessage }) {
+function BotBubble({ msg, onSuggestion }: { msg: ChatMessage; onSuggestion: (s: string) => void }) {
   const hasUnmatched = msg.intent === 'compare' && msg.unmatched_names && msg.unmatched_names.length > 0
   return (
     <div className="flex gap-2.5 items-start animate-fade-in-up">
-      {/* Avatar */}
       <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-           style={{ background: 'linear-gradient(135deg,#001454,#3B5CCC)' }}>
+           style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)' }}>
         <Sparkles className="w-3.5 h-3.5 text-white" />
       </div>
       <div className="max-w-[88%]">
-        <div className="bg-gray-50 border border-gray-100 rounded-2xl rounded-tl-none px-3.5 py-2.5 text-sm text-gray-800 leading-relaxed">
+        <div className="rounded-2xl rounded-tl-none px-3.5 py-2.5 text-sm text-gray-800 leading-relaxed"
+             style={{ background: '#F7FAFA', border: '1px solid #E6F4F4' }}>
           <Markdown text={msg.content} />
         </div>
         {hasUnmatched && (
@@ -288,6 +311,16 @@ function BotBubble({ msg }: { msg: ChatMessage }) {
         {msg.intent === 'filter' && msg.lenders && msg.lenders.length > 0 && (
           <FilterMiniCards lenders={msg.lenders} />
         )}
+        {msg.suggested_actions && msg.suggested_actions.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5 px-1">
+            {msg.suggested_actions.map(s => (
+              <button key={s} onClick={() => onSuggestion(s)}
+                className="text-[11px] px-2.5 py-1 rounded-full border border-[#3B5CCC]/30 text-[#3B5CCC] bg-blue-50/60 hover:bg-blue-100 transition-colors">
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -297,7 +330,7 @@ function UserBubble({ content }: { content: string }) {
   return (
     <div className="flex justify-end animate-slide-in-right">
       <div className="max-w-[85%] text-white rounded-2xl rounded-tr-none px-3.5 py-2.5 text-sm leading-relaxed"
-           style={{ background: 'linear-gradient(135deg,#001454,#3B5CCC)' }}>
+           style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)' }}>
         {content}
       </div>
     </div>
@@ -308,14 +341,15 @@ function TypingIndicator() {
   return (
     <div className="flex gap-2.5 items-start">
       <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-           style={{ background: 'linear-gradient(135deg,#001454,#3B5CCC)' }}>
+           style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)' }}>
         <Sparkles className="w-3.5 h-3.5 text-white" />
       </div>
-      <div className="bg-gray-50 border border-gray-100 rounded-2xl rounded-tl-none px-4 py-3">
+      <div className="rounded-2xl rounded-tl-none px-4 py-3"
+           style={{ background: '#F7FAFA', border: '1px solid #E6F4F4' }}>
         <span className="flex gap-1.5">
           {[0, 1, 2].map(i => (
-            <span key={i} className="w-1.5 h-1.5 rounded-full bg-[#3B5CCC]/40 animate-bounce"
-                  style={{ animationDelay: `${i * 0.15}s` }} />
+            <span key={i} className="w-1.5 h-1.5 rounded-full animate-bounce"
+                  style={{ background: 'rgba(26,112,112,0.4)', animationDelay: `${i * 0.15}s` }} />
           ))}
         </span>
       </div>
@@ -332,8 +366,10 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
   const [historyLoaded,      setHistoryLoaded]      = useState(false)
   const [aiAvailable,        setAiAvailable]        = useState<boolean | null>(null)
   const [lastAppliedFilters, setLastAppliedFilters] = useState<ApiFilters | null>(null)
-  const bottomRef = useRef<HTMLDivElement>(null)
-  const inputRef  = useRef<HTMLTextAreaElement>(null)
+  const [lastLenderNames,    setLastLenderNames]    = useState<string[]>([])
+  // Ref to the scrollable messages container (NOT the sentinel div)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const inputRef           = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     if (!open || !user?.access_token) return
@@ -349,8 +385,14 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  const scrollToBottom = useCallback(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  /** Scroll only within the chat panel — never touches the page scroll position */
+  const scrollToBottom = useCallback((force = false) => {
+    const el = scrollContainerRef.current
+    if (!el) return
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+    if (force || nearBottom) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+    }
   }, [])
 
   useEffect(() => {
@@ -384,7 +426,8 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
     setMessages(prev => [...prev, { role: 'user', content: msg }])
     setInput('')
     setLoading(true)
-    setTimeout(scrollToBottom, 50)
+    // Force-scroll when the user deliberately sends a message
+    setTimeout(() => scrollToBottom(true), 50)
 
     const historyPayload = messages.slice(-12).map(m => ({ role: m.role, content: m.content }))
 
@@ -395,6 +438,7 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
         body: JSON.stringify({
           message: msg, session_id: sessionId,
           history: historyPayload, last_filters: lastAppliedFilters,
+          last_lender_names: lastLenderNames.length ? lastLenderNames : undefined,
         }),
       })
       if (!res.ok) {
@@ -419,7 +463,9 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
       setMessages(prev => [...prev, {
         role: 'assistant', content: data.answer, intent: data.intent,
         lenders: data.lenders, unmatched_names: data.unmatched_names,
+        suggested_actions: data.suggested_actions,
       }])
+      if (data.lenders?.length) setLastLenderNames(data.lenders.slice(0, 3).map((l: LenderResult) => l.company_name))
       if (data.intent === 'filter' && data.applied_filters) {
         setLastAppliedFilters(data.applied_filters)
         onFiltersApplied(apiFiltersToMultiFilters(data.applied_filters))
@@ -432,8 +478,10 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
       }])
     } finally {
       setLoading(false)
+      // Scroll after response arrives — only if user is near bottom
+      setTimeout(() => scrollToBottom(), 80)
     }
-  }, [input, loading, user?.access_token, messages, sessionId, apiUrl, onFiltersApplied, lastAppliedFilters])
+  }, [input, loading, user?.access_token, messages, sessionId, apiUrl, onFiltersApplied, lastAppliedFilters, scrollToBottom])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() }
@@ -464,47 +512,63 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
              }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 flex-shrink-0"
+             style={{ borderBottom: '1px solid #D8EBEB', background: '#F7FAFA' }}>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full flex items-center justify-center"
-                 style={{ background: 'linear-gradient(135deg,#001454,#3B5CCC)' }}>
+                 style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)' }}>
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div>
-              <p className="font-bold text-[#001454] text-sm leading-tight">Ask AI</p>
+              <p className="font-bold text-sm leading-tight" style={{ color: '#0D3333' }}>Ask AI</p>
               <p className="text-[10px] text-gray-400">MITRAM360 Intelligence</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
             <button onClick={startNewChat} title="New conversation"
-              className="p-1.5 rounded-lg text-gray-400 hover:text-[#3B5CCC] hover:bg-[#EEF2FF] transition-colors">
+              className="p-1.5 rounded-lg transition-colors"
+              style={{ color: '#7A9E9E' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#E6F4F4'; (e.currentTarget as HTMLButtonElement).style.color = '#1A7070' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#7A9E9E' }}
+            >
               <RotateCcw className="w-4 h-4" />
             </button>
             <button onClick={onClose} title="Close"
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+              className="p-1.5 rounded-lg transition-colors"
+              style={{ color: '#7A9E9E' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#E6F4F4' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Messages — scrollable container, isolated from page scroll */}
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto p-4 space-y-4"
+          style={{ overscrollBehavior: 'contain' }}
+        >
           {messages.length === 0 && !loading && (
             <div className="py-8 text-center">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-                   style={{ background: 'linear-gradient(135deg,#EEF2FF,#dce1ff)' }}>
-                <Sparkles className="w-7 h-7 text-[#3B5CCC]" />
+                   style={{ background: 'linear-gradient(135deg,#E6F4F4,#CCE9E9)' }}>
+                <Sparkles className="w-7 h-7" style={{ color: '#1A7070' }} />
               </div>
-              <p className="font-semibold text-[#1A2B6B] text-sm mb-1">Ask about any lender</p>
+              <p className="font-semibold text-sm mb-1" style={{ color: '#0D3333' }}>Ask about any lender</p>
               <p className="text-gray-400 text-xs mb-5 leading-relaxed max-w-[260px] mx-auto">
                 Filter results, compare lenders, or get details — all in plain English.
               </p>
               <div className="space-y-2">
                 {SUGGESTIONS.map(s => (
                   <button key={s} onClick={() => sendMessage(s)}
-                    className="block w-full text-left text-xs font-medium text-[#3B5CCC]
-                               bg-[#EEF2FF] hover:bg-[#dde3ff] px-3.5 py-2.5 rounded-xl
-                               transition-colors border border-[#C7D2FE]/50">
+                    className="block w-full text-left text-xs font-medium px-3.5 py-2.5 rounded-xl
+                               transition-colors"
+                    style={{ background: '#E6F4F4', color: '#1A7070', border: '1px solid #A8DADA' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#CCE9E9' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#E6F4F4' }}
+                  >
                     {s}
                   </button>
                 ))}
@@ -514,10 +578,11 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
           {messages.map((msg, i) =>
             msg.role === 'user'
               ? <UserBubble key={i} content={msg.content} />
-              : <BotBubble  key={i} msg={msg} />
+              : <BotBubble  key={i} msg={msg} onSuggestion={s => sendMessage(s)} />
           )}
           {loading && <TypingIndicator />}
-          <div ref={bottomRef} />
+          {/* Sentinel — never used for scrollIntoView anymore */}
+          <div aria-hidden="true" style={{ height: 1 }} />
         </div>
 
         {/* AI unavailable banner */}
@@ -529,7 +594,7 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
         )}
 
         {/* Input area */}
-        <div className="border-t border-gray-100 p-3 flex-shrink-0 bg-white">
+        <div className="p-3 flex-shrink-0 bg-white" style={{ borderTop: '1px solid #D8EBEB' }}>
           <div className="flex gap-2 items-end">
             <textarea
               ref={inputRef}
@@ -539,19 +604,24 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
               placeholder="Ask about lenders…"
               rows={1}
               disabled={aiAvailable === false}
-              className="flex-1 resize-none rounded-xl border border-gray-200 px-3.5 py-2.5
+              className="flex-1 resize-none rounded-xl border px-3.5 py-2.5
                          text-sm text-gray-800 placeholder-gray-400
-                         focus:outline-none focus:ring-2 focus:border-[#3B5CCC] max-h-28 overflow-y-auto
+                         focus:outline-none max-h-28 overflow-y-auto
                          disabled:bg-gray-50 disabled:text-gray-400 transition-all duration-150"
-              style={{ lineHeight: '1.5', focusRingColor: 'rgba(59,92,204,0.25)' } as React.CSSProperties}
+              style={{
+                lineHeight: '1.5',
+                borderColor: '#D8EBEB',
+                outline: 'none',
+              } as React.CSSProperties}
+              onFocus={e => { e.currentTarget.style.borderColor = '#1A7070'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(26,112,112,0.12)' }}
+              onBlur={e =>  { e.currentTarget.style.borderColor = '#D8EBEB'; e.currentTarget.style.boxShadow = 'none' }}
             />
             <button onClick={() => sendMessage()}
               disabled={!input.trim() || loading || aiAvailable === false}
               className="p-2.5 rounded-xl text-white transition-all duration-200
                          disabled:opacity-40 disabled:cursor-not-allowed
-                         hover:shadow-md hover:shadow-[#1A2B6B]/20 hover:-translate-y-0.5
-                         active:translate-y-0 flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg,#001454,#3B5CCC)' }}>
+                         hover:-translate-y-0.5 active:translate-y-0 flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)', boxShadow: '0 2px 8px rgba(26,112,112,0.3)' }}>
               <Send className="w-4 h-4" />
             </button>
           </div>
