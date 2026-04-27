@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import {
   MapPin, Calendar, TrendingUp, Users,
-  Phone, Mail, Globe, ArrowRight, Bookmark, BookmarkCheck,
+  Phone, Mail, Globe, ArrowRight, Bookmark, BookmarkCheck, Scale,
 } from 'lucide-react'
 
 interface Lender {
@@ -23,14 +23,17 @@ interface Lender {
   phone?:          string | null
   email?:          string | null
   website?:        string | null
+  qualityScore?:   number | null
 }
 
 interface LenderCardProps {
-  lender:      Lender
-  index?:      number
-  onTagClick?: (tag: string) => void
-  isSaved?:    boolean
-  onSave?:     () => void
+  lender:        Lender
+  index?:        number
+  onTagClick?:   (tag: string) => void
+  isSaved?:      boolean
+  onSave?:       () => void
+  isComparing?:  boolean
+  onCompare?:    () => void
 }
 
 function companyTypeBadgeStyle(type: string) {
@@ -52,9 +55,18 @@ function companyTypeBadgeStyle(type: string) {
   return { bg: '#F8F9FC', color: '#6B7280', border: '#E5E7EB' }
 }
 
-export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onSave }: LenderCardProps) {
+function qualityDot(score: number | null | undefined) {
+  if (score == null) return null
+  const pct = Math.round(score * 100)
+  const color = pct >= 70 ? '#16A34A' : pct >= 40 ? '#D97706' : '#DC2626'
+  const bg    = pct >= 70 ? '#F0FDF4' : pct >= 40 ? '#FFFBEB' : '#FEF2F2'
+  return { pct, color, bg }
+}
+
+export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onSave, isComparing = false, onCompare }: LenderCardProps) {
   const hasContactInfo = lender.website || lender.phone || lender.email
   const badgeStyle     = companyTypeBadgeStyle(lender.companyType)
+  const quality        = qualityDot(lender.qualityScore)
 
   const location = (() => {
     const city  = lender.city  !== 'N/A' ? lender.city  : ''
@@ -85,6 +97,20 @@ export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onS
                   style={{ background: badgeStyle.bg, color: badgeStyle.color, border: `1px solid ${badgeStyle.border}` }}>
               {lender.companyType}
             </span>
+          )}
+          {onCompare !== undefined && (
+            <button
+              type="button"
+              onClick={e => { e.preventDefault(); onCompare() }}
+              title={isComparing ? 'Remove from compare' : 'Add to compare'}
+              className={`p-1.5 rounded-lg transition-all duration-200 ${
+                isComparing
+                  ? 'text-[#C9A227] bg-[#FDF8E4]'
+                  : 'text-gray-300 hover:text-[#C9A227] hover:bg-[#FDF8E4]'
+              }`}
+            >
+              <Scale className="w-4 h-4" />
+            </button>
           )}
           {onSave && (
             <button
@@ -198,26 +224,39 @@ export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onS
         </div>
       )}
 
-      {/* Detail link */}
-      <Link
-        href={`/lender/${lender.id}`}
-        className="inline-flex items-center justify-center gap-1.5 w-full py-2 mb-3
-                   rounded-lg text-xs font-semibold border transition-all duration-200"
-        style={{ borderColor: '#D8EBEB', color: '#3D6363' }}
-        onMouseEnter={e => {
-          (e.currentTarget as HTMLAnchorElement).style.borderColor = '#1A7070'
-          ;(e.currentTarget as HTMLAnchorElement).style.color = '#1A7070'
-          ;(e.currentTarget as HTMLAnchorElement).style.background = '#E6F4F4'
-        }}
-        onMouseLeave={e => {
-          (e.currentTarget as HTMLAnchorElement).style.borderColor = '#D8EBEB'
-          ;(e.currentTarget as HTMLAnchorElement).style.color = '#3D6363'
-          ;(e.currentTarget as HTMLAnchorElement).style.background = 'transparent'
-        }}
-      >
-        View Profile
-        <ArrowRight className="w-3 h-3" />
-      </Link>
+      {/* Detail link + quality badge */}
+      <div className="flex items-center gap-2 mb-3">
+        <Link
+          href={`/lender/${lender.id}`}
+          className="inline-flex items-center justify-center gap-1.5 flex-1 py-2
+                     rounded-lg text-xs font-semibold border transition-all duration-200"
+          style={{ borderColor: '#D8EBEB', color: '#3D6363' }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLAnchorElement).style.borderColor = '#1A7070'
+            ;(e.currentTarget as HTMLAnchorElement).style.color = '#1A7070'
+            ;(e.currentTarget as HTMLAnchorElement).style.background = '#E6F4F4'
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLAnchorElement).style.borderColor = '#D8EBEB'
+            ;(e.currentTarget as HTMLAnchorElement).style.color = '#3D6363'
+            ;(e.currentTarget as HTMLAnchorElement).style.background = 'transparent'
+          }}
+        >
+          View Profile
+          <ArrowRight className="w-3 h-3" />
+        </Link>
+        {quality && (
+          <span
+            title={`Data quality: ${quality.pct}%`}
+            className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold"
+            style={{ background: quality.bg, color: quality.color }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ background: quality.color }} />
+            {quality.pct}%
+          </span>
+        )}
+      </div>
 
       {/* Contact row */}
       {hasContactInfo && (

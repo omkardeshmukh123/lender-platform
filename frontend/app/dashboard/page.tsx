@@ -187,6 +187,130 @@ function filtersToParams(f: MultiFilters, pg: number): string {
 }
 
 // ─────────────────────────────────────────────────────────────
+// COMPARE MODAL
+// ─────────────────────────────────────────────────────────────
+
+function CompareModal({ lenders, onClose }: { lenders: LenderSummary[]; onClose: () => void }) {
+  const [copied, setCopied] = useState(false)
+
+  type FieldDef = { label: string; render: (l: LenderSummary) => string }
+  const fields: FieldDef[] = [
+    { label: 'Type',               render: l => l.company_type },
+    { label: 'AUM',                render: l => fmtAum(l.aum_crores) },
+    { label: 'AUM Band',           render: l => l.aum_category ?? '—' },
+    { label: 'HQ',                 render: l => l.hq_location ?? l.hq_state ?? '—' },
+    { label: 'Est. Year',          render: l => l.established_year != null ? String(l.established_year) : '—' },
+    { label: 'Employees',          render: l => l.employee_count != null ? l.employee_count.toLocaleString('en-IN') : '—' },
+    { label: 'Data Quality',       render: l => l.quality_score != null ? `${Math.round(l.quality_score * 100)}%` : '—' },
+    { label: 'Loan Products',      render: l => l.primary_loan_segments.length ? l.primary_loan_segments.slice(0, 3).join(', ') : '—' },
+    { label: 'Pan India',          render: l => l.pan_india ? 'Yes' : 'No' },
+    { label: 'Listed',             render: l => l.is_listed ? 'Yes' : 'No' },
+    { label: 'Op. Intensity',      render: l => l.operating_intensity ?? '—' },
+  ]
+
+  const copyCSV = () => {
+    const header = ['Field', ...lenders.map(l => l.company_name)].join('\t')
+    const rows   = fields.map(f => [f.label, ...lenders.map(l => f.render(l))].join('\t'))
+    navigator.clipboard.writeText([header, ...rows].join('\n')).then(() => {
+      setCopied(true); setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(13,51,51,0.5)', backdropFilter: 'blur(2px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+        style={{ boxShadow: '0 20px 60px rgba(13,51,51,0.2)' }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b flex-shrink-0"
+             style={{ borderColor: '#E6F4F4', background: '#F7FAFA' }}>
+          <h2 className="font-bold text-base" style={{ color: '#0D3333' }}>
+            Side-by-Side Comparison
+          </h2>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={copyCSV}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border transition-colors"
+              style={{ borderColor: '#D8EBEB', color: '#3D6363' }}
+            >
+              {copied ? '✓ Copied!' : 'Copy CSV'}
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg transition-colors"
+              style={{ color: '#7A9E9E' }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-auto p-4">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr style={{ background: '#F7FAFA' }}>
+                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide w-36"
+                    style={{ color: '#7A9E9E' }}>
+                  Field
+                </th>
+                {lenders.map(l => (
+                  <th key={l.id} className="px-3 py-2 text-left font-bold text-sm">
+                    <a href={`/lender/${l.id}`} className="hover:underline" style={{ color: '#1A7070' }}>
+                      {l.company_name}
+                    </a>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {fields.map((f, i) => (
+                <tr key={f.label} style={{ background: i % 2 === 0 ? '#F7FAFA' : 'white' }}>
+                  <td className="px-3 py-2 text-xs font-semibold whitespace-nowrap" style={{ color: '#7A9E9E' }}>
+                    {f.label}
+                  </td>
+                  {lenders.map(l => (
+                    <td key={l.id} className="px-3 py-2 text-sm" style={{ color: '#3D6363' }}>
+                      {f.render(l)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// CSV EXPORT HELPER
+// ─────────────────────────────────────────────────────────────
+
+function exportShortlistCSV(saved: SavedLender[]) {
+  const header = ['Name', 'Type', 'AUM', 'Products', 'Website', 'Phone', 'Email']
+  const rows = saved.map(l => [
+    l.name, l.companyType, l.aum ?? '',
+    (l.products ?? []).join('; '),
+    l.website ?? '', l.phone ?? '', l.email ?? '',
+  ])
+  const csv = [header, ...rows]
+    .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = 'shortlist.csv'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+// ─────────────────────────────────────────────────────────────
 // COMPONENT
 // ─────────────────────────────────────────────────────────────
 
@@ -203,9 +327,21 @@ function DashboardContent() {
   const [apiError,      setApiError]      = useState<string | null>(null)
   const [page,          setPage]          = useState(() => Number(searchParams.get('pg') ?? 0))
   const [filters,       setFilters]       = useState<MultiFilters>(() => filtersFromParams(searchParams))
-  const [sidebarOpen,   setSidebarOpen]   = useState(false)
-  const [chatOpen,      setChatOpen]      = useState(false)
-  const [savedOpen,     setSavedOpen]     = useState(false)
+  const [sidebarOpen,    setSidebarOpen]   = useState(false)
+  const [chatOpen,       setChatOpen]      = useState(false)
+  const [savedOpen,      setSavedOpen]     = useState(false)
+  const [compareLenders, setCompareLenders] = useState<LenderSummary[]>([])
+  const [compareOpen,    setCompareOpen]   = useState(false)
+
+  const toggleCompare = (lender: LenderSummary) => {
+    setCompareLenders(prev => {
+      const exists = prev.some(l => l.id === lender.id)
+      if (exists) return prev.filter(l => l.id !== lender.id)
+      if (prev.length >= 4) return prev
+      return [...prev, lender]
+    })
+  }
+  const isComparingId = (id: string) => compareLenders.some(l => String(l.id) === id)
 
   const isFirstLoad  = useRef(true)
   const requestIdRef = useRef(0)
@@ -214,11 +350,6 @@ function DashboardContent() {
   useEffect(() => {
     router.replace(filtersToParams(filters, page), { scroll: false })
   }, [filters, page, router])
-
-  // ── Auth guard ──────────────────────────────────────────────
-  useEffect(() => {
-    if (!authLoading && !user) router.push('/')
-  }, [user, authLoading, router])
 
   // ── Main fetch ──────────────────────────────────────────────
   const fetchLenders = useCallback(async (f: MultiFilters, pg: number) => {
@@ -252,8 +383,8 @@ function DashboardContent() {
   }, [])
 
   useEffect(() => {
-    if (user) fetchLenders(filters, page)
-  }, [user, filters, page, fetchLenders])
+    if (!authLoading) fetchLenders(filters, page)
+  }, [authLoading, filters, page, fetchLenders])
 
   // ── Filter change handler ───────────────────────────────────
   const handleFilterChange = useCallback(
@@ -283,25 +414,19 @@ function DashboardContent() {
     phone:           l.phone                 || null,
     email:           l.email                 || null,
     website:         l.website               || null,
+    qualityScore:    l.quality_score         ?? null,
   }))
-
-  // ── Auth loading screen ─────────────────────────────────────
-  if (authLoading || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F7FAFA' }}>
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-t-transparent"
-               style={{ borderColor: '#1A7070', borderTopColor: 'transparent' }} />
-          <p className="text-sm" style={{ color: '#7A9E9E' }}>Loading…</p>
-        </div>
-      </div>
-    )
-  }
 
   // ── Render ──────────────────────────────────────────────────
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#F7FAFA' }}>
-      <Navbar authenticated user={user} onSignOut={signOut} savedCount={savedCount} onSavedClick={() => setSavedOpen(o => !o)} />
+      <Navbar
+        authenticated={!!user}
+        user={user}
+        onSignOut={signOut}
+        savedCount={savedCount}
+        onSavedClick={user ? () => setSavedOpen(o => !o) : undefined}
+      />
       <Hero />
 
       <div className="flex flex-1 min-h-0 relative">
@@ -326,21 +451,23 @@ function DashboardContent() {
         <main className="flex-1 min-w-0 py-8 px-4 sm:px-6 lg:px-8
                          bg-gradient-to-b from-gray-50 to-white">
 
-          {/* Desktop Ask AI button */}
-          <div className="hidden md:flex justify-end mb-4">
-            <button
-              onClick={() => setChatOpen(p => !p)}
-              className="inline-flex items-center gap-2 px-4 py-2
-                         text-white rounded-xl text-sm font-semibold
-                         transition-all hover:-translate-y-0.5 hover:shadow-lg"
-              style={{ background: chatOpen
-                ? 'linear-gradient(135deg,#C9A227,#A07E1A)'
-                : 'linear-gradient(135deg,#0F4848,#1A7070)',
-                boxShadow: '0 2px 8px rgba(26,112,112,0.25)' }}
-            >
-              {chatOpen ? 'Close AI' : '✦ Ask AI'}
-            </button>
-          </div>
+          {/* Desktop Ask AI button — auth required */}
+          {user && (
+            <div className="hidden md:flex justify-end mb-4">
+              <button
+                onClick={() => setChatOpen(p => !p)}
+                className="inline-flex items-center gap-2 px-4 py-2
+                           text-white rounded-xl text-sm font-semibold
+                           transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                style={{ background: chatOpen
+                  ? 'linear-gradient(135deg,#C9A227,#A07E1A)'
+                  : 'linear-gradient(135deg,#0F4848,#1A7070)',
+                  boxShadow: '0 2px 8px rgba(26,112,112,0.25)' }}
+              >
+                {chatOpen ? 'Close AI' : '✦ Ask AI'}
+              </button>
+            </div>
+          )}
 
           <div className="flex items-center justify-between mb-6 md:hidden">
             <button
@@ -354,16 +481,18 @@ function DashboardContent() {
               <SlidersHorizontal className="w-4 h-4" style={{ color: '#1A7070' }} />
               Filters
             </button>
-            <button
-              type="button"
-              onClick={() => setChatOpen(p => !p)}
-              className="inline-flex items-center gap-2 px-4 py-2
-                         text-white rounded-xl text-sm font-semibold
-                         transition-all hover:shadow-lg"
-              style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)', boxShadow: '0 2px 8px rgba(26,112,112,0.25)' }}
-            >
-              ✦ Ask AI
-            </button>
+            {user && (
+              <button
+                type="button"
+                onClick={() => setChatOpen(p => !p)}
+                className="inline-flex items-center gap-2 px-4 py-2
+                           text-white rounded-xl text-sm font-semibold
+                           transition-all hover:shadow-lg"
+                style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)', boxShadow: '0 2px 8px rgba(26,112,112,0.25)' }}
+              >
+                ✦ Ask AI
+              </button>
+            )}
             <span className="text-sm" style={{ color: '#3D6363' }}>
               <span className="font-bold" style={{ color: '#1A7070' }}>
                 {totalCount.toLocaleString('en-IN')}
@@ -428,8 +557,8 @@ function DashboardContent() {
                     key={lender.id}
                     lender={lender}
                     index={index}
-                    isSaved={isSaved(lender.id)}
-                    onSave={() => toggleSave({
+                    isSaved={user ? isSaved(lender.id) : false}
+                    onSave={user ? () => toggleSave({
                       id:          lender.id,
                       name:        lender.name,
                       companyType: lender.companyType,
@@ -438,7 +567,9 @@ function DashboardContent() {
                       website:     lender.website,
                       phone:       lender.phone,
                       email:       lender.email,
-                    })}
+                    }) : undefined}
+                    isComparing={isComparingId(lender.id)}
+                    onCompare={() => toggleCompare(lenders[index])}
                     onTagClick={tag => {
                       if (!filters.loanType.includes(tag)) {
                         handleFilterChange('loanType', [...filters.loanType, tag])
@@ -509,20 +640,22 @@ function DashboardContent() {
 
         </main>
 
-        <ChatPanel
-          open={chatOpen}
-          onClose={() => setChatOpen(false)}
-          onFiltersApplied={(f) => {
-            setFilters(f)
-            setPage(0)
-            isFirstLoad.current = false
-          }}
-          apiUrl={API_URL}
-          user={user}
-        />
+        {user && (
+          <ChatPanel
+            open={chatOpen}
+            onClose={() => setChatOpen(false)}
+            onFiltersApplied={(f) => {
+              setFilters(f)
+              setPage(0)
+              isFirstLoad.current = false
+            }}
+            apiUrl={API_URL}
+            user={user}
+          />
+        )}
 
-        {/* Saved lenders drawer */}
-        {savedOpen && (
+        {/* Saved lenders drawer — auth required */}
+        {user && savedOpen && (
           <aside className="fixed inset-y-0 right-0 z-40 w-80 bg-white flex flex-col"
                  style={{ borderLeft: '1px solid #D8EBEB', boxShadow: '0 12px 32px rgba(26,112,112,0.14)' }}>
             <div className="flex items-center justify-between px-5 py-4 border-b"
@@ -533,15 +666,27 @@ function DashboardContent() {
                   {savedCount} lender{savedCount !== 1 ? 's' : ''} saved
                 </p>
               </div>
-              <button
-                onClick={() => setSavedOpen(false)}
-                className="p-1.5 rounded-lg transition-colors"
-                style={{ color: '#7A9E9E' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#E6F4F4' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                {saved.length > 0 && (
+                  <button
+                    onClick={() => exportShortlistCSV(saved)}
+                    className="px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors"
+                    style={{ borderColor: '#D8EBEB', color: '#3D6363' }}
+                    title="Download as CSV"
+                  >
+                    ↓ CSV
+                  </button>
+                )}
+                <button
+                  onClick={() => setSavedOpen(false)}
+                  className="p-1.5 rounded-lg transition-colors"
+                  style={{ color: '#7A9E9E' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#E6F4F4' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto py-3 px-4 space-y-3">
@@ -604,6 +749,52 @@ function DashboardContent() {
           </aside>
         )}
       </div>
+
+      {/* Compare sticky bar */}
+      {compareLenders.length >= 2 && (
+        <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3 bg-white border-t"
+             style={{ borderColor: '#D8EBEB', boxShadow: '0 -4px 16px rgba(26,112,112,0.1)' }}>
+          <div className="max-w-5xl mx-auto flex items-center gap-3 flex-wrap">
+            <span className="text-sm font-semibold flex-shrink-0" style={{ color: '#0D3333' }}>
+              Compare ({compareLenders.length}/4)
+            </span>
+            <div className="flex flex-wrap gap-2 flex-1 min-w-0">
+              {compareLenders.map(l => (
+                <span key={l.id}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
+                      style={{ background: '#FDF8E4', color: '#A07E1A', border: '1px solid #F5E8A8' }}>
+                  {l.company_name}
+                  <button
+                    onClick={() => setCompareLenders(prev => prev.filter(x => x.id !== l.id))}
+                    className="hover:text-red-500 transition-colors"
+                  >✕</button>
+                </span>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => setCompareLenders([])}
+                className="px-3 py-1.5 text-xs rounded-lg border transition-colors"
+                style={{ borderColor: '#D8EBEB', color: '#7A9E9E' }}
+              >
+                Clear
+              </button>
+              <button
+                onClick={() => setCompareOpen(true)}
+                className="px-4 py-1.5 text-xs font-semibold text-white rounded-lg transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)' }}
+              >
+                Compare →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Compare modal */}
+      {compareOpen && compareLenders.length >= 2 && (
+        <CompareModal lenders={compareLenders} onClose={() => setCompareOpen(false)} />
+      )}
 
       <StatsSection totalLenders={totalCount} />
       <Footer />

@@ -5,7 +5,7 @@ import { useAuth } from './components/AuthContext'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
-  Search, ArrowRight, BadgeCheck, Sparkles,
+  Search, ArrowRight, Sparkles,
   SlidersHorizontal, GitCompare, Shield, Zap, Globe, Handshake,
 } from 'lucide-react'
 
@@ -84,13 +84,8 @@ export default function LandingPage() {
           {/* Nav links */}
           <div className="hidden md:flex items-center gap-7 text-sm font-medium"
                style={{ color: '#3D6363' }}>
-            <Link href="/dashboard" className="hover:text-[#1A7070] transition-colors">Browse Lenders</Link>
+            <Link href={user ? '/dashboard' : '/login'} className="hover:text-[#1A7070] transition-colors">Browse Lenders</Link>
             <a href="#how-it-works" className="hover:text-[#1A7070] transition-colors">How It Works</a>
-            <Link href="/match"
-              className="flex items-center gap-1.5 hover:text-[#1A7070] transition-colors">
-              <Sparkles className="w-3.5 h-3.5" style={{ color: '#C9A227' }} />
-              AI Match
-            </Link>
           </div>
 
           {/* Auth buttons */}
@@ -163,7 +158,7 @@ export default function LandingPage() {
               </p>
 
               <div className="flex flex-wrap gap-3 mb-6">
-                <Link href="/dashboard"
+                <Link href={user ? '/dashboard' : '/login'}
                   className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-base font-semibold
                              text-white transition-all hover:-translate-y-0.5 hover:shadow-xl"
                   style={{ background: 'linear-gradient(135deg,#C9A227,#A07E1A)', boxShadow: '0 4px 14px rgba(201,162,39,0.4)' }}>
@@ -171,7 +166,7 @@ export default function LandingPage() {
                   Browse Lenders
                   <ArrowRight className="w-4 h-4" />
                 </Link>
-                <Link href="/match"
+                <Link href={user ? '/dashboard' : '/signup'}
                   className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-base font-semibold
                              transition-all hover:bg-white/10 hover:-translate-y-0.5"
                   style={{ color: 'white', border: '1px solid rgba(255,255,255,0.22)', backdropFilter: 'blur(8px)' }}>
@@ -308,7 +303,7 @@ export default function LandingPage() {
           </div>
 
           <div className="text-center mt-12">
-            <Link href="/dashboard"
+            <Link href={user ? '/dashboard' : '/login'}
               className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-base font-semibold
                          text-white transition-all hover:-translate-y-0.5 hover:shadow-xl"
               style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)', boxShadow: '0 4px 14px rgba(26,112,112,0.3)' }}>
@@ -387,7 +382,7 @@ export default function LandingPage() {
             No registration required to browse. Sign up to save lenders and use AI.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
-            <Link href="/dashboard"
+            <Link href={user ? '/dashboard' : '/login'}
               className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-base font-semibold
                          transition-all hover:-translate-y-0.5 hover:shadow-xl"
               style={{ background: 'linear-gradient(135deg,#C9A227,#A07E1A)', color: 'white', boxShadow: '0 4px 14px rgba(201,162,39,0.4)' }}>

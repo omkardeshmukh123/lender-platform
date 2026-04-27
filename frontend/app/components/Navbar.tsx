@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect, useRef } from 'react'
-import { User, LogOut, Bookmark, Sparkles } from 'lucide-react'
+import { User, LogOut, Bookmark } from 'lucide-react'
 
 interface NavbarProps {
   authenticated?: boolean
@@ -78,11 +78,6 @@ export function Navbar({ authenticated = false, user, onSignOut, savedCount = 0,
             <Link href="/dashboard"
               className="hover:text-[#1A7070] transition-colors">
               Browse
-            </Link>
-            <Link href="/match"
-              className="hover:text-[#1A7070] transition-colors flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5" style={{ color: '#C9A227' }} />
-              AI Match
             </Link>
           </div>
 

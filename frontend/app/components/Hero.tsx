@@ -1,8 +1,6 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
-import { Search, Sparkles } from 'lucide-react'
 
 export function Hero() {
   return (
@@ -56,23 +54,6 @@ export function Hero() {
             </div>
           </div>
 
-          {/* Right quick actions */}
-          <div className="flex items-center gap-3 md:ml-auto flex-wrap">
-            <Link href="/match"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold
-                         transition-all hover:-translate-y-0.5"
-              style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>
-              <Sparkles className="w-4 h-4" style={{ color: '#F5D97A' }} />
-              AI Match
-            </Link>
-            <Link href="/"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold
-                         text-white transition-all hover:-translate-y-0.5 hover:shadow-lg"
-              style={{ background: 'linear-gradient(135deg,#C9A227,#A07E1A)', boxShadow: '0 2px 8px rgba(201,162,39,0.3)' }}>
-              <Search className="w-4 h-4" />
-              How It Works
-            </Link>
-          </div>
         </div>
       </div>
 
