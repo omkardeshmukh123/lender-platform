@@ -33,17 +33,19 @@ interface LenderResult {
 }
 
 interface ApiFilters {
-  q?:            string
-  loan_type?:    string[]
-  state?:        string
-  company_type?: string[]
-  aum_category?: string[]
-  aum_min?:      number
-  aum_max?:      number
-  pan_india?:    boolean
-  is_listed?:    boolean
-  sort_by?:      string
-  sort_dir?:     'asc' | 'desc'
+  q?:                   string
+  loan_type?:           string[]
+  state?:               string
+  company_type?:        string[]
+  aum_category?:        string[]
+  aum_min?:             number
+  aum_max?:             number
+  pan_india?:           boolean
+  is_listed?:           boolean
+  operating_intensity?: string[]
+  business_sector?:     string[]
+  sort_by?:             string
+  sort_dir?:            'asc' | 'desc'
 }
 
 interface ChatMessage {
@@ -87,8 +89,8 @@ function apiFiltersToMultiFilters(f: ApiFilters): MultiFilters {
     state:                f.state ?? 'All States',
     ticketSize:           f.aum_category ?? [],
     companyType:          f.company_type ?? [],
-    operatingIntensity:   [],
-    businessSector:       [],
+    operatingIntensity:   f.operating_intensity ?? [],
+    businessSector:       f.business_sector     ?? [],
     listingStatus,
     establishedYearRange: 'All Years',
     sortField:            (f.sort_by as MultiFilters['sortField']) ?? '',
@@ -209,7 +211,7 @@ function CompareTable({ lenders }: { lenders: LenderResult[] }) {
     { label: 'HQ',            render: l => l.hq_location ?? l.hq_state ?? '—' },
     { label: 'Est. Year',     render: l => l.established_year != null ? String(l.established_year) : '—' },
     { label: 'Employees',     render: l => l.employee_count != null ? l.employee_count.toLocaleString('en-IN') : '—' },
-    { label: 'Quality',       render: l => l.quality_score != null ? `${l.quality_score.toFixed(1)}/10` : '—' },
+    { label: 'Quality',       render: l => l.quality_score != null ? `${Math.round(l.quality_score * 100)}%` : '—' },
     { label: 'Loan Products', render: l => l.primary_loan_segments.length ? l.primary_loan_segments.slice(0,3).join(', ') : '—' },
     { label: 'Pan India',     render: l => l.pan_india ? 'Yes' : 'No' },
     { label: 'Listed',        render: l => l.is_listed ? 'Yes' : 'No' },
@@ -606,6 +608,7 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
     setSessionId(generateUUID())
     setHistoryLoaded(false)
     setLastAppliedFilters(null)
+    setLastLenderNames([])
     inputRef.current?.focus()
   }
 
@@ -713,7 +716,11 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
             <textarea
               ref={inputRef}
               value={input}
-              onChange={e => setInput(e.target.value)}
+              onChange={e => {
+                setInput(e.target.value)
+                e.target.style.height = 'auto'
+                e.target.style.height = `${Math.min(e.target.scrollHeight, 112)}px`
+              }}
               onKeyDown={handleKeyDown}
               placeholder="Ask about lenders…"
               rows={1}
