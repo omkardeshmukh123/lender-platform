@@ -183,7 +183,7 @@ function MultiSelectDropdown({
         {hasSelection && (
           <span
             className="ml-1.5 inline-flex items-center justify-center
-                       w-[18px] h-[18px] bg-[#3B5CCC] text-white
+                       w-[18px] h-[18px] bg-[#1A7070] text-white
                        text-[10px] font-bold rounded-full align-middle"
           >
             {selected.length}
@@ -204,14 +204,14 @@ function MultiSelectDropdown({
           'flex items-center justify-between gap-2',
           'border rounded-xl transition-all duration-150 bg-white cursor-pointer min-h-[42px]',
           open
-            ? 'border-[#3B5CCC] ring-2 ring-[#3B5CCC]/20 shadow-sm'
+            ? 'border-[#1A7070] ring-2 ring-[#1A7070]/20 shadow-sm'
             : hasSelection
-              ? 'border-[#3B5CCC]/60 bg-[#EEF2FF]'
+              ? 'border-[#1A7070]/60 bg-[#E6F4F4]'
               : 'border-gray-200 hover:border-gray-300',
         ].join(' ')}
       >
         <span className={`truncate text-sm ${
-          hasSelection ? 'text-[#3B5CCC] font-medium' : 'text-gray-400'
+          hasSelection ? 'text-[#1A7070] font-medium' : 'text-gray-400'
         }`}>
           {displayText}
         </span>
@@ -252,7 +252,7 @@ function MultiSelectDropdown({
             <button
               type="button"
               onClick={selectAll}
-              className="text-xs text-[#3B5CCC] font-semibold hover:underline"
+              className="text-xs text-[#1A7070] font-semibold hover:underline"
             >
               Select all
             </button>
@@ -285,7 +285,7 @@ function MultiSelectDropdown({
                       'w-full flex items-center gap-3 px-3 py-2',
                       'text-sm text-left transition-colors duration-100',
                       isSel
-                        ? 'bg-[#EEF2FF] text-[#3B5CCC]'
+                        ? 'bg-[#E6F4F4] text-[#1A7070]'
                         : 'text-gray-700 hover:bg-gray-50',
                     ].join(' ')}
                   >
@@ -294,7 +294,7 @@ function MultiSelectDropdown({
                       'flex-shrink-0 w-4 h-4 rounded border-[1.5px]',
                       'flex items-center justify-center transition-all',
                       isSel
-                        ? 'bg-[#3B5CCC] border-[#3B5CCC]'
+                        ? 'bg-[#1A7070] border-[#1A7070]'
                         : 'border-gray-300 bg-white',
                     ].join(' ')}>
                       {isSel && (
@@ -344,10 +344,10 @@ function SingleSelect({ id, label, options, value, onChange }: SingleSelectProps
           onChange={e => onChange(e.target.value)}
           className={[
             'w-full px-3.5 py-2.5 text-sm appearance-none border rounded-xl cursor-pointer min-h-[42px]',
-            'focus:outline-none focus:ring-2 focus:ring-[#3B5CCC]/20 focus:border-[#3B5CCC]',
+            'focus:outline-none focus:ring-2 focus:ring-[#1A7070]/20 focus:border-[#1A7070]',
             'transition-all duration-150 bg-white',
             isActive
-              ? 'border-[#3B5CCC]/60 bg-[#EEF2FF] text-[#3B5CCC] font-medium'
+              ? 'border-[#1A7070]/60 bg-[#E6F4F4] text-[#1A7070] font-medium'
               : 'border-gray-200 hover:border-gray-300 text-gray-400',
           ].join(' ')}
         >
@@ -405,7 +405,7 @@ function SortBtn({ label, field, activeField, activeDir, onSort, onClear }: Sort
         'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium',
         'border transition-all duration-150 select-none whitespace-nowrap',
         isActive
-          ? 'bg-[#3B5CCC] text-white border-[#3B5CCC] shadow-sm shadow-blue-200'
+          ? 'bg-[#1A7070] text-white border-[#1A7070] shadow-sm shadow-teal-200'
           : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:text-gray-900',
       ].join(' ')}
     >
@@ -522,9 +522,9 @@ function ActiveFilterTags({
           type="button"
           onClick={tag.onRemove}
           className="inline-flex items-center gap-1.5 px-2.5 py-1
-                     bg-[#EEF2FF] text-[#3B5CCC] text-xs font-medium
-                     rounded-lg border border-blue-100
-                     hover:bg-blue-100 transition-colors duration-100 group"
+                     bg-[#E6F4F4] text-[#1A7070] text-xs font-medium
+                     rounded-lg border border-teal-100
+                     hover:bg-teal-100 transition-colors duration-100 group"
         >
           {tag.label}
           <X className="w-3 h-3 opacity-50 group-hover:opacity-100" />
@@ -642,8 +642,8 @@ export function SearchFilter({
         className="w-full pl-12 pr-10 py-3.5
                    border border-gray-200 rounded-xl bg-white
                    text-gray-800 placeholder-gray-400 text-sm
-                   focus:outline-none focus:ring-2 focus:ring-[#3B5CCC]/30
-                   focus:border-[#3B5CCC] transition-all duration-150"
+                   focus:outline-none focus:ring-2 focus:ring-[#1A7070]/30
+                   focus:border-[#1A7070] transition-all duration-150"
       />
       {localSearch && (
         <button
@@ -663,10 +663,10 @@ export function SearchFilter({
   const filterHeader = (
     <div className="flex items-center justify-between">
       <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-        <SlidersHorizontal className="w-4 h-4 text-[#3B5CCC]" aria-hidden="true" />
+        <SlidersHorizontal className="w-4 h-4 text-[#1A7070]" aria-hidden="true" />
         Filter Lenders
         {activeCount > 0 && (
-          <span className="text-xs font-bold text-[#3B5CCC] bg-[#EEF2FF] px-2 py-0.5 rounded-full">
+          <span className="text-xs font-bold text-[#1A7070] bg-[#E6F4F4] px-2 py-0.5 rounded-full">
             {activeCount} active
           </span>
         )}
@@ -675,7 +675,7 @@ export function SearchFilter({
         <button
           type="button"
           onClick={handleResetAll}
-          className="text-xs font-medium text-gray-400 hover:text-[#3B5CCC]
+          className="text-xs font-medium text-gray-400 hover:text-[#1A7070]
                      flex items-center gap-1.5 transition-colors"
         >
           <X className="w-3.5 h-3.5" />
@@ -713,7 +713,7 @@ export function SearchFilter({
       )}
       {!sidebar && (
         <div className="ml-auto text-sm text-gray-600">
-          <span className="font-bold text-[#3B5CCC]">
+          <span className="font-bold text-[#1A7070]">
             {resultsCount.toLocaleString('en-IN')}
           </span>
           {' '}lender{resultsCount !== 1 ? 's' : ''}
@@ -739,20 +739,24 @@ export function SearchFilter({
         <aside
           aria-label="Filter panel"
           className={[
-            'bg-white border-r border-gray-200 w-72 flex-shrink-0 overflow-y-auto',
-            // Mobile: fixed overlay drawer
+            'flex-shrink-0 overflow-y-auto',
             'fixed top-0 left-0 h-full z-40 transition-transform duration-300 ease-in-out',
             sidebarOpen ? 'translate-x-0' : '-translate-x-full',
-            // Desktop: sticky in-flow, always visible
             'md:sticky md:top-0 md:h-screen md:z-auto md:translate-x-0',
           ].join(' ')}
+          style={{
+            width: '280px',
+            background: '#FAFBFD',
+            borderRight: '1px solid #E9ECF2',
+            boxShadow: 'inset -1px 0 0 rgba(26,43,107,0.04)',
+          }}
         >
           <div className="p-4 flex flex-col gap-4">
 
             {/* Mobile close button */}
             <div className="flex items-center justify-between pb-3 border-b border-gray-100 md:hidden">
               <span className="font-semibold text-sm text-gray-900 flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4 text-[#3B5CCC]" aria-hidden="true" />
+                <SlidersHorizontal className="w-4 h-4 text-[#1A7070]" aria-hidden="true" />
                 Filters
               </span>
               <button
@@ -842,11 +846,16 @@ export function SearchFilter({
             />
 
             {/* Results count pinned at bottom of sidebar */}
-            <div className="mt-auto pt-4 border-t border-gray-100 text-sm text-center text-gray-500">
-              <span className="font-bold text-[#3B5CCC]">
-                {resultsCount.toLocaleString('en-IN')}
-              </span>
-              {' '}lender{resultsCount !== 1 ? 's' : ''}
+            <div className="mt-auto pt-4 border-t border-gray-100 text-center">
+              <div className="inline-flex items-baseline gap-1">
+                <span className="text-2xl font-extrabold text-transparent bg-clip-text"
+                      style={{ backgroundImage: 'linear-gradient(135deg,#0F4848,#1A7070)' }}>
+                  {resultsCount.toLocaleString('en-IN')}
+                </span>
+                <span className="text-sm text-gray-400 font-medium">
+                  lender{resultsCount !== 1 ? 's' : ''}
+                </span>
+              </div>
             </div>
 
           </div>
@@ -858,13 +867,13 @@ export function SearchFilter({
   // ── Bar variant (default) ────────────────────────────────────
 
   return (
-    <section className="bg-gradient-to-b from-gray-50 to-white py-8">
+    <section className="py-6" style={{ background: '#F8F9FC' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <div className="mb-6">{searchBar}</div>
 
         {/* Filter + Sort Card */}
-        <div className="bg-white rounded-2xl shadow-md shadow-gray-200/50 border border-gray-100 p-6">
+        <div className="bg-white rounded-2xl p-5" style={{ boxShadow: '0 2px 8px rgba(26,43,107,0.06), 0 1px 2px rgba(0,0,0,0.04)', border: '1px solid rgba(198,197,210,0.35)' }}>
 
           <div className="mb-5">{filterHeader}</div>
 

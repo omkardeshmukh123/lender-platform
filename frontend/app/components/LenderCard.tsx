@@ -1,18 +1,10 @@
 'use client'
 
-/**
- * LenderCard.tsx — Updated final version
- * ========================================
- * Changes from original:
- *   ✅ All props marked optional where data might be missing
- *   ✅ Safe rendering — no crash on null/undefined fields
- *   ✅ city/state display handles missing hq_location gracefully
- *   ✅ Products: up to 4 tags shown (was 3), rest collapsed to "+N"
- *   ✅ Consistent card height via flex-col layout
- */
-
 import Link from 'next/link'
-import { MapPin, Calendar, TrendingUp, Users, Phone, Mail, Globe, ArrowRight, Bookmark, BookmarkCheck } from 'lucide-react'
+import {
+  MapPin, Calendar, TrendingUp, Users,
+  Phone, Mail, Globe, ArrowRight, Bookmark, BookmarkCheck,
+} from 'lucide-react'
 
 interface Lender {
   id:              string
@@ -34,17 +26,36 @@ interface Lender {
 }
 
 interface LenderCardProps {
-  lender:       Lender
-  index?:       number
-  onTagClick?:  (tag: string) => void
-  isSaved?:     boolean
-  onSave?:      () => void
+  lender:      Lender
+  index?:      number
+  onTagClick?: (tag: string) => void
+  isSaved?:    boolean
+  onSave?:     () => void
+}
+
+function companyTypeBadgeStyle(type: string) {
+  const t = type.toLowerCase()
+  if (t.includes('nbfc-mfi') || t.includes('microfinance'))
+    return { bg: '#FFF7ED', color: '#C2410C', border: '#FED7AA' }
+  if (t.includes('nbfc'))
+    return { bg: '#E6F4F4', color: '#1A7070', border: '#A8DADA' }
+  if (t.includes('psu'))
+    return { bg: '#F0FDF4', color: '#16A34A', border: '#BBF7D0' }
+  if (t.includes('private'))
+    return { bg: '#F0F9FF', color: '#0284C7', border: '#BAE6FD' }
+  if (t.includes('foreign'))
+    return { bg: '#FDF4FF', color: '#9333EA', border: '#E9D5FF' }
+  if (t.includes('small finance'))
+    return { bg: '#FFFBEB', color: '#D97706', border: '#FDE68A' }
+  if (t.includes('cooperative'))
+    return { bg: '#F0FDF4', color: '#15803D', border: '#BBF7D0' }
+  return { bg: '#F8F9FC', color: '#6B7280', border: '#E5E7EB' }
 }
 
 export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onSave }: LenderCardProps) {
   const hasContactInfo = lender.website || lender.phone || lender.email
+  const badgeStyle     = companyTypeBadgeStyle(lender.companyType)
 
-  // Safely build location string — avoid "N/A, N/A"
   const location = (() => {
     const city  = lender.city  !== 'N/A' ? lender.city  : ''
     const state = lender.state !== 'N/A' ? lender.state : ''
@@ -52,26 +63,26 @@ export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onS
     return city || state || 'Location N/A'
   })()
 
-  // Products to display (cap at 4 visible)
   const visibleProducts = (lender.products ?? []).slice(0, 4)
   const extraCount      = Math.max(0, (lender.products ?? []).length - 4)
 
   return (
-    <div className="bg-white border border-[#E5E7EB] rounded-xl p-6
-                    flex flex-col
-                    transition-all duration-300 ease-out
-                    hover:-translate-y-1.5 hover:shadow-lg hover:border-[#3B5CCC]/20">
-
-      {/* Header: name + company type badge + save */}
+    <div
+      className="lender-card animate-fade-in-up"
+      style={{ animationDelay: `${Math.min(index, 5) * 60}ms` }}
+    >
+      {/* Header */}
       <div className="flex items-start justify-between mb-4 gap-2">
-        <h3 className="text-lg font-semibold text-gray-900 flex-1 leading-tight">
-          {lender.name || 'Unknown Lender'}
-        </h3>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base font-bold leading-tight truncate"
+              style={{ color: '#0D3333' }}>
+            {lender.name || 'Unknown Lender'}
+          </h3>
+        </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {lender.companyType && lender.companyType !== 'N/A' && (
-            <span className="px-2.5 py-1 text-xs font-semibold
-                             bg-blue-50 text-[#3B5CCC] rounded-lg border border-blue-100
-                             whitespace-nowrap">
+            <span className="px-2 py-0.5 text-[11px] font-bold rounded-md whitespace-nowrap"
+                  style={{ background: badgeStyle.bg, color: badgeStyle.color, border: `1px solid ${badgeStyle.border}` }}>
               {lender.companyType}
             </span>
           )}
@@ -80,12 +91,11 @@ export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onS
               type="button"
               onClick={e => { e.preventDefault(); onSave() }}
               title={isSaved ? 'Remove from shortlist' : 'Add to shortlist'}
-              className={[
-                'p-1.5 rounded-lg transition-all',
+              className={`p-1.5 rounded-lg transition-all duration-200 ${
                 isSaved
-                  ? 'text-[#3B5CCC] bg-blue-50 hover:bg-blue-100'
-                  : 'text-gray-400 hover:text-[#3B5CCC] hover:bg-blue-50',
-              ].join(' ')}
+                  ? 'text-[#1A7070] bg-[#E6F4F4]'
+                  : 'text-gray-300 hover:text-[#1A7070] hover:bg-[#E6F4F4]'
+              }`}
             >
               {isSaved
                 ? <BookmarkCheck className="w-4 h-4" />
@@ -96,89 +106,95 @@ export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onS
       </div>
 
       {/* Key info rows */}
-      <div className="space-y-2.5 mb-4 flex-1">
-
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
+      <div className="space-y-2 mb-3 flex-1">
+        <div className="flex items-center gap-2 text-sm" style={{ color: '#7A9E9E' }}>
+          <MapPin className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#A8CECE' }} />
           <span className="truncate">{location}</span>
         </div>
 
         {lender.established && lender.established !== 'N/A' && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
+          <div className="flex items-center gap-2 text-sm" style={{ color: '#7A9E9E' }}>
+            <Calendar className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#A8CECE' }} />
             <span>Est. {lender.established}</span>
           </div>
         )}
 
         <div className="flex items-center gap-2 text-sm">
-          <TrendingUp className="w-4 h-4 text-[#3B5CCC] flex-shrink-0" aria-hidden="true" />
-          <span className="font-semibold text-[#3B5CCC]">
+          <TrendingUp className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#C9A227' }} />
+          <span className="font-semibold" style={{ color: '#0F4848' }}>
             AUM: {lender.aum}
           </span>
         </div>
 
         {lender.employees && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Users className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
+          <div className="flex items-center gap-2 text-sm" style={{ color: '#7A9E9E' }}>
+            <Users className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#A8CECE' }} />
             <span>{lender.employees} employees</span>
           </div>
         )}
       </div>
 
-      {/* Ticket size + sector */}
-      {(lender.ticketSize && lender.ticketSize !== 'N/A') || lender.businessSector ? (
-        <div className="mb-3 flex flex-wrap gap-2 text-xs">
+      {/* Metadata chips */}
+      {((lender.ticketSize && lender.ticketSize !== 'N/A') || lender.businessSector) && (
+        <div className="mb-3 flex flex-wrap gap-1.5">
           {lender.ticketSize && lender.ticketSize !== 'N/A' && (
-            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md font-medium">
+            <span className="px-2 py-0.5 text-[11px] font-semibold rounded-md"
+                  style={{ background: '#F7FAFA', color: '#3D6363', border: '1px solid #D8EBEB' }}>
               {lender.ticketSize}
             </span>
           )}
           {lender.businessSector && (
-            <span className="px-2 py-0.5 bg-green-50 text-green-700 border border-green-100 rounded-md font-medium">
+            <span className="px-2 py-0.5 text-[11px] font-semibold rounded-md"
+                  style={{ background: '#FDF8E4', color: '#A07E1A', border: '1px solid #F5E8A8' }}>
               {lender.businessSector}
             </span>
           )}
         </div>
-      ) : null}
+      )}
 
-      {/* Operating states coverage */}
+      {/* Operating states */}
       {lender.operatingStates && lender.operatingStates.length > 0 && (
-        <div className="mb-3 text-xs text-gray-500">
+        <p className="mb-3 text-[11px]" style={{ color: '#A8CECE' }}>
           Operating in{' '}
-          <span className="font-semibold text-gray-700">
+          <span className="font-semibold" style={{ color: '#3D6363' }}>
             {lender.operatingStates.length}
           </span>
           {' '}state{lender.operatingStates.length !== 1 ? 's' : ''}
-        </div>
+        </p>
       )}
 
       {/* Product tags */}
       {visibleProducts.length > 0 && (
-        <div className="mb-4">
-          <div className="flex flex-wrap gap-1.5">
-            {visibleProducts.map((product, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => onTagClick?.(product)}
-                title={onTagClick ? `Filter by ${product}` : product}
-                className={[
-                  'px-2.5 py-1 bg-blue-50 text-[#3B5CCC] text-xs font-medium',
-                  'rounded-md border border-blue-100',
-                  'hover:bg-blue-100 hover:border-blue-200 transition-all duration-200',
-                  onTagClick ? 'cursor-pointer' : 'cursor-default',
-                ].join(' ')}
-              >
-                {product}
-              </button>
-            ))}
-            {extraCount > 0 && (
-              <span className="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-medium
-                               rounded-md border border-gray-200">
-                +{extraCount}
-              </span>
-            )}
-          </div>
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          {visibleProducts.map((product, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => onTagClick?.(product)}
+              title={onTagClick ? `Filter by ${product}` : product}
+              className={`px-2 py-0.5 text-[11px] font-medium rounded-md transition-all duration-150
+                          ${onTagClick ? 'cursor-pointer' : 'cursor-default'}`}
+              style={{
+                background: '#E6F4F4',
+                color: '#1A7070',
+                border: '1px solid #A8DADA',
+              }}
+              onMouseEnter={e => {
+                if (onTagClick) (e.currentTarget as HTMLButtonElement).style.background = '#CCE9E9'
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLButtonElement).style.background = '#E6F4F4'
+              }}
+            >
+              {product}
+            </button>
+          ))}
+          {extraCount > 0 && (
+            <span className="px-2 py-0.5 text-[11px] font-medium rounded-md"
+                  style={{ background: '#F7FAFA', color: '#7A9E9E' }}>
+              +{extraCount}
+            </span>
+          )}
         </div>
       )}
 
@@ -186,55 +202,53 @@ export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onS
       <Link
         href={`/lender/${lender.id}`}
         className="inline-flex items-center justify-center gap-1.5 w-full py-2 mb-3
-                   rounded-lg text-xs font-medium border border-gray-200 text-gray-600
-                   hover:border-[#3B5CCC]/40 hover:text-[#3B5CCC] transition-colors"
+                   rounded-lg text-xs font-semibold border transition-all duration-200"
+        style={{ borderColor: '#D8EBEB', color: '#3D6363' }}
+        onMouseEnter={e => {
+          (e.currentTarget as HTMLAnchorElement).style.borderColor = '#1A7070'
+          ;(e.currentTarget as HTMLAnchorElement).style.color = '#1A7070'
+          ;(e.currentTarget as HTMLAnchorElement).style.background = '#E6F4F4'
+        }}
+        onMouseLeave={e => {
+          (e.currentTarget as HTMLAnchorElement).style.borderColor = '#D8EBEB'
+          ;(e.currentTarget as HTMLAnchorElement).style.color = '#3D6363'
+          ;(e.currentTarget as HTMLAnchorElement).style.background = 'transparent'
+        }}
       >
-        View Details
+        View Profile
         <ArrowRight className="w-3 h-3" />
       </Link>
 
-      {/* Contact buttons */}
+      {/* Contact row */}
       {hasContactInfo && (
-        <div className="flex flex-wrap gap-2 pt-2 mt-auto border-t border-gray-50">
-
+        <div className="flex flex-wrap gap-1.5 pt-2 mt-auto border-t" style={{ borderColor: '#F0F9F9' }}>
           {lender.website && (
-            <a
-              href={lender.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
-                         bg-[#3B5CCC] text-white rounded-lg
-                         hover:bg-[#2d4aa8] transition-colors"
-            >
-              <Globe className="w-3.5 h-3.5" aria-hidden="true" />
+            <a href={lender.website} target="_blank" rel="noopener noreferrer"
+               className="inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-semibold
+                          text-white rounded-lg hover:shadow-md transition-all duration-200 hover:-translate-y-0.5"
+               style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)' }}>
+              <Globe className="w-3 h-3" />
               Website
             </a>
           )}
-
           {lender.phone && (
-            <a
-              href={`tel:${lender.phone}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
-                         bg-gray-100 text-gray-700 rounded-lg
-                         hover:bg-gray-200 transition-colors"
-            >
-              <Phone className="w-3.5 h-3.5" aria-hidden="true" />
+            <a href={`tel:${lender.phone}`}
+               className="inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-semibold
+                          rounded-lg transition-colors"
+               style={{ background: '#F7FAFA', color: '#3D6363' }}>
+              <Phone className="w-3 h-3" />
               Call
             </a>
           )}
-
           {lender.email && (
-            <a
-              href={`mailto:${lender.email}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
-                         bg-gray-100 text-gray-700 rounded-lg
-                         hover:bg-gray-200 transition-colors"
-            >
-              <Mail className="w-3.5 h-3.5" aria-hidden="true" />
+            <a href={`mailto:${lender.email}`}
+               className="inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-semibold
+                          rounded-lg transition-colors"
+               style={{ background: '#F7FAFA', color: '#3D6363' }}>
+              <Mail className="w-3 h-3" />
               Email
             </a>
           )}
-
         </div>
       )}
     </div>

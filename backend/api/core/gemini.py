@@ -1,13 +1,16 @@
 # backend/api/core/gemini.py
 """
 Gemini chat client for the lender chatbot.
-Uses gemini-2.0-flash with JSON schema mode for structured intent extraction.
+Two-pass RAG pipeline:
+  1. parse_intent()  — classify + extract entities (no answer)
+  2. generate_grounded_answer() — answer strictly from DB records
 """
 from __future__ import annotations
 
 import json
 import logging
 import os
+from collections import Counter
 from typing import Optional
 
 from google import genai
@@ -15,72 +18,125 @@ from google.genai import types
 
 logger = logging.getLogger(__name__)
 
-_SYSTEM_PROMPT = """You are a helpful AI assistant for MITRAM360, an Indian lender discovery platform.
-You help users find NBFCs and banks based on their financing requirements.
+# ---------------------------------------------------------------------------
+# Pass 1 — intent classification only
+# ---------------------------------------------------------------------------
 
-Classify every user message into one of three intents:
-- "filter"  — user wants to search/list lenders with specific criteria
-- "compare" — user wants to compare 2–3 specific named lenders side-by-side
-- "qa"      — general question about lending, finance, NBFCs, or the platform
+_INTENT_SYSTEM_PROMPT = """\
+You are an intent classifier for MITRAM360, an Indian lender discovery platform.
+Your ONLY job is to classify the user message and extract named entities.
+Do NOT generate answers. Do NOT use your knowledge about lenders.
 
-VALID FILTER VALUES (use only these exact strings):
-loan_type: MSME Loan, Personal Loan, Home Loan, Business Loan, Vehicle Loan,
-           Gold Loan, Education Loan, Micro Loan, Loan Against Property,
-           Working Capital, Agriculture Loan, EV Loan, Two Wheeler Loan,
-           Rural Loan, Microfinance, Supply Chain Finance,
-           Consumer Durable Loan, Credit Card
+Intents:
+- "filter"        — user wants to search/list lenders by criteria (loan type, state, AUM, company type, sector, etc.)
+- "compare"       — user wants to compare 2–3 specific named lenders side-by-side
+- "lender_detail" — user asks about a single specific named lender (HQ, location, contact, products, AUM, website, etc.)
+- "concept"       — definitional/educational question about lending terms, types, or regulations (e.g. "What is NBFC?", "Difference between NBFC and bank?")
+- "qa"            — factual question about lenders in India with no specific lender named and no clear filter criteria
+- "greeting"      — greetings, thanks, small talk, or questions about the assistant's capabilities
+- "out_of_scope"  — completely unrelated to lending/finance in India
 
-company_type: NBFC, Private Bank, PSU Bank, Foreign Bank,
-              Cooperative Bank, NBFC-MFI, Small Finance Bank
-
+VALID filter values (use exact strings only):
+loan_type: MSME Loan, Personal Loan, Home Loan, Business Loan, Vehicle Loan, Gold Loan,
+           Education Loan, Micro Loan, Loan Against Property, Working Capital,
+           Agriculture Loan, EV Loan, Two Wheeler Loan, Rural Loan, Microfinance,
+           Supply Chain Finance, Consumer Durable Loan, Credit Card
+company_type: NBFC, Private Bank, PSU Bank, Foreign Bank, Cooperative Bank, NBFC-MFI, Small Finance Bank
 aum_category: Micro, Small, Mid, Large
+operating_intensity: Hyperlocal, Local, Regional, National
+business_sector: Agriculture, MSME, Consumer, Real Estate, Microfinance, Vehicle, Education, Healthcare, Infrastructure
 sort_by: aum_crores, established_year, employee_count, quality_score, company_name
 sort_dir: asc, desc
 
 RULES:
-- Always populate "answer" with a friendly, concise reply (1–3 sentences).
-- For "filter": extract all criteria mentioned. Omit fields that are not mentioned.
-- For "compare": list company names in compare_names exactly as the user said them.
-- For "qa": answer the question directly; leave filters and compare_names empty.
-- If the user's language is Hindi or Hinglish, reply in Hinglish.
+- "filter"        → populate filters; omit fields not mentioned.
+- "compare"       → put lender names in compare_names (max 3).
+- "lender_detail" → put the single lender name in detail_names.
+- "concept"       → leave all fields empty.
+- "qa"            → leave filters, compare_names, and detail_names empty.
+- "greeting"      → leave all fields empty.
+- "out_of_scope"  → leave all fields empty.
+
+EXAMPLES (intent classification):
+"What NBFCs are in Gujarat?"                    → filter, {company_type:["NBFC"], state:"Gujarat"}
+"Who offers agriculture loans?"                 → filter, {loan_type:["Agriculture Loan"]}
+"Show me large AUM lenders in Mumbai"           → filter, {aum_category:["Large"], state:"Maharashtra"}
+"Which banks operate pan India?"                → filter, {pan_india:true}
+"NBFCs focused on agriculture sector"           → filter, {company_type:["NBFC"], business_sector:["Agriculture"]}
+"Regional lenders in Rajasthan"                 → filter, {state:"Rajasthan", operating_intensity:["Regional"]}
+"Compare Bajaj and Muthoot"                     → compare, compare_names:["Bajaj Finance","Muthoot Finance"]
+"Tell me about HDFC Bank"                       → lender_detail, detail_names:["HDFC Bank"]
+"What is an NBFC?"                              → concept
+"Difference between NBFC-MFI and Small Finance Bank?" → concept
+"What is FOIR?"                                 → concept
+"Which lenders have highest AUM?"               → qa
+"Hello" / "Thanks" / "What can you do?"        → greeting
+"Who won the cricket match?"                    → out_of_scope
 """
 
-_RESPONSE_SCHEMA = {
+_INTENT_SCHEMA = {
     "type": "OBJECT",
     "properties": {
         "intent": {
             "type": "STRING",
-            "enum": ["filter", "compare", "qa"],
+            "enum": ["filter", "compare", "lender_detail", "concept", "qa", "greeting", "out_of_scope"],
         },
-        "answer": {"type": "STRING"},
         "filters": {
             "type": "OBJECT",
             "properties": {
-                "q":            {"type": "STRING"},
-                "loan_type":    {"type": "ARRAY", "items": {"type": "STRING"}},
-                "state":        {"type": "STRING"},
-                "company_type": {"type": "ARRAY", "items": {"type": "STRING"}},
-                "aum_category": {"type": "ARRAY", "items": {"type": "STRING"}},
-                "aum_min":      {"type": "NUMBER"},
-                "aum_max":      {"type": "NUMBER"},
-                "pan_india":    {"type": "BOOLEAN"},
-                "is_listed":    {"type": "BOOLEAN"},
-                "sort_by":      {"type": "STRING"},
-                "sort_dir":     {"type": "STRING", "enum": ["asc", "desc"]},
+                "q":                   {"type": "STRING"},
+                "loan_type":           {"type": "ARRAY", "items": {"type": "STRING"}},
+                "state":               {"type": "STRING"},
+                "company_type":        {"type": "ARRAY", "items": {"type": "STRING"}},
+                "aum_category":        {"type": "ARRAY", "items": {"type": "STRING"}},
+                "aum_min":             {"type": "NUMBER"},
+                "aum_max":             {"type": "NUMBER"},
+                "pan_india":           {"type": "BOOLEAN"},
+                "is_listed":           {"type": "BOOLEAN"},
+                "operating_intensity": {"type": "ARRAY", "items": {"type": "STRING"}},
+                "business_sector":     {"type": "ARRAY", "items": {"type": "STRING"}},
+                "sort_by":             {"type": "STRING"},
+                "sort_dir":            {"type": "STRING", "enum": ["asc", "desc"]},
             },
         },
-        "compare_names": {
-            "type": "ARRAY",
-            "items": {"type": "STRING"},
-        },
+        "compare_names": {"type": "ARRAY", "items": {"type": "STRING"}},
+        "detail_names":  {"type": "ARRAY", "items": {"type": "STRING"}},
     },
-    "required": ["intent", "answer"],
+    "required": ["intent"],
 }
+
+# ---------------------------------------------------------------------------
+# Pass 2 — grounded answer generation
+# ---------------------------------------------------------------------------
+
+_ANSWER_SYSTEM_PROMPT = """\
+You are the AI assistant for MITRAM360, an Indian lender discovery platform.
+
+STRICT RULES — follow without exception:
+1. Answer ONLY from the database records provided in the prompt — unless intent is "concept".
+2. NEVER use your training knowledge to make factual claims about specific lenders, rates, or locations.
+3. If a field is null or missing in the records, say "not available in our database" for that field.
+4. If no records are provided and intent is not "concept", say: "I couldn't find that information in our database."
+5. Be concise and direct — 1 to 4 sentences for detail/qa questions.
+6. For HQ / location questions: use hq_location and hq_state fields.
+7. For contact questions: use phone, email, website fields.
+8. Do not speculate or infer beyond what the records contain.
+9. For filter summaries: use the aggregate stats (total, type breakdown, state breakdown) from the prompt header. List top 3–5 lenders by AUM with their type and HQ state as a bullet list.
+10. If the user writes in Hindi or Hinglish, reply in Hinglish.
+11. For compare intent: format the answer as one bullet block per lender — name, type, AUM, HQ, key loan segments. Never use flowing prose for compare answers.
+12. After every filter or qa answer, suggest one follow-up action in italics: e.g. _Want details on any of these? Ask me: "Tell me about [lender name]"_
+"""
+
+_CONCEPT_SYSTEM_PROMPT = """\
+You are a knowledgeable assistant for MITRAM360, an Indian lender discovery platform.
+Answer the user's conceptual question about Indian lending, financial regulations, or lender types
+using accurate general knowledge. Be concise (3–6 sentences). Use simple language.
+Do not make claims about specific lenders in the MITRAM360 database.
+If the user writes in Hindi or Hinglish, reply in Hinglish.
+"""
 
 
 class GeminiChatClient:
-    """Wraps google-genai for structured lender chat responses."""
-
     def __init__(self, api_key: str) -> None:
         if not api_key:
             raise ValueError("GEMINI_API_KEY is required for the chat feature")
@@ -88,65 +144,196 @@ class GeminiChatClient:
         self._model = "gemini-2.5-flash"
         logger.info("GeminiChatClient initialized (model=%s)", self._model)
 
-    def parse_response(self, message: str, history: list[dict]) -> dict:
-        """
-        Send a user message + conversation history to Gemini.
-        Returns parsed dict with keys: intent, answer, filters, compare_names.
-        history: list of {role: "user"|"model", parts: [str]} dicts
-        """
-        contents: list = []
-        for h in history:
-            role = h.get("role", "user")
-            parts = h.get("parts", [])
-            text = parts[0] if parts else ""
-            contents.append(
-                types.Content(role=role, parts=[types.Part(text=str(text))])
+    # ------------------------------------------------------------------
+    # Pass 1
+    # ------------------------------------------------------------------
+
+    def parse_intent(self, message: str, history: list[dict]) -> dict:
+        """Classify intent and extract entities. Returns no answer text."""
+        # Only last 2 turns needed for intent — trimming cuts token cost ~70% on long sessions
+        contents = self._build_contents(history[-(2 * 2):], message)
+        try:
+            response = self._client.models.generate_content(
+                model=self._model,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    system_instruction=_INTENT_SYSTEM_PROMPT,
+                    response_mime_type="application/json",
+                    response_schema=_INTENT_SCHEMA,
+                    temperature=0.1,
+                    max_output_tokens=256,
+                ),
             )
-        contents.append(
-            types.Content(role="user", parts=[types.Part(text=message)])
+            raw = response.text
+        except Exception as exc:
+            logger.error("Gemini intent parse error: %s", exc)
+            raise
+
+        if not raw:
+            logger.warning("Gemini returned empty response during intent parsing")
+            return {"intent": "qa", "filters": {}, "compare_names": [], "detail_names": []}
+
+        try:
+            data = json.loads(raw)
+        except (json.JSONDecodeError, TypeError) as exc:
+            logger.error("Gemini non-JSON intent response: %s | raw=%s", exc, str(raw)[:200])
+            return {"intent": "qa", "filters": {}, "compare_names": [], "detail_names": []}
+
+        data.setdefault("filters", {})
+        data.setdefault("compare_names", [])
+        data.setdefault("detail_names", [])
+        return data
+
+    # ------------------------------------------------------------------
+    # Pass 2
+    # ------------------------------------------------------------------
+
+    def generate_grounded_answer(
+        self,
+        question: str,
+        intent: str,
+        lenders: list[dict],
+        history: list[dict],
+        note: str = "",
+    ) -> str:
+        """Generate an answer strictly from the provided DB records.
+
+        `note` is an optional one-line prefix injected before DB records
+        (e.g. "No exact match — showing broadened results.").
+        """
+        # --- Static / no-DB intents ---
+        if intent == "greeting":
+            return (
+                "Hi! I'm the MITRAM360 AI assistant. I can help you:\n"
+                "- **Find lenders** by loan type, state, AUM, sector, or company type\n"
+                "- **Compare** two or three lenders side-by-side\n"
+                "- **Look up details** for a specific lender (HQ, contact, products)\n"
+                "- **Explain** lending terms and lender types\n\n"
+                "Try: \"Show NBFCs in Maharashtra\" or \"What is a Small Finance Bank?\""
+            )
+
+        if intent == "out_of_scope":
+            return "I can only help with questions about lenders and lending in India. Try asking about loan types, states, or specific lenders."
+
+        # --- Concept: use general knowledge, not DB records ---
+        if intent == "concept":
+            contents = self._build_contents(history[-(4 * 2):], question)
+            try:
+                response = self._client.models.generate_content(
+                    model=self._model,
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        system_instruction=_CONCEPT_SYSTEM_PROMPT,
+                        temperature=0.3,
+                        max_output_tokens=400,
+                    ),
+                )
+                text = response.text
+                return text if text else "I couldn't generate an answer. Please try again."
+            except Exception as exc:
+                logger.error("Gemini concept answer error: %s", exc)
+                raise
+
+        # --- Grounded intents need DB records ---
+        if not lenders:
+            if intent == "qa":
+                return (
+                    "I can only answer questions based on lenders in our database. "
+                    "Try asking about a specific lender, loan type, or state — for example: "
+                    "\"Where is Bajaj Finance HQ?\" or \"Show NBFCs in Maharashtra\"."
+                )
+            return "I couldn't find that information in our database."
+
+        if intent == "filter":
+            slim = [_slim_record(l) for l in lenders]
+            total = len(lenders)
+            type_counts  = Counter(l.get("company_type") for l in lenders if l.get("company_type"))
+            state_counts = Counter(l.get("hq_state")     for l in lenders if l.get("hq_state"))
+            top_types    = ", ".join(f"{t}({c})" for t, c in type_counts.most_common(4))
+            top_states   = ", ".join(f"{s}({c})" for s, c in state_counts.most_common(4))
+            prefix = (
+                f"{note + chr(10) if note else ''}"
+                f"Total matching lenders: {total}. "
+                f"By type: {top_types}. "
+                f"By HQ state: {top_states}.\n\n"
+            )
+            context = slim
+        else:
+            prefix  = f"{note}\n\n" if note else ""
+            context = lenders
+
+        records_json = json.dumps(context, indent=2, default=str)
+        prompt = (
+            f"{prefix}"
+            f"Database records:\n{records_json}\n\n"
+            f"User question: {question}\n\n"
+            "Answer using ONLY the records above."
         )
+
+        history_contents = self._build_contents(history[-(6 * 2):], None)
+        contents = history_contents + [
+            types.Content(role="user", parts=[types.Part(text=prompt)])
+        ]
 
         try:
             response = self._client.models.generate_content(
                 model=self._model,
                 contents=contents,
                 config=types.GenerateContentConfig(
-                    system_instruction=_SYSTEM_PROMPT,
-                    response_mime_type="application/json",
-                    response_schema=_RESPONSE_SCHEMA,
-                    temperature=0.3,
-                    max_output_tokens=1024,
+                    system_instruction=_ANSWER_SYSTEM_PROMPT,
+                    temperature=0.2,
+                    max_output_tokens=800,
                 ),
             )
-            raw = response.text
+            text = response.text
+            if not text:
+                logger.warning("Gemini returned empty answer response")
+                return "I couldn't generate an answer. Please try again."
+            return text
         except Exception as exc:
-            logger.error("Gemini API error: %s", exc)
+            logger.error("Gemini answer generation error: %s", exc)
             raise
 
-        # response.text is None when Gemini blocks the output (safety filter)
-        if not raw:
-            finish = None
-            try:
-                finish = response.candidates[0].finish_reason if response.candidates else None
-            except Exception:
-                pass
-            logger.warning("Gemini returned empty/blocked response (finish_reason=%s)", finish)
-            return {
-                "intent": "qa",
-                "answer": "I wasn't able to process that request. Please try rephrasing.",
-                "filters": {},
-                "compare_names": [],
-            }
+    # ------------------------------------------------------------------
+    # Shared helpers
+    # ------------------------------------------------------------------
 
-        try:
-            data = json.loads(raw)
-        except (json.JSONDecodeError, TypeError) as exc:
-            logger.error("Gemini returned non-JSON: %s | raw=%s", exc, str(raw)[:200])
-            return {"intent": "qa", "answer": str(raw), "filters": {}, "compare_names": []}
+    def _build_contents(self, history: list[dict], message: str | None) -> list:
+        contents = []
+        for h in history:
+            role  = h.get("role", "user")
+            parts = h.get("parts", [])
+            text  = parts[0] if parts else ""
+            contents.append(
+                types.Content(role=role, parts=[types.Part(text=str(text))])
+            )
+        if message is not None:
+            contents.append(
+                types.Content(role="user", parts=[types.Part(text=message)])
+            )
+        return contents
 
-        data.setdefault("filters", {})
-        data.setdefault("compare_names", [])
-        return data
+
+def _slim_record(l: dict) -> dict:
+    return {
+        "name":               l.get("company_name"),
+        "type":               l.get("company_type"),
+        "rbi_category":       l.get("rbi_category"),
+        "aum_crores":         l.get("aum_crores"),
+        "hq_state":           l.get("hq_state"),
+        "hq_location":        l.get("hq_location"),
+        "pan_india":          l.get("pan_india"),
+        "loan_segments":      l.get("primary_loan_segments"),
+        "operating_intensity":l.get("operating_intensity"),
+        "business_sector":    l.get("business_sector"),
+        "established":        l.get("established_year"),
+        "employees":          l.get("employee_count"),
+        "is_listed":          l.get("is_listed"),
+        "quality_score":      l.get("quality_score"),
+        "website":            l.get("website"),
+        "phone":              l.get("phone"),
+        "email":              l.get("email"),
+    }
 
 
 _client: Optional[GeminiChatClient] = None

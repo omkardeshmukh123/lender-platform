@@ -288,15 +288,19 @@ function DashboardContent() {
   // ── Auth loading screen ─────────────────────────────────────
   if (authLoading || !user) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B5CCC]" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F7FAFA' }}>
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-t-transparent"
+               style={{ borderColor: '#1A7070', borderTopColor: 'transparent' }} />
+          <p className="text-sm" style={{ color: '#7A9E9E' }}>Loading…</p>
+        </div>
       </div>
     )
   }
 
   // ── Render ──────────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen flex flex-col" style={{ background: '#F7FAFA' }}>
       <Navbar authenticated user={user} onSignOut={signOut} savedCount={savedCount} onSavedClick={() => setSavedOpen(o => !o)} />
       <Hero />
 
@@ -327,10 +331,14 @@ function DashboardContent() {
             <button
               onClick={() => setChatOpen(p => !p)}
               className="inline-flex items-center gap-2 px-4 py-2
-                         bg-[#3B5CCC] text-white rounded-xl text-sm font-medium
-                         hover:bg-[#2d4aa8] transition-colors shadow-sm"
+                         text-white rounded-xl text-sm font-semibold
+                         transition-all hover:-translate-y-0.5 hover:shadow-lg"
+              style={{ background: chatOpen
+                ? 'linear-gradient(135deg,#C9A227,#A07E1A)'
+                : 'linear-gradient(135deg,#0F4848,#1A7070)',
+                boxShadow: '0 2px 8px rgba(26,112,112,0.25)' }}
             >
-              {chatOpen ? 'Close AI' : 'Ask AI'}
+              {chatOpen ? 'Close AI' : '✦ Ask AI'}
             </button>
           </div>
 
@@ -339,25 +347,25 @@ function DashboardContent() {
               type="button"
               onClick={() => setSidebarOpen(true)}
               className="inline-flex items-center gap-2 px-4 py-2
-                         bg-white border border-gray-200 rounded-xl
-                         text-sm font-medium text-gray-700
-                         hover:border-gray-300 transition-colors shadow-sm"
+                         bg-white border rounded-xl
+                         text-sm font-medium transition-colors shadow-sm"
+              style={{ borderColor: '#D8EBEB', color: '#3D6363' }}
             >
-              <SlidersHorizontal className="w-4 h-4 text-[#3B5CCC]" />
+              <SlidersHorizontal className="w-4 h-4" style={{ color: '#1A7070' }} />
               Filters
             </button>
             <button
               type="button"
               onClick={() => setChatOpen(p => !p)}
               className="inline-flex items-center gap-2 px-4 py-2
-                         bg-[#3B5CCC] text-white rounded-xl
-                         text-sm font-medium
-                         hover:bg-[#2d4aa8] transition-colors shadow-sm"
+                         text-white rounded-xl text-sm font-semibold
+                         transition-all hover:shadow-lg"
+              style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)', boxShadow: '0 2px 8px rgba(26,112,112,0.25)' }}
             >
-              Ask AI
+              ✦ Ask AI
             </button>
-            <span className="text-sm text-gray-600">
-              <span className="font-bold text-[#3B5CCC]">
+            <span className="text-sm" style={{ color: '#3D6363' }}>
+              <span className="font-bold" style={{ color: '#1A7070' }}>
                 {totalCount.toLocaleString('en-IN')}
               </span>
               {' '}lender{totalCount !== 1 ? 's' : ''}
@@ -366,9 +374,11 @@ function DashboardContent() {
 
           {filterLoading && !loading && (
             <div className="flex justify-center mb-6">
-              <span className="flex items-center gap-2 text-sm text-gray-500
-                               bg-white px-4 py-2 rounded-full border border-gray-200 shadow-sm">
-                <span className="animate-spin inline-block w-4 h-4 border-b-2 border-[#3B5CCC] rounded-full" />
+              <span className="flex items-center gap-2 text-sm bg-white px-4 py-2
+                               rounded-full border shadow-sm"
+                    style={{ color: '#3D6363', borderColor: '#D8EBEB' }}>
+                <span className="animate-spin inline-block w-4 h-4 rounded-full border-2"
+                      style={{ borderColor: '#D8EBEB', borderTopColor: '#1A7070' }} />
                 Updating results…
               </span>
             </div>
@@ -392,20 +402,19 @@ function DashboardContent() {
             </div>
           )}
 
+          {/* Skeleton loaders */}
           {loading ? (
-            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse"
-                >
-                  <div className="h-5 bg-gray-200 rounded w-3/4 mb-3" />
-                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-2" />
-                  <div className="h-4 bg-gray-200 rounded w-2/3 mb-2" />
-                  <div className="h-4 bg-gray-200 rounded w-1/3 mb-5" />
+                <div key={i} className="bg-white rounded-2xl p-5 animate-pulse"
+                     style={{ border: '1px solid #E6F4F4', boxShadow: '0 2px 6px rgba(26,112,112,0.05)' }}>
+                  <div className="h-5 rounded-lg w-3/4 mb-3 skeleton" />
+                  <div className="h-4 rounded-lg w-1/2 mb-2 skeleton" />
+                  <div className="h-4 rounded-lg w-2/3 mb-2 skeleton" />
+                  <div className="h-4 rounded-lg w-1/3 mb-5 skeleton" />
                   <div className="flex gap-2">
-                    <div className="h-6 bg-gray-200 rounded w-20" />
-                    <div className="h-6 bg-gray-200 rounded w-16" />
+                    <div className="h-6 skeleton rounded-lg w-20" />
+                    <div className="h-6 skeleton rounded-lg w-16" />
                   </div>
                 </div>
               ))}
@@ -413,7 +422,7 @@ function DashboardContent() {
 
           ) : transformedLenders.length > 0 ? (
             <>
-              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
                 {transformedLenders.map((lender, index) => (
                   <LenderCard
                     key={lender.id}
@@ -444,20 +453,21 @@ function DashboardContent() {
                   <button
                     onClick={() => setPage(p => Math.max(0, p - 1))}
                     disabled={page === 0}
-                    className="px-5 py-2 rounded-xl border border-gray-200 text-sm font-medium
-                               bg-white hover:bg-gray-50 transition-colors
+                    className="px-5 py-2 rounded-xl border text-sm font-medium
+                               bg-white transition-colors
                                disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ borderColor: '#D8EBEB', color: '#3D6363' }}
                   >
                     ← Previous
                   </button>
 
-                  <span className="text-sm text-gray-600">
-                    <span className="font-semibold text-gray-900">
+                  <span className="text-sm" style={{ color: '#3D6363' }}>
+                    <span className="font-semibold" style={{ color: '#0D3333' }}>
                       {(page * PAGE_SIZE + 1).toLocaleString('en-IN')}–
                       {Math.min((page + 1) * PAGE_SIZE, totalCount).toLocaleString('en-IN')}
                     </span>
                     {' '}of{' '}
-                    <span className="font-semibold text-[#3B5CCC]">
+                    <span className="font-semibold" style={{ color: '#1A7070' }}>
                       {totalCount.toLocaleString('en-IN')}
                     </span>
                   </span>
@@ -465,9 +475,10 @@ function DashboardContent() {
                   <button
                     onClick={() => setPage(p => p + 1)}
                     disabled={(page + 1) * PAGE_SIZE >= totalCount}
-                    className="px-5 py-2 rounded-xl border border-gray-200 text-sm font-medium
-                               bg-white hover:bg-gray-50 transition-colors
+                    className="px-5 py-2 rounded-xl border text-sm font-medium
+                               bg-white transition-colors
                                disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ borderColor: '#D8EBEB', color: '#3D6363' }}
                   >
                     Next →
                   </button>
@@ -476,18 +487,20 @@ function DashboardContent() {
             </>
 
           ) : (
-            <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 shadow-sm">
+            <div className="text-center py-16 bg-white rounded-2xl shadow-sm"
+                 style={{ border: '1px solid #E6F4F4' }}>
               <div className="text-5xl mb-4" aria-hidden="true">🔍</div>
-              <p className="text-gray-800 font-semibold text-lg mb-1">
+              <p className="font-semibold text-lg mb-1" style={{ color: '#0D3333' }}>
                 No lenders found
               </p>
-              <p className="text-gray-400 text-sm mb-6">
+              <p className="text-sm mb-6" style={{ color: '#7A9E9E' }}>
                 Try removing some filters or searching with different terms
               </p>
               <button
                 onClick={() => { setFilters(DEFAULT_FILTERS); setPage(0) }}
-                className="px-6 py-2.5 bg-[#3B5CCC] text-white rounded-xl font-medium
-                           hover:bg-[#2d4aa8] transition-colors"
+                className="px-6 py-2.5 text-white rounded-xl font-semibold
+                           transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)' }}
               >
                 Reset All Filters
               </button>
@@ -510,15 +523,22 @@ function DashboardContent() {
 
         {/* Saved lenders drawer */}
         {savedOpen && (
-          <aside className="fixed inset-y-0 right-0 z-40 w-80 bg-white border-l border-gray-200 shadow-xl flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <aside className="fixed inset-y-0 right-0 z-40 w-80 bg-white flex flex-col"
+                 style={{ borderLeft: '1px solid #D8EBEB', boxShadow: '0 12px 32px rgba(26,112,112,0.14)' }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b"
+                 style={{ background: '#F7FAFA', borderColor: '#E6F4F4' }}>
               <div>
-                <h2 className="font-semibold text-gray-900">Shortlist</h2>
-                <p className="text-xs text-gray-400 mt-0.5">{savedCount} lender{savedCount !== 1 ? 's' : ''} saved</p>
+                <h2 className="font-bold" style={{ color: '#0D3333' }}>Shortlist</h2>
+                <p className="text-xs mt-0.5" style={{ color: '#7A9E9E' }}>
+                  {savedCount} lender{savedCount !== 1 ? 's' : ''} saved
+                </p>
               </div>
               <button
                 onClick={() => setSavedOpen(false)}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                className="p-1.5 rounded-lg transition-colors"
+                style={{ color: '#7A9E9E' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#E6F4F4' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
               >
                 ✕
               </button>
@@ -527,15 +547,18 @@ function DashboardContent() {
             <div className="flex-1 overflow-y-auto py-3 px-4 space-y-3">
               {saved.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-sm text-gray-400">No lenders saved yet.</p>
-                  <p className="text-xs text-gray-300 mt-1">Click the bookmark icon on any card.</p>
+                  <p className="text-sm" style={{ color: '#7A9E9E' }}>No lenders saved yet.</p>
+                  <p className="text-xs mt-1" style={{ color: '#A8CECE' }}>Click the bookmark icon on any card.</p>
                 </div>
               ) : saved.map(l => (
-                <div key={l.id} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                <div key={l.id} className="rounded-xl p-3"
+                     style={{ background: '#F7FAFA', border: '1px solid #E6F4F4' }}>
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{l.name}</p>
-                      <p className="text-xs text-gray-400">{l.companyType}{l.aum ? ` · ${l.aum}` : ''}</p>
+                      <p className="text-sm font-semibold truncate" style={{ color: '#0D3333' }}>{l.name}</p>
+                      <p className="text-xs" style={{ color: '#7A9E9E' }}>
+                        {l.companyType}{l.aum ? ` · ${l.aum}` : ''}
+                      </p>
                     </div>
                     <button
                       onClick={() => toggleSave(l)}
@@ -548,21 +571,29 @@ function DashboardContent() {
                   {l.products && l.products.length > 0 && (
                     <div className="flex flex-wrap gap-1 mb-2">
                       {l.products.slice(0, 3).map(p => (
-                        <span key={p} className="px-1.5 py-0.5 bg-blue-50 text-[#3B5CCC] text-[10px] rounded-md">{p}</span>
+                        <span key={p} className="px-1.5 py-0.5 text-[10px] rounded-md"
+                              style={{ background: '#E6F4F4', color: '#1A7070' }}>
+                          {p}
+                        </span>
                       ))}
                       {l.products.length > 3 && (
-                        <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[10px] rounded-md">+{l.products.length - 3}</span>
+                        <span className="px-1.5 py-0.5 text-[10px] rounded-md"
+                              style={{ background: '#F7FAFA', color: '#7A9E9E' }}>
+                          +{l.products.length - 3}
+                        </span>
                       )}
                     </div>
                   )}
                   <div className="flex gap-2">
                     <a href={`/lender/${l.id}`}
-                       className="flex-1 text-center py-1.5 text-xs font-medium text-[#3B5CCC] bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                       className="flex-1 text-center py-1.5 text-xs font-semibold rounded-lg transition-colors"
+                       style={{ background: '#E6F4F4', color: '#1A7070' }}>
                       Details
                     </a>
                     {l.website && (
                       <a href={l.website} target="_blank" rel="noopener noreferrer"
-                         className="flex-1 text-center py-1.5 text-xs font-medium text-white bg-[#3B5CCC] rounded-lg hover:bg-[#2d4aa8] transition-colors">
+                         className="flex-1 text-center py-1.5 text-xs font-semibold text-white rounded-lg transition-colors"
+                         style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)' }}>
                         Apply
                       </a>
                     )}
@@ -583,8 +614,9 @@ function DashboardContent() {
 export default function Dashboard() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B5CCC]" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F7FAFA' }}>
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-t-transparent"
+             style={{ borderColor: '#1A7070', borderTopColor: 'transparent' }} />
       </div>
     }>
       <DashboardContent />

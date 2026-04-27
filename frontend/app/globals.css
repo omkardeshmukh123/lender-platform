@@ -1,36 +1,295 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Brand Colors (extracted from MITRAM360 logo) ────────────
+   Logo palette:
+   • Teal ring   → #1A7070  (primary)
+   • Dark teal   → #0F4848  (primary-dark)
+   • Mid teal    → #155E5E  (primary-mid)
+   • Gold        → #C9A227  (accent / handshake)
+   • Gold dark   → #A07E1A  (accent hover)
+   • Light teal  → #E6F4F4  (tint)
+   • Light gold  → #FDF8E4  (gold tint)
+──────────────────────────────────────────────────────────────── */
+:root {
+  /* ── Primary (Teal) */
+  --color-primary:        #0F4848;   /* darkest — hero bg top */
+  --color-primary-mid:    #1A7070;   /* main brand teal */
+  --color-primary-light:  #2A9090;   /* hover states */
+  --color-primary-tint:   #E6F4F4;   /* backgrounds */
+  --color-primary-tint2:  #CCE9E9;   /* borders on teal */
+
+  /* ── Accent (Gold) */
+  --color-accent:         #C9A227;   /* logo gold */
+  --color-accent-dark:    #A07E1A;   /* hover gold */
+  --color-accent-tint:    #FDF8E4;   /* light gold bg */
+  --color-accent-tint2:   #F5E8A8;   /* gold border */
+
+  /* ── Surfaces */
+  --color-surface:        #F7FAFA;   /* page bg — very light teal-white */
+  --color-surface-card:   #FFFFFF;
+  --color-surface-input:  #EFF7F7;
+
+  /* ── Borders */
+  --color-border:         #D8EBEB;
+  --color-border-subtle:  rgba(26,112,112,0.12);
+
+  /* ── Text */
+  --color-text-primary:   #0D3333;   /* very dark teal for headings */
+  --color-text-secondary: #3D6363;   /* medium teal-gray */
+  --color-text-muted:     #7A9E9E;   /* muted teal */
+
+  /* ── Status */
+  --color-success:        #10B981;
+  --color-warning:        #F59E0B;
+  --color-error:          #DC2626;
+
+  /* ── Radius */
+  --radius-sm:    6px;
+  --radius-md:    10px;
+  --radius-lg:    14px;
+  --radius-xl:    18px;
+  --radius-2xl:   24px;
+  --radius-full:  9999px;
+
+  /* ── Shadows (teal-tinted) */
+  --shadow-card:  0 2px 8px rgba(26,112,112,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-hover: 0 8px 24px rgba(26,112,112,0.16), 0 4px 8px rgba(0,0,0,0.06);
+  --shadow-modal: 0 24px 48px rgba(15,72,72,0.18), 0 8px 16px rgba(0,0,0,0.08);
+  --shadow-chat:  0 12px 32px rgba(26,112,112,0.14);
+}
+
+/* ─── Base Reset ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  line-height: 1.6;
 }
 
-/* Optional: Add smooth scrolling */
-html {
-  scroll-behavior: smooth;
+/* ─── Custom Scrollbar ─────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #EFF7F7; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: #A8CECE; border-radius: 3px; transition: background 0.2s; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-primary-mid); }
+
+/* ─── Focus Styles ─────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
-/* Optional: Custom scrollbar styling */
-::-webkit-scrollbar {
-  width: 10px;
+/* ─── Utility Layer ─────────────────────────────────────────── */
+@layer utilities {
+
+  /* Teal gradient — hero, headers */
+  .bg-brand-gradient {
+    background: linear-gradient(160deg, #0F4848 0%, #1A7070 55%, #236B6B 100%);
+  }
+  /* Gold accent gradient */
+  .bg-gold-gradient {
+    background: linear-gradient(135deg, #C9A227 0%, #A07E1A 100%);
+  }
+  /* Teal+Gold split hero */
+  .bg-hero-gradient {
+    background: linear-gradient(160deg, #082E2E 0%, #0F4848 40%, #1A7070 100%);
+  }
+
+  /* Glassmorphism */
+  .glass {
+    background: rgba(231, 244, 244, 0.82);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .glass-dark {
+    background: rgba(15, 72, 72, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .glass-gold {
+    background: rgba(201, 162, 39, 0.12);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  /* Text */
+  .text-brand   { color: var(--color-primary-mid); }
+  .text-accent  { color: var(--color-accent); }
+  .text-muted   { color: var(--color-text-muted); }
+
+  /* Cards */
+  .card-surface {
+    background: var(--color-surface-card);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-card);
+  }
+  .card-surface:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
+  }
+
+  .transition-premium {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
+/* ─── Component Layer ───────────────────────────────────────── */
+@layer components {
+
+  /* Primary Button — Teal */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-xl
+           font-semibold text-sm text-white
+           transition-all duration-200 cursor-pointer select-none;
+    background: linear-gradient(135deg, #0F4848 0%, #1A7070 100%);
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(26,112,112,0.35);
+  }
+  .btn-primary:active { transform: translateY(0); }
+
+  /* Gold Button — Accent */
+  .btn-gold {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-xl
+           font-semibold text-sm
+           transition-all duration-200 cursor-pointer select-none;
+    background: linear-gradient(135deg, #C9A227 0%, #A07E1A 100%);
+    color: #fff;
+  }
+  .btn-gold:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(201,162,39,0.4);
+  }
+
+  /* Secondary Button */
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-xl
+           font-semibold text-sm bg-white border
+           transition-all duration-200 cursor-pointer select-none;
+    color: var(--color-primary-mid);
+    border-color: var(--color-border);
+  }
+  .btn-secondary:hover {
+    border-color: var(--color-primary-mid);
+    color: var(--color-primary-mid);
+    box-shadow: 0 2px 8px rgba(26,112,112,0.14);
+  }
+
+  /* Input field */
+  .input-field {
+    @apply w-full px-4 py-2.5 text-sm rounded-xl border transition-all duration-150;
+    background: var(--color-surface-input);
+    border-color: transparent;
+    color: var(--color-text-primary);
+  }
+  .input-field:focus {
+    outline: none;
+    background: white;
+    border-color: var(--color-primary-mid);
+    box-shadow: 0 0 0 3px rgba(26,112,112,0.14);
+  }
+  .input-field::placeholder { color: var(--color-text-muted); }
+
+  /* Badges */
+  .badge            { @apply inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold rounded-full; }
+  .badge-teal       { background: var(--color-primary-tint); color: var(--color-primary-mid); }
+  .badge-gold       { background: var(--color-accent-tint); color: var(--color-accent-dark); }
+  .badge-dark       { background: var(--color-primary-mid); color: white; }
+  .badge-green      { @apply bg-emerald-50 text-emerald-700; }
+  .badge-gray       { @apply bg-gray-100 text-gray-600; }
+
+  /* Lender card */
+  .lender-card {
+    @apply bg-white rounded-2xl p-5 flex flex-col;
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--color-border-subtle);
+    transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+  }
+  .lender-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-3px);
+    border-color: rgba(26,112,112,0.22);
+  }
+
+  /* Chat panel */
+  .chat-panel {
+    @apply fixed right-0 top-0 h-full flex flex-col;
+    width: 400px;
+    background: white;
+    border-left: 1px solid var(--color-border);
+    box-shadow: var(--shadow-chat);
+    z-index: 30;
+  }
 }
 
-::-webkit-scrollbar-thumb {
-  background: #3B5CCC;
-  border-radius: 5px;
+/* ─── Animation Keyframes ──────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201,162,39,0.35); }
+  50%       { box-shadow: 0 0 0 8px rgba(201,162,39,0); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes rotateSlow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #2d4aa8;
+.animate-fade-in-up       { animation: fadeInUp 0.4s ease both; }
+.animate-fade-in          { animation: fadeIn 0.3s ease both; }
+.animate-slide-in-right   { animation: slideInRight 0.35s ease both; }
+.animate-pulse-glow-gold  { animation: pulseGlow 2s ease-in-out infinite; }
+.animate-rotate-slow      { animation: rotateSlow 20s linear infinite; }
+
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 60ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 180ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 300ms; }
+
+/* Skeleton shimmer */
+.skeleton {
+  background: linear-gradient(90deg, #EFF7F7 25%, #D8EBEB 50%, #EFF7F7 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: var(--radius-md);
 }
+
+/* ─── Typography Scale ─────────────────────────────────────── */
+.text-display-lg { font-size: clamp(2.5rem, 5vw, 4rem);    font-weight: 800; line-height: 1.1; }
+.text-display-md { font-size: clamp(2rem,  4vw, 3rem);     font-weight: 700; line-height: 1.2; }
+.text-display-sm { font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 700; line-height: 1.25; }
+.text-headline   { font-size: 1.5rem;   font-weight: 700; line-height: 1.3; }
+.text-title      { font-size: 1.125rem; font-weight: 600; line-height: 1.4; }
+.text-label-sm   { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
