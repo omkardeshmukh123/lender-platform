@@ -42,6 +42,11 @@ logs/
 Thumbs.db
 
 # ==============================
+# Local assets (screenshots, temp files)
+# ==============================
+images/
+
+# ==============================
 # TypeScript Build Info
 # ==============================
 tsconfig.tsbuildinfo
