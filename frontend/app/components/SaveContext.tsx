@@ -1,20 +1,5 @@
 'use client'
 
-/**
- * SaveContext.tsx
- * ================
- * Saved / shortlisted lenders — persisted in localStorage.
- *
- * Usage:
- *   const { isSaved, toggle, saved, count } = useSaved()
- *   toggle(lenderObj)   // add or remove
- *   isSaved('42')       // boolean
- *   count               // number of saved lenders
- *
- * Cap: 20 lenders maximum (oldest are dropped when limit hit).
- * Works without auth — purely client-side.
- */
-
 import {
   createContext,
   useCallback,
@@ -22,10 +7,7 @@ import {
   useEffect,
   useState,
 } from 'react'
-
-// ─────────────────────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────────────────────
+import { supabase } from '../lib/supabase'
 
 export interface SavedLender {
   id:          string
@@ -46,10 +28,6 @@ interface SaveContextType {
   clear:    () => void
 }
 
-// ─────────────────────────────────────────────────────────────
-// CONTEXT
-// ─────────────────────────────────────────────────────────────
-
 const SaveContext = createContext<SaveContextType>({
   saved:   [],
   count:   0,
@@ -61,46 +39,92 @@ const SaveContext = createContext<SaveContextType>({
 const STORAGE_KEY = 'mitram360_saved_v1'
 const MAX_SAVED   = 20
 
-// ─────────────────────────────────────────────────────────────
-// PROVIDER
-// ─────────────────────────────────────────────────────────────
-
 export function SaveProvider({ children }: { children: React.ReactNode }) {
-  const [saved, setSaved] = useState<SavedLender[]>([])
+  const [saved,   setSaved]   = useState<SavedLender[]>([])
+  const [userId,  setUserId]  = useState<string | null>(null)
 
-  // Hydrate from localStorage once on mount (client only)
+  // Read from localStorage once on mount
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (raw) setSaved(JSON.parse(raw))
-    } catch {
-      // localStorage unavailable or JSON parse error — start empty
-    }
+    } catch {}
   }, [])
+
+  // Track auth state and sync with DB when logged in
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      const uid = data.session?.user?.id ?? null
+      setUserId(uid)
+      if (uid) loadFromDb(uid)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const uid = session?.user?.id ?? null
+      setUserId(uid)
+      if (uid) loadFromDb(uid)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  async function loadFromDb(uid: string) {
+    try {
+      const { data, error } = await supabase
+        .from('user_shortlists')
+        .select('lender_id, lender_data')
+        .eq('user_id', uid)
+      if (error || !data) return
+      const dbItems: SavedLender[] = data.map((r: { lender_id: number; lender_data: SavedLender }) => ({
+        ...r.lender_data,
+        id: String(r.lender_id),
+      }))
+      // Merge: DB is authoritative, but keep any local items not yet in DB
+      setSaved(prev => {
+        const dbIds = new Set(dbItems.map(l => l.id))
+        const localOnly = prev.filter(l => !dbIds.has(l.id))
+        const merged = [...dbItems, ...localOnly].slice(-MAX_SAVED)
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(merged)) } catch {}
+        return merged
+      })
+    } catch {}
+  }
 
   const persist = (next: SavedLender[]) => {
     setSaved(next)
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    } catch {
-      // Quota exceeded or private browsing — silent fail
-    }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch {}
   }
 
-  const isSaved = useCallback(
-    (id: string) => saved.some(s => s.id === id),
-    [saved],
-  )
+  const isSaved = useCallback((id: string) => saved.some(s => s.id === id), [saved])
 
   const toggle = useCallback((lender: SavedLender) => {
     setSaved(prev => {
       const exists = prev.some(s => s.id === lender.id)
       const next = exists
         ? prev.filter(s => s.id !== lender.id)
-        : [...prev.slice(-(MAX_SAVED - 1)), lender]  // evict oldest if at cap
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-      } catch {}
+        : [...prev.slice(-(MAX_SAVED - 1)), lender]
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch {}
+
+      // Sync to DB for logged-in users
+      supabase.auth.getUser().then(({ data }) => {
+        const uid = data.user?.id
+        if (!uid) return
+        if (exists) {
+          supabase.from('user_shortlists')
+            .delete()
+            .eq('user_id', uid)
+            .eq('lender_id', parseInt(lender.id, 10))
+            .then(() => {})
+        } else {
+          supabase.from('user_shortlists')
+            .upsert({
+              user_id:     uid,
+              lender_id:   parseInt(lender.id, 10),
+              lender_data: lender,
+            }, { onConflict: 'user_id,lender_id' })
+            .then(() => {})
+        }
+      })
+
       return next
     })
   }, [])
@@ -108,6 +132,10 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
   const clear = useCallback(() => {
     setSaved([])
     try { localStorage.removeItem(STORAGE_KEY) } catch {}
+    supabase.auth.getUser().then(({ data }) => {
+      const uid = data.user?.id
+      if (uid) supabase.from('user_shortlists').delete().eq('user_id', uid).then(() => {})
+    })
   }, [])
 
   return (
@@ -116,9 +144,5 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
     </SaveContext.Provider>
   )
 }
-
-// ─────────────────────────────────────────────────────────────
-// HOOK
-// ─────────────────────────────────────────────────────────────
 
 export const useSaved = () => useContext(SaveContext)

@@ -68,6 +68,8 @@ export interface MultiFilters {
   establishedYearRange: string     // single from YEAR_RANGE_OPTIONS
   sortField:            SortField
   sortDirection:        SortDirection
+  hasPolicies:          boolean    // only lenders with scraped policy data
+  hasRevenue:           boolean    // only lenders with revenue data
 }
 
 /** Use this as the initial state in dashboard/page.tsx */
@@ -83,6 +85,8 @@ export const DEFAULT_FILTERS: MultiFilters = {
   establishedYearRange: 'All Years',
   sortField:            '',
   sortDirection:        'desc',
+  hasPolicies:          false,
+  hasRevenue:           false,
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -495,6 +499,22 @@ function ActiveFilterTags({
     })
   }
 
+  if (filters.hasPolicies) {
+    tags.push({
+      key:      'hasPolicies',
+      label:    'Has Policy Data',
+      onRemove: () => onFilterChange('hasPolicies', false),
+    })
+  }
+
+  if (filters.hasRevenue) {
+    tags.push({
+      key:      'hasRevenue',
+      label:    'Has Revenue Data',
+      onRemove: () => onFilterChange('hasRevenue', false),
+    })
+  }
+
   // Sort tag
   if (filters.sortField) {
     const sortLabel = filters.sortField === 'aum_crores' ? 'AUM' : 'Est. Year'
@@ -597,6 +617,8 @@ export function SearchFilter({
     onFilterChange('establishedYearRange', 'All Years')
     onFilterChange('sortField',            '')
     onFilterChange('sortDirection',        'desc')
+    onFilterChange('hasPolicies',          false)
+    onFilterChange('hasRevenue',           false)
   }
 
   const handleSort = (field: SortField, dir: SortDirection) => {
@@ -620,7 +642,9 @@ export function SearchFilter({
     (filters.state                !== 'All States'            ? 1 : 0) +
     (filters.listingStatus        !== 'All'                   ? 1 : 0) +
     (filters.establishedYearRange !== 'All Years'             ? 1 : 0) +
-    (filters.sortField                                        ? 1 : 0)
+    (filters.sortField                                        ? 1 : 0) +
+    (filters.hasPolicies                                      ? 1 : 0) +
+    (filters.hasRevenue                                       ? 1 : 0)
 
   // ── Shared sub-sections ─────────────────────────────────────────
 
@@ -836,6 +860,41 @@ export function SearchFilter({
                 value={filters.establishedYearRange || 'All Years'}
                 onChange={v => onFilterChange('establishedYearRange', v)}
               />
+
+              {/* Boolean toggles */}
+              <div className="flex flex-col gap-2 pt-1">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Data Filters</span>
+                {([
+                  { key: 'hasPolicies' as const, label: 'Has Policy Data', desc: 'Scraped loan terms' },
+                  { key: 'hasRevenue'  as const, label: 'Has Revenue Data', desc: 'Annual revenue known' },
+                ] as const).map(({ key, label, desc }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => onFilterChange(key, !filters[key])}
+                    className={[
+                      'flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all',
+                      filters[key]
+                        ? 'border-[#1A7070] bg-[#E6F4F4]'
+                        : 'border-gray-200 bg-white hover:border-gray-300',
+                    ].join(' ')}
+                  >
+                    <div>
+                      <p className={`text-xs font-semibold ${filters[key] ? 'text-[#1A7070]' : 'text-gray-700'}`}>{label}</p>
+                      <p className="text-[10px] text-gray-400">{desc}</p>
+                    </div>
+                    <div className={[
+                      'w-8 h-4 rounded-full flex-shrink-0 transition-colors relative',
+                      filters[key] ? 'bg-[#1A7070]' : 'bg-gray-200',
+                    ].join(' ')}>
+                      <span className={[
+                        'absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform',
+                        filters[key] ? 'translate-x-4' : 'translate-x-0.5',
+                      ].join(' ')} />
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {sortRow}

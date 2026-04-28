@@ -24,6 +24,7 @@ interface Lender {
   email?:          string | null
   website?:        string | null
   qualityScore?:   number | null
+  policyCount?:    number | null
 }
 
 interface LenderCardProps {
@@ -221,6 +222,17 @@ export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onS
               +{extraCount}
             </span>
           )}
+        </div>
+      )}
+
+      {/* Policy count badge */}
+      {lender.policyCount != null && lender.policyCount > 0 && (
+        <div className="mb-3">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold rounded-md"
+                style={{ background: '#F0FDF4', color: '#16A34A', border: '1px solid #BBF7D0' }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
+            {lender.policyCount} {lender.policyCount === 1 ? 'policy' : 'policies'} available
+          </span>
         </div>
       )}
 

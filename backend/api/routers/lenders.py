@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 ALLOWED_SORT_COLS = {
     "aum_crores", "established_year", "employee_count",
-    "branch_count", "quality_score", "company_name",
+    "branch_count", "quality_score", "company_name", "last_year_revenue",
 }
 
 _VALID_LOAN_TYPES    = VALID_LOAN_TYPES
@@ -71,6 +71,8 @@ def _row_to_summary(row) -> LenderSummary:
         is_listed=bool(d.get("is_listed", False)),
         phone=d.get("phone"),
         email=d.get("email"),
+        policy_count=d.get("policy_count"),
+        last_year_revenue=d.get("last_year_revenue"),
     )
 
 
@@ -109,6 +111,11 @@ def _row_to_detail(row) -> LenderDetail:
         authorized_capital_lakhs=d.get("authorized_capital_lakhs"),
         paid_up_capital_lakhs=d.get("paid_up_capital_lakhs"),
         mca21_status=d.get("mca21_status"),
+        last_year_revenue=d.get("last_year_revenue"),
+        recent_funding=d.get("recent_funding"),
+        recent_funding_amount=d.get("recent_funding_amount"),
+        recent_funding_year=d.get("recent_funding_year"),
+        financial_source=d.get("financial_source"),
     )
 
 
@@ -131,6 +138,10 @@ async def search_lenders(
     is_listed: Optional[bool] = Query(None),
     operating_intensity: Optional[List[str]] = Query(None),
     business_sector: Optional[List[str]] = Query(None),
+    has_policies: Optional[bool] = Query(None, description="Filter to lenders with scraped policy data"),
+    has_revenue: Optional[bool] = Query(None, description="Filter to lenders with revenue data"),
+    revenue_min: Optional[float] = Query(None, ge=0, description="Min revenue in Crores"),
+    revenue_max: Optional[float] = Query(None, ge=0, description="Max revenue in Crores"),
     sort_by: str = Query("aum_crores"),
     sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
     page: int = Query(1, ge=1, le=500),
@@ -160,7 +171,6 @@ async def search_lenders(
             )
         aum_category = aum_category[:len(_VALID_AUM_CATEGORIES)]
 
-    # Cache key from all search params
     cache_params = {
         "q": q, "loan_type": sorted(loan_type or []),
         "state": state, "company_type": sorted(company_type or []),
@@ -171,6 +181,8 @@ async def search_lenders(
         "pan_india": pan_india, "is_listed": is_listed,
         "operating_intensity": sorted(operating_intensity or []),
         "business_sector": sorted(business_sector or []),
+        "has_policies": has_policies, "has_revenue": has_revenue,
+        "revenue_min": revenue_min, "revenue_max": revenue_max,
         "sort_by": sort_by, "sort_dir": sort_dir,
         "page": page, "limit": limit,
     }
@@ -182,99 +194,131 @@ async def search_lenders(
         return JSONResponse(cached, headers={"X-Cache": "HIT"})
     metrics.inc("cache.miss", tags={"endpoint": "lenders_search"})
 
-    conditions = ["approval_status = 'approved'"]
+    conditions = ["l.approval_status = 'approved'"]
     params: list = []
     idx = 1
 
     q_clean = q.strip() if q else None
     if q_clean:
         q_esc = q_clean.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-        conditions.append(f"company_name ILIKE ${idx}")
+        conditions.append(f"l.company_name ILIKE ${idx}")
         params.append(f"%{q_esc}%")
         idx += 1
 
     if company_type:
-        conditions.append(f"company_type = ANY(${idx}::text[])")
+        conditions.append(f"l.company_type = ANY(${idx}::text[])")
         params.append(company_type)
         idx += 1
 
     if state:
-        # operating_states is TEXT[] — use ANY(), not JSONB @> operator
-        conditions.append(
-            f"(pan_india = true OR ${idx} = ANY(operating_states))"
-        )
+        conditions.append(f"(l.pan_india = true OR ${idx} = ANY(l.operating_states))")
         params.append(state)
         idx += 1
 
     if loan_type:
-        # primary_loan_segments is TEXT[] — use ANY(), not JSONB @> operator
         lt_conds = []
         for lt in loan_type:
-            lt_conds.append(f"${idx} = ANY(primary_loan_segments)")
+            lt_conds.append(f"${idx} = ANY(l.primary_loan_segments)")
             params.append(lt)
             idx += 1
         conditions.append(f"({' OR '.join(lt_conds)})")
 
     if aum_category:
-        conditions.append(f"aum_category = ANY(${idx}::text[])")
+        conditions.append(f"l.aum_category = ANY(${idx}::text[])")
         params.append(aum_category)
         idx += 1
 
     if aum_min is not None:
-        conditions.append(f"aum_crores >= ${idx}")
+        conditions.append(f"l.aum_crores >= ${idx}")
         params.append(aum_min)
         idx += 1
 
     if aum_max is not None:
-        conditions.append(f"aum_crores <= ${idx}")
+        conditions.append(f"l.aum_crores <= ${idx}")
         params.append(aum_max)
         idx += 1
 
     if established_year_min is not None:
-        conditions.append(f"established_year >= ${idx}")
+        conditions.append(f"l.established_year >= ${idx}")
         params.append(established_year_min)
         idx += 1
 
     if established_year_max is not None:
-        conditions.append(f"established_year <= ${idx}")
+        conditions.append(f"l.established_year <= ${idx}")
         params.append(established_year_max)
         idx += 1
 
     if pan_india is not None:
-        conditions.append(f"pan_india = ${idx}")
+        conditions.append(f"l.pan_india = ${idx}")
         params.append(pan_india)
         idx += 1
 
     if is_listed is not None:
-        conditions.append(f"is_listed = ${idx}")
+        conditions.append(f"l.is_listed = ${idx}")
         params.append(is_listed)
         idx += 1
 
     if operating_intensity:
-        conditions.append(f"operating_intensity = ANY(${idx}::text[])")
+        conditions.append(f"l.operating_intensity = ANY(${idx}::text[])")
         params.append(operating_intensity)
         idx += 1
 
     if business_sector:
-        conditions.append(f"business_sector = ANY(${idx}::text[])")
+        conditions.append(f"l.business_sector = ANY(${idx}::text[])")
         params.append(business_sector)
         idx += 1
 
+    if has_policies is True:
+        conditions.append(
+            "EXISTS (SELECT 1 FROM policies p WHERE p.lender_id = l.id "
+            "AND p.is_active = true AND p.approval_status = 'approved')"
+        )
+    elif has_policies is False:
+        conditions.append(
+            "NOT EXISTS (SELECT 1 FROM policies p WHERE p.lender_id = l.id "
+            "AND p.is_active = true AND p.approval_status = 'approved')"
+        )
+
+    if has_revenue is True:
+        conditions.append("l.last_year_revenue IS NOT NULL")
+    elif has_revenue is False:
+        conditions.append("l.last_year_revenue IS NULL")
+
+    if revenue_min is not None:
+        conditions.append(f"l.last_year_revenue >= ${idx}")
+        params.append(revenue_min)
+        idx += 1
+
+    if revenue_max is not None:
+        conditions.append(f"l.last_year_revenue <= ${idx}")
+        params.append(revenue_max)
+        idx += 1
+
     where    = " AND ".join(conditions)
-    sort_sql = f"ORDER BY {sort_by} {sort_dir.upper()} NULLS LAST"
+    sort_sql = f"ORDER BY l.{sort_by} {sort_dir.upper()} NULLS LAST"
     offset   = (page - 1) * limit
 
     try:
         async with db.acquire() as conn:
-            total = await conn.fetchval(f"SELECT COUNT(*) FROM lenders WHERE {where}", *params)
-            rows  = await conn.fetch(
+            total = await conn.fetchval(
+                f"SELECT COUNT(*) FROM lenders l WHERE {where}", *params
+            )
+            rows = await conn.fetch(
                 f"""
-                SELECT id, company_name, company_type, rbi_category,
-                       aum_crores, aum_category, hq_state, hq_location,
-                       operating_intensity, business_sector, pan_india, primary_loan_segments,
-                       operating_states, website, quality_score,
-                       employee_count, established_year, is_listed, phone, email
-                FROM lenders
+                SELECT
+                    l.id, l.company_name, l.company_type, l.rbi_category,
+                    l.aum_crores, l.aum_category, l.hq_state, l.hq_location,
+                    l.operating_intensity, l.business_sector, l.pan_india,
+                    l.primary_loan_segments, l.operating_states, l.website,
+                    l.quality_score, l.employee_count, l.established_year,
+                    l.is_listed, l.phone, l.email, l.last_year_revenue,
+                    (
+                        SELECT COUNT(*)::int FROM policies p
+                        WHERE p.lender_id = l.id
+                          AND p.is_active = true
+                          AND p.approval_status = 'approved'
+                    ) AS policy_count
+                FROM lenders l
                 WHERE {where}
                 {sort_sql}
                 LIMIT ${idx} OFFSET ${idx + 1}
@@ -378,7 +422,9 @@ async def get_lender(
                        stock_symbol, phone, email,
                        last_scraped_at, data_source, schema_version,
                        cin, company_status, authorized_capital_lakhs,
-                       paid_up_capital_lakhs, mca21_status
+                       paid_up_capital_lakhs, mca21_status,
+                       last_year_revenue, recent_funding, recent_funding_amount,
+                       recent_funding_year, financial_source
                 FROM lenders
                 WHERE id = $1 AND approval_status = 'approved'
                 """,

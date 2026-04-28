@@ -24,6 +24,8 @@ class LenderSummary(BaseModel):
     is_listed: bool = False
     phone: Optional[str] = None
     email: Optional[str] = None
+    policy_count: Optional[int] = None
+    last_year_revenue: Optional[float] = None
 
 
 class LenderDetail(LenderSummary):
@@ -38,6 +40,11 @@ class LenderDetail(LenderSummary):
     authorized_capital_lakhs: Optional[float] = None
     paid_up_capital_lakhs: Optional[float] = None
     mca21_status: Optional[str] = None
+    # Financial fields
+    recent_funding: Optional[str] = None
+    recent_funding_amount: Optional[float] = None
+    recent_funding_year: Optional[int] = None
+    financial_source: Optional[str] = None
 
 
 class LenderSearchParams(BaseModel):
@@ -50,6 +57,10 @@ class LenderSearchParams(BaseModel):
     aum_max: Optional[float] = Field(None, description="Max AUM in Crores")
     pan_india: Optional[bool] = None
     is_listed: Optional[bool] = None
+    has_policies: Optional[bool] = Field(None, description="Only lenders with scraped policy data")
+    has_revenue: Optional[bool] = Field(None, description="Only lenders with revenue data")
+    revenue_min: Optional[float] = Field(None, description="Min last_year_revenue in Crores")
+    revenue_max: Optional[float] = Field(None, description="Max last_year_revenue in Crores")
     sort_by: str = Field("aum_crores", description="Column to sort by")
     sort_dir: str = Field("desc", description="asc or desc")
     page: int = Field(1, ge=1)

@@ -44,6 +44,12 @@ interface LenderDetail {
   authorized_capital_lakhs: number | null
   paid_up_capital_lakhs: number | null
   mca21_status: string | null
+  // Financial
+  last_year_revenue: number | null
+  recent_funding: string | null
+  recent_funding_amount: number | null
+  recent_funding_year: number | null
+  financial_source: string | null
 }
 
 interface Policy {
@@ -543,6 +549,82 @@ export default function LenderDetailPage() {
             </div>
           ))}
         </div>
+
+        {/* ── FINANCIAL OVERVIEW ───────────────────────────────── */}
+        {(lender.last_year_revenue != null || lender.recent_funding_amount != null ||
+          lender.authorized_capital_lakhs != null || lender.paid_up_capital_lakhs != null) && (
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" style={{ color: '#1A7070' }} />
+              Financial Overview
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {lender.last_year_revenue != null && (
+                <div className="rounded-xl p-4" style={{ background: '#F7FAFA' }}>
+                  <p className="text-xs text-gray-400 mb-1">Last Year Revenue</p>
+                  <p className="text-lg font-bold" style={{ color: '#0D3333' }}>
+                    {lender.last_year_revenue >= 1_000
+                      ? `₹${(lender.last_year_revenue / 1_000).toFixed(1)}K Cr`
+                      : `₹${lender.last_year_revenue.toLocaleString('en-IN')} Cr`}
+                  </p>
+                  {lender.aum_crores != null && lender.last_year_revenue > 0 && (
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      {((lender.last_year_revenue / lender.aum_crores) * 100).toFixed(1)}% of AUM
+                    </p>
+                  )}
+                </div>
+              )}
+              {lender.aum_crores != null && (
+                <div className="rounded-xl p-4" style={{ background: '#F7FAFA' }}>
+                  <p className="text-xs text-gray-400 mb-1">Total AUM</p>
+                  <p className="text-lg font-bold" style={{ color: '#0D3333' }}>
+                    {formatAUM(lender.aum_crores)}
+                  </p>
+                  {lender.aum_category && (
+                    <p className="text-[11px] text-gray-400 mt-0.5">{lender.aum_category} tier</p>
+                  )}
+                </div>
+              )}
+              {lender.authorized_capital_lakhs != null && (
+                <div className="rounded-xl p-4" style={{ background: '#F7FAFA' }}>
+                  <p className="text-xs text-gray-400 mb-1">Authorized Capital</p>
+                  <p className="text-lg font-bold" style={{ color: '#0D3333' }}>
+                    {formatAmount(lender.authorized_capital_lakhs)}
+                  </p>
+                </div>
+              )}
+              {lender.paid_up_capital_lakhs != null && (
+                <div className="rounded-xl p-4" style={{ background: '#F7FAFA' }}>
+                  <p className="text-xs text-gray-400 mb-1">Paid-up Capital</p>
+                  <p className="text-lg font-bold" style={{ color: '#0D3333' }}>
+                    {formatAmount(lender.paid_up_capital_lakhs)}
+                  </p>
+                </div>
+              )}
+              {lender.recent_funding_amount != null && (
+                <div className="rounded-xl p-4" style={{ background: '#FDF8E4' }}>
+                  <p className="text-xs text-gray-400 mb-1">Recent Funding</p>
+                  <p className="text-lg font-bold" style={{ color: '#A07E1A' }}>
+                    ₹{lender.recent_funding_amount.toLocaleString('en-IN')} Cr
+                  </p>
+                  {lender.recent_funding && (
+                    <p className="text-[11px] text-gray-500 mt-0.5 truncate" title={lender.recent_funding}>
+                      {lender.recent_funding}
+                    </p>
+                  )}
+                  {lender.recent_funding_year && (
+                    <p className="text-[11px] text-gray-400 mt-0.5">{lender.recent_funding_year}</p>
+                  )}
+                </div>
+              )}
+            </div>
+            {lender.financial_source && (
+              <p className="text-[11px] text-gray-400 mt-3">
+                Source: {lender.financial_source}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* ── POLICIES SECTION ─────────────────────────────────── */}
         <div>

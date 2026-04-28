@@ -74,8 +74,8 @@ interface LenderSummary {
   operating_intensity:   string | null
   business_sector:       string | null
   pan_india:             boolean
-  primary_loan_segments: string[]   // already parsed array from API
-  operating_states:      string[]   // already parsed array from API
+  primary_loan_segments: string[]
+  operating_states:      string[]
   website:               string | null
   quality_score:         number | null
   employee_count:        number | null
@@ -83,6 +83,8 @@ interface LenderSummary {
   is_listed:             boolean
   phone:                 string | null
   email:                 string | null
+  policy_count:          number | null
+  last_year_revenue:     number | null
 }
 
 interface LenderSearchResponse {
@@ -98,6 +100,8 @@ interface LenderSearchResponse {
 
 function fmtAum(val: number | null | undefined): string {
   if (!val) return 'N/A'
+  if (val >= 100_000) return `₹${(val / 100_000).toFixed(1)}L Cr`
+  if (val >= 1_000)   return `₹${(val / 1_000).toFixed(1)}K Cr`
   return `₹${val.toLocaleString('en-IN')} Cr`
 }
 
@@ -129,6 +133,8 @@ async function fetchFromAPI(f: MultiFilters, pg: number): Promise<LenderSearchRe
   if (f.listingStatus === 'Unlisted Only') params.set('is_listed', 'false')
   if (f.sortField)                 params.set('sort_by', f.sortField)
   if (f.sortDirection)             params.set('sort_dir', f.sortDirection)
+  if (f.hasPolicies)               params.set('has_policies', 'true')
+  if (f.hasRevenue)                params.set('has_revenue', 'true')
 
   const yr = yearRangeToParams(f.establishedYearRange ?? 'All Years')
   if (yr.min !== undefined) params.set('established_year_min', String(yr.min))
@@ -165,6 +171,8 @@ function filtersFromParams(params: URLSearchParams): MultiFilters {
     establishedYearRange: params.get('yr')   ?? DEFAULT_FILTERS.establishedYearRange,
     sortField:            (params.get('sf')  ?? DEFAULT_FILTERS.sortField)     as SortField,
     sortDirection:        (params.get('sd')  ?? DEFAULT_FILTERS.sortDirection) as SortDirection,
+    hasPolicies:          params.get('hp')   === 'true',
+    hasRevenue:           params.get('hr')   === 'true',
   }
 }
 
@@ -181,6 +189,8 @@ function filtersToParams(f: MultiFilters, pg: number): string {
   if (f.establishedYearRange !== DEFAULT_FILTERS.establishedYearRange) p.set('yr', f.establishedYearRange)
   if (f.sortField)                                          p.set('sf', f.sortField)
   if (f.sortDirection !== DEFAULT_FILTERS.sortDirection)    p.set('sd', f.sortDirection)
+  if (f.hasPolicies)                                        p.set('hp', 'true')
+  if (f.hasRevenue)                                         p.set('hr', 'true')
   if (pg > 0)                                               p.set('pg', String(pg))
   const qs = p.toString()
   return qs ? `/dashboard?${qs}` : '/dashboard'
@@ -190,8 +200,54 @@ function filtersToParams(f: MultiFilters, pg: number): string {
 // COMPARE MODAL
 // ─────────────────────────────────────────────────────────────
 
+type PolicySnap = {
+  interest_rate_min: number | null
+  interest_rate_max: number | null
+  loan_amount_min:   number | null
+  loan_amount_max:   number | null
+  tenure_min:        number | null
+  tenure_max:        number | null
+}
+
 function CompareModal({ lenders, onClose }: { lenders: LenderSummary[]; onClose: () => void }) {
-  const [copied, setCopied] = useState(false)
+  const [copied,   setCopied]   = useState(false)
+  const [policies, setPolicies] = useState<Record<number, PolicySnap | null>>({})
+
+  useEffect(() => {
+    Promise.all(
+      lenders.map(async l => {
+        try {
+          const res = await fetch(`${API_URL}/v1/policies/filter?lender_id=${l.id}&limit=1`)
+          if (!res.ok) return [l.id, null] as const
+          const data = await res.json()
+          return [l.id, (data.results?.[0] ?? null) as PolicySnap | null] as const
+        } catch {
+          return [l.id, null] as const
+        }
+      })
+    ).then(entries => setPolicies(Object.fromEntries(entries)))
+  }, [lenders])
+
+  function fmtRate(p: PolicySnap | null): string {
+    if (!p || (p.interest_rate_min == null && p.interest_rate_max == null)) return '—'
+    const lo = p.interest_rate_min, hi = p.interest_rate_max
+    if (lo != null && hi != null && lo !== hi) return `${lo}% – ${hi}%`
+    return `${lo ?? hi}%`
+  }
+  function fmtLoan(p: PolicySnap | null): string {
+    if (!p || (p.loan_amount_min == null && p.loan_amount_max == null)) return '—'
+    const fmt = (v: number) => v >= 100 ? `₹${(v / 100).toFixed(0)}Cr` : `₹${v}L`
+    const lo = p.loan_amount_min, hi = p.loan_amount_max
+    if (lo != null && hi != null) return `${fmt(lo)} – ${fmt(hi)}`
+    return fmt((lo ?? hi)!)
+  }
+  function fmtTenure(p: PolicySnap | null): string {
+    if (!p || (p.tenure_min == null && p.tenure_max == null)) return '—'
+    const fmt = (m: number) => m >= 12 ? `${Math.floor(m / 12)}y${m % 12 ? `${m % 12}m` : ''}` : `${m}m`
+    const lo = p.tenure_min, hi = p.tenure_max
+    if (lo != null && hi != null && lo !== hi) return `${fmt(lo)} – ${fmt(hi)}`
+    return fmt((lo ?? hi)!)
+  }
 
   type FieldDef = { label: string; render: (l: LenderSummary) => string }
   const fields: FieldDef[] = [
@@ -208,10 +264,18 @@ function CompareModal({ lenders, onClose }: { lenders: LenderSummary[]; onClose:
     { label: 'Op. Intensity',      render: l => l.operating_intensity ?? '—' },
   ]
 
+  type PolicyFieldDef = { label: string; render: (p: PolicySnap | null) => string }
+  const policyFields: PolicyFieldDef[] = [
+    { label: 'Interest Rate', render: fmtRate },
+    { label: 'Loan Amount',   render: fmtLoan },
+    { label: 'Tenure',        render: fmtTenure },
+  ]
+
   const copyCSV = () => {
-    const header = ['Field', ...lenders.map(l => l.company_name)].join('\t')
-    const rows   = fields.map(f => [f.label, ...lenders.map(l => f.render(l))].join('\t'))
-    navigator.clipboard.writeText([header, ...rows].join('\n')).then(() => {
+    const header  = ['Field', ...lenders.map(l => l.company_name)].join('\t')
+    const rows    = fields.map(f => [f.label, ...lenders.map(l => f.render(l))].join('\t'))
+    const prows   = policyFields.map(f => [f.label, ...lenders.map(l => f.render(policies[l.id] ?? null))].join('\t'))
+    navigator.clipboard.writeText([header, ...rows, ...prows].join('\n')).then(() => {
       setCopied(true); setTimeout(() => setCopied(false), 2000)
     })
   }
@@ -275,6 +339,23 @@ function CompareModal({ lenders, onClose }: { lenders: LenderSummary[]; onClose:
                   {lenders.map(l => (
                     <td key={l.id} className="px-3 py-2 text-sm" style={{ color: '#3D6363' }}>
                       {f.render(l)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+              <tr>
+                <td colSpan={lenders.length + 1} className="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: '#1A7070' }}>
+                  Loan Terms (best policy)
+                </td>
+              </tr>
+              {policyFields.map((f, i) => (
+                <tr key={f.label} style={{ background: i % 2 === 0 ? '#F7FAFA' : 'white' }}>
+                  <td className="px-3 py-2 text-xs font-semibold whitespace-nowrap" style={{ color: '#7A9E9E' }}>
+                    {f.label}
+                  </td>
+                  {lenders.map(l => (
+                    <td key={l.id} className="px-3 py-2 text-sm" style={{ color: '#3D6363' }}>
+                      {f.render(policies[l.id] ?? null)}
                     </td>
                   ))}
                 </tr>
@@ -415,6 +496,7 @@ function DashboardContent() {
     email:           l.email                 || null,
     website:         l.website               || null,
     qualityScore:    l.quality_score         ?? null,
+    policyCount:     l.policy_count          ?? null,
   }))
 
   // ── Render ──────────────────────────────────────────────────
