@@ -95,6 +95,8 @@ function apiFiltersToMultiFilters(f: ApiFilters): MultiFilters {
     establishedYearRange: 'All Years',
     sortField:            (f.sort_by as MultiFilters['sortField']) ?? '',
     sortDirection:        f.sort_dir ?? 'desc',
+    hasPolicies:          false,
+    hasRevenue:           false,
   }
 }
 
