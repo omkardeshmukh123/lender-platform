@@ -181,7 +181,6 @@ def run(args: argparse.Namespace) -> None:
             update['stock_symbol'] = slug
 
         if len(update) > 1:
-            update['data_source'] = 'screener'
             updates.append(update)
             stats['updated'] += 1
 
