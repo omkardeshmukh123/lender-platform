@@ -62,12 +62,54 @@ class PipelineRow(BaseModel):
     avg_policy_completeness: Optional[float] = None
 
 
+class PendingLenderRow(BaseModel):
+    """Simplified lender row for the admin pending-review list."""
+    id: int
+    company_name: str
+    company_type: str
+    hq_state: Optional[str] = None
+    website: Optional[str] = None
+    quality_score: Optional[float] = None
+    data_source: Optional[str] = None
+    created_at: Optional[str] = None
+    admin_notes: Optional[str] = None
+
+
+class PendingLenderResponse(BaseModel):
+    total: int
+    page: int
+    limit: int
+    results: List[PendingLenderRow]
+
+
+class PendingPolicy(BaseModel):
+    id: int
+    lender_id: int
+    lender_name: Optional[str] = None
+    product_name: Optional[str] = None
+    loan_type: Optional[str] = None
+    loan_amount_min: Optional[float] = None
+    loan_amount_max: Optional[float] = None
+    interest_rate_min: Optional[float] = None
+    interest_rate_max: Optional[float] = None
+    completeness_score: Optional[float] = None
+    data_source: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class PendingPolicyResponse(BaseModel):
+    total: int
+    page: int
+    limit: int
+    results: List[PendingPolicy]
+
+
 class ApproveRequest(BaseModel):
     notes: Optional[str] = Field(None, description="Optional notes for the approval")
 
 
 class RejectRequest(BaseModel):
-    reason: str = Field(..., min_length=5, description="Rejection reason (required)")
+    reason: str = Field("", description="Rejection reason")
 
 
 class AuditRow(BaseModel):
@@ -98,6 +140,223 @@ class PipelineRunRow(BaseModel):
 
 
 # ── Endpoints ──────────────────────────────────────────────────────────────────
+
+
+@router.get(
+    "/lenders/pending",
+    response_model=PendingLenderResponse,
+    summary="List lenders pending admin review (paginated)",
+)
+async def get_pending_lenders(
+    request: Request,
+    admin: AdminUser,
+    db: asyncpg.Pool = Depends(get_db),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+):
+    """Frontend-facing alias: GET /admin/lenders/pending?page=N&limit=N."""
+    offset = (page - 1) * limit
+    try:
+        async with db.acquire() as conn:
+            total = await conn.fetchval(
+                "SELECT COUNT(*) FROM lenders WHERE approval_status = 'pending'"
+            )
+            rows = await conn.fetch(
+                """
+                SELECT id, company_name, company_type, hq_state, website,
+                       quality_score, data_source,
+                       created_at, admin_notes
+                FROM lenders
+                WHERE approval_status = 'pending'
+                ORDER BY quality_score DESC NULLS LAST, id DESC
+                LIMIT $1 OFFSET $2
+                """,
+                limit, offset,
+            )
+    except Exception as exc:
+        logger.error("get_pending_lenders DB error: %s", exc)
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
+
+    return PendingLenderResponse(
+        total=total or 0,
+        page=page,
+        limit=limit,
+        results=[
+            PendingLenderRow(
+                id=r["id"],
+                company_name=r["company_name"],
+                company_type=r["company_type"],
+                hq_state=r["hq_state"],
+                website=r["website"],
+                quality_score=r["quality_score"],
+                data_source=r["data_source"],
+                created_at=r["created_at"].isoformat() if r["created_at"] else None,
+                admin_notes=r["admin_notes"],
+            )
+            for r in rows
+        ],
+    )
+
+
+@router.get(
+    "/policies/pending",
+    response_model=PendingPolicyResponse,
+    summary="List policies pending admin approval (paginated)",
+)
+async def get_pending_policies(
+    request: Request,
+    admin: AdminUser,
+    db: asyncpg.Pool = Depends(get_db),
+    lender_id: Optional[int] = Query(None, description="Filter by lender ID"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+):
+    offset = (page - 1) * limit
+    conditions = ["p.approval_status = 'pending'"]
+    params: list = []
+    idx = 1
+
+    if lender_id is not None:
+        conditions.append(f"p.lender_id = ${idx}")
+        params.append(lender_id)
+        idx += 1
+
+    where = " AND ".join(conditions)
+    try:
+        async with db.acquire() as conn:
+            total = await conn.fetchval(
+                f"SELECT COUNT(*) FROM policies p WHERE {where}", *params
+            )
+            rows = await conn.fetch(
+                f"""
+                SELECT p.id, p.lender_id, l.company_name,
+                       p.product_name, p.loan_type,
+                       p.loan_amount_min, p.loan_amount_max,
+                       p.interest_rate_min, p.interest_rate_max,
+                       p.completeness_score, p.data_source,
+                       p.created_at
+                FROM policies p
+                JOIN lenders l ON l.id = p.lender_id
+                WHERE {where}
+                ORDER BY p.completeness_score DESC NULLS LAST, p.id DESC
+                LIMIT ${idx} OFFSET ${idx + 1}
+                """,
+                *params, limit, offset,
+            )
+    except Exception as exc:
+        logger.error("get_pending_policies DB error: %s", exc)
+        raise HTTPException(status_code=503, detail="Policy service temporarily unavailable")
+
+    return PendingPolicyResponse(
+        total=total or 0,
+        page=page,
+        limit=limit,
+        results=[
+            PendingPolicy(
+                id=r["id"],
+                lender_id=r["lender_id"],
+                lender_name=r["company_name"],
+                product_name=r["product_name"],
+                loan_type=r["loan_type"],
+                loan_amount_min=r["loan_amount_min"],
+                loan_amount_max=r["loan_amount_max"],
+                interest_rate_min=r["interest_rate_min"],
+                interest_rate_max=r["interest_rate_max"],
+                completeness_score=r["completeness_score"],
+                data_source=r["data_source"],
+                created_at=r["created_at"].isoformat() if r["created_at"] else None,
+            )
+            for r in rows
+        ],
+    )
+
+
+@router.post(
+    "/policies/{policy_id}/approve",
+    summary="Approve a single pending policy",
+)
+async def approve_policy(
+    request: Request,
+    policy_id: int,
+    body: ApproveRequest,
+    admin: AdminUser,
+    db: asyncpg.Pool = Depends(get_db),
+    cache=Depends(get_cache),
+):
+    actor_id, actor_email = _actor_info(admin)
+    try:
+        async with db.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                UPDATE policies
+                SET approval_status = 'approved',
+                    is_active = true,
+                    approved_at = NOW(),
+                    approved_by = $2,
+                    admin_notes = COALESCE($3, admin_notes)
+                WHERE id = $1
+                RETURNING id, lender_id
+                """,
+                policy_id,
+                actor_email,
+                body.notes,
+            )
+    except Exception as exc:
+        logger.error("approve_policy DB error: policy=%d | %s", policy_id, exc)
+        raise HTTPException(status_code=503, detail="Policy approval service temporarily unavailable")
+
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Policy {policy_id} not found")
+
+    lender_id = row["lender_id"]
+    await cache.delete_pattern("lp:policies_filter:*")
+    await cache.delete_pattern(f"lp:lender_detail:{lender_id}:*")
+    await cache.delete_pattern("lp:loans_match:*")
+
+    logger.info("ADMIN_APPROVE_POLICY policy=%d actor=%s", policy_id, actor_email)
+    return {"policy_id": policy_id, "action": "approved"}
+
+
+@router.post(
+    "/policies/{policy_id}/reject",
+    summary="Reject a single pending policy",
+)
+async def reject_policy(
+    request: Request,
+    policy_id: int,
+    body: ApproveRequest,
+    admin: AdminUser,
+    db: asyncpg.Pool = Depends(get_db),
+    cache=Depends(get_cache),
+):
+    actor_id, actor_email = _actor_info(admin)
+    try:
+        async with db.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                UPDATE policies
+                SET approval_status = 'rejected',
+                    is_active = false,
+                    admin_notes = COALESCE($2, admin_notes)
+                WHERE id = $1
+                RETURNING id, lender_id
+                """,
+                policy_id,
+                body.notes,
+            )
+    except Exception as exc:
+        logger.error("reject_policy DB error: policy=%d | %s", policy_id, exc)
+        raise HTTPException(status_code=503, detail="Policy rejection service temporarily unavailable")
+
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Policy {policy_id} not found")
+
+    lender_id = row["lender_id"]
+    await cache.delete_pattern("lp:policies_filter:*")
+    await cache.delete_pattern(f"lp:lender_detail:{lender_id}:*")
+
+    logger.info("ADMIN_REJECT_POLICY policy=%d actor=%s", policy_id, actor_email)
+    return {"policy_id": policy_id, "action": "rejected"}
 
 @router.get(
     "/pipeline",
