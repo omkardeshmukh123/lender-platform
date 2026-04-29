@@ -701,6 +701,23 @@ function DashboardContent() {
                   </button>
                 </div>
               )}
+
+              {stubs.length > 0 && (
+                <div className="mt-8">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="h-px flex-1 bg-gray-200" />
+                    <span className="text-xs font-medium text-gray-400 whitespace-nowrap">
+                      Also registered with RBI — data not yet available
+                    </span>
+                    <div className="h-px flex-1 bg-gray-200" />
+                  </div>
+                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {stubs.map(stub => (
+                      <StubCard key={stub.id} stub={stub} userEmail={user?.email ?? null} />
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
 
           ) : (

@@ -349,8 +349,8 @@ async def search_lenders(
                     q_clean, existing_ids,
                 )
 
-            # Phase 3: registry stubs when still no results at all
-            if q_clean and len(q_clean) >= 3 and (total or 0) == 0 and not fuzzy_rows:
+            # Phase 3: registry stubs when no exact matches (show alongside fuzzy results)
+            if q_clean and len(q_clean) >= 3 and (total or 0) == 0:
                 stub_rows = await conn.fetch(
                     """
                     SELECT id, company_name, cin, rbi_registration_number,
