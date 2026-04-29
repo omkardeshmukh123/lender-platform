@@ -704,41 +704,43 @@ function DashboardContent() {
             </>
 
           ) : (
-            <div className="text-center py-16 bg-white rounded-2xl shadow-sm"
-                 style={{ border: '1px solid #E6F4F4' }}>
-              <div className="text-5xl mb-4" aria-hidden="true">🔍</div>
-              <p className="font-semibold text-lg mb-1" style={{ color: '#0D3333' }}>
-                No lenders found
-              </p>
-              <p className="text-sm mb-6" style={{ color: '#7A9E9E' }}>
-                Try removing some filters or searching with different terms
-              </p>
-              <button
-                onClick={() => { setFilters(DEFAULT_FILTERS); setPage(0) }}
-                className="px-6 py-2.5 text-white rounded-xl font-semibold
-                           transition-all hover:-translate-y-0.5 hover:shadow-lg"
-                style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)' }}
-              >
-                Reset All Filters
-              </button>
-            </div>
-
-            {stubs.length > 0 && (
-              <div className="mt-8">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-px flex-1 bg-gray-200" />
-                  <span className="text-xs font-medium text-gray-400 whitespace-nowrap">
-                    Also registered with RBI — data not yet available
-                  </span>
-                  <div className="h-px flex-1 bg-gray-200" />
-                </div>
-                <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {stubs.map(stub => (
-                    <StubCard key={stub.id} stub={stub} userEmail={user?.email ?? null} />
-                  ))}
-                </div>
+            <>
+              <div className="text-center py-16 bg-white rounded-2xl shadow-sm"
+                   style={{ border: '1px solid #E6F4F4' }}>
+                <div className="text-5xl mb-4" aria-hidden="true">🔍</div>
+                <p className="font-semibold text-lg mb-1" style={{ color: '#0D3333' }}>
+                  No lenders found
+                </p>
+                <p className="text-sm mb-6" style={{ color: '#7A9E9E' }}>
+                  Try removing some filters or searching with different terms
+                </p>
+                <button
+                  onClick={() => { setFilters(DEFAULT_FILTERS); setPage(0) }}
+                  className="px-6 py-2.5 text-white rounded-xl font-semibold
+                             transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                  style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)' }}
+                >
+                  Reset All Filters
+                </button>
               </div>
-            )}
+
+              {stubs.length > 0 && (
+                <div className="mt-8">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="h-px flex-1 bg-gray-200" />
+                    <span className="text-xs font-medium text-gray-400 whitespace-nowrap">
+                      Also registered with RBI — data not yet available
+                    </span>
+                    <div className="h-px flex-1 bg-gray-200" />
+                  </div>
+                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {stubs.map(stub => (
+                      <StubCard key={stub.id} stub={stub} userEmail={user?.email ?? null} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
         </main>
