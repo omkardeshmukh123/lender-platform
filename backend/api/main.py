@@ -48,6 +48,7 @@ from limiter import limiter
 from routers import lenders
 from routers import admin as admin_router
 from routers import chat as chat_router
+from routers import policies as policies_router
 from middleware.logging import StructuredLoggingMiddleware
 from middleware.security import SecurityHeadersMiddleware
 from core.cache import create_redis_cache
@@ -184,9 +185,10 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 _V1 = "/v1"
-app.include_router(lenders.router,      prefix=f"{_V1}/lenders",  tags=["Lenders"])
-app.include_router(admin_router.router, prefix=f"{_V1}/admin",    tags=["Admin"])
-app.include_router(chat_router.router,  prefix=f"{_V1}/chat",     tags=["Chat"])
+app.include_router(lenders.router,         prefix=f"{_V1}/lenders",  tags=["Lenders"])
+app.include_router(policies_router.router, prefix=f"{_V1}/policies", tags=["Policies"])
+app.include_router(admin_router.router,    prefix=f"{_V1}/admin",    tags=["Admin"])
+app.include_router(chat_router.router,     prefix=f"{_V1}/chat",     tags=["Chat"])
 
 
 @app.get("/", tags=["Health"])
