@@ -45,6 +45,16 @@ interface PipelineRun {
   failed_count: number
 }
 
+interface LenderRequest {
+  id: number
+  company_name: string
+  cin: string | null
+  requested_by: string | null
+  notes: string | null
+  created_at: string
+  status: string
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 function badge(score: number | null) {
@@ -69,7 +79,10 @@ export default function AdminPage() {
   const [policyPage, setPolicyPage] = useState(1)
 
   const [runs, setRuns] = useState<PipelineRun[]>([])
-  const [tab, setTab] = useState<'lenders' | 'policies' | 'pipeline'>('lenders')
+  const [requests, setRequests] = useState<LenderRequest[]>([])
+  const [requestTotal, setRequestTotal] = useState(0)
+  const [requestPage, setRequestPage] = useState(1)
+  const [tab, setTab] = useState<'lenders' | 'policies' | 'pipeline' | 'requests'>('lenders')
   const [loading, setLoading] = useState(false)
   const [acting, setActing] = useState<number | null>(null)
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
@@ -144,7 +157,19 @@ export default function AdminPage() {
     } finally { setLoading(false) }
   }, [token, apiGet])
 
-  // On initial auth, load all three counts so the stats row is populated
+  const fetchRequests = useCallback(async () => {
+    if (!token) return
+    setLoading(true)
+    try {
+      const data = await apiGet(`/v1/admin/lender-requests?page=${requestPage}&limit=${PAGE_SIZE}`)
+      setRequests(data.results ?? [])
+      setRequestTotal(data.total ?? 0)
+    } catch (e: any) {
+      showToast(`Failed to load requests: ${e.message}`, false)
+    } finally { setLoading(false) }
+  }, [token, requestPage, apiGet])
+
+  // On initial auth, load all counts so the stats row is populated
   useEffect(() => {
     if (!authDone) return
     fetchLenders()
@@ -153,13 +178,14 @@ export default function AdminPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authDone])
 
-  // Reload current tab when page changes
+  // Reload current tab when tab/page changes
   useEffect(() => {
     if (!authDone) return
     if (tab === 'lenders') fetchLenders()
     else if (tab === 'policies') fetchPolicies()
+    else if (tab === 'requests') fetchRequests()
     else fetchRuns()
-  }, [tab, lenderPage, policyPage, fetchLenders, fetchPolicies, fetchRuns])
+  }, [tab, lenderPage, policyPage, requestPage, fetchLenders, fetchPolicies, fetchRequests, fetchRuns])
 
   const handleApproveLender = async (id: number) => {
     setActing(id)
@@ -214,6 +240,14 @@ export default function AdminPage() {
     }
     showToast(`Approved ${approved} / ${policies.length} policies on this page`, true)
     fetchPolicies()
+  }
+
+  const handleUpdateRequestStatus = async (id: number, status: string) => {
+    try {
+      await apiPost(`/v1/admin/lender-requests/${id}/status`, { status })
+      showToast(`Request marked ${status}`, true)
+      fetchRequests()
+    } catch (e: any) { showToast(`Update failed: ${e.message}`, false) }
   }
 
   if (!authDone) {
@@ -275,17 +309,20 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-gray-100 rounded-xl p-1 w-fit">
-          {(['lenders', 'policies', 'pipeline'] as const).map(t => (
+          {(['lenders', 'policies', 'requests', 'pipeline'] as const).map(t => (
             <button
               key={t}
-              onClick={() => { setTab(t); setLenderPage(1); setPolicyPage(1) }}
+              onClick={() => { setTab(t); setLenderPage(1); setPolicyPage(1); setRequestPage(1) }}
               className={[
                 'px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5',
                 tab === t ? 'bg-white text-[#3B5CCC] shadow-sm' : 'text-gray-500 hover:text-gray-700',
               ].join(' ')}
             >
               {t === 'policies' && <FileText className="w-3.5 h-3.5" />}
-              {t === 'lenders' ? 'Pending Lenders' : t === 'policies' ? `Pending Policies${policyTotal > 0 ? ` (${policyTotal})` : ''}` : 'Pipeline Runs'}
+              {t === 'lenders' ? 'Pending Lenders'
+                : t === 'policies' ? `Pending Policies${policyTotal > 0 ? ` (${policyTotal})` : ''}`
+                : t === 'requests' ? `Requests${requestTotal > 0 ? ` (${requestTotal})` : ''}`
+                : 'Pipeline Runs'}
             </button>
           ))}
         </div>
@@ -512,6 +549,70 @@ export default function AdminPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Requests tab ── */}
+        {tab === 'requests' && (
+          <>
+            {loading && requests.length === 0 ? (
+              <div className="text-center py-16 text-gray-400">Loading…</div>
+            ) : requests.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+                <CheckCircle className="w-10 h-10 text-green-400 mx-auto mb-3" />
+                <p className="font-medium text-gray-700">No pending requests</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Company</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Requested By</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Date</th>
+                      <th className="text-right px-4 py-3 font-medium text-gray-600">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {requests.map(r => (
+                      <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-gray-900">{r.company_name}</div>
+                          {r.cin && <div className="text-xs text-gray-400 font-mono">{r.cin}</div>}
+                          {r.notes && <div className="text-xs text-gray-500 mt-0.5">{r.notes}</div>}
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 text-xs hidden md:table-cell">{r.requested_by ?? '—'}</td>
+                        <td className="px-4 py-3 text-xs text-gray-400 hidden lg:table-cell">
+                          {new Date(r.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <select
+                            value={r.status}
+                            onChange={e => handleUpdateRequestStatus(r.id, e.target.value)}
+                            className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#3B5CCC]"
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="done">Done</option>
+                            <option value="rejected">Rejected</option>
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {Math.ceil(requestTotal / PAGE_SIZE) > 1 && (
+                  <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+                    <span className="text-xs text-gray-500">{((requestPage - 1) * PAGE_SIZE) + 1}–{Math.min(requestPage * PAGE_SIZE, requestTotal)} of {requestTotal}</span>
+                    <div className="flex gap-2">
+                      <button onClick={() => setRequestPage(p => Math.max(1, p - 1))} disabled={requestPage === 1} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
+                      <span className="text-xs text-gray-500 flex items-center">{requestPage} / {Math.ceil(requestTotal / PAGE_SIZE)}</span>
+                      <button onClick={() => setRequestPage(p => Math.min(Math.ceil(requestTotal / PAGE_SIZE), p + 1))} disabled={requestPage === Math.ceil(requestTotal / PAGE_SIZE)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 disabled:opacity-30"><ChevronRight className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </>

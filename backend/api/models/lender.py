@@ -67,8 +67,19 @@ class LenderSearchParams(BaseModel):
     limit: int = Field(20, ge=1, le=100)
 
 
+class RegistryStub(BaseModel):
+    id: int
+    company_name: str
+    cin: Optional[str] = None
+    rbi_registration_number: Optional[str] = None
+    regulatory_tier: Optional[str] = None
+    hq_state: Optional[str] = None
+    established_year: Optional[int] = None
+
+
 class LenderSearchResponse(BaseModel):
     total: int
     page: int
     limit: int
     results: List[LenderSummary]
+    stubs: List[RegistryStub] = Field(default_factory=list)

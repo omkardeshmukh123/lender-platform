@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { SlidersHorizontal } from 'lucide-react'
 import { useAuth } from '../components/AuthContext'
 import { useSaved, SavedLender } from '../components/SaveContext'
+import StubCard, { RegistryStub } from '../components/StubCard'
 import { Navbar }        from '../components/Navbar'
 import { Hero }          from '../components/Hero'
 import {
@@ -92,6 +93,7 @@ interface LenderSearchResponse {
   page:    number
   limit:   number
   results: LenderSummary[]
+  stubs:   RegistryStub[]
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -402,6 +404,7 @@ function DashboardContent() {
   const searchParams = useSearchParams()
 
   const [lenders,       setLenders]       = useState<LenderSummary[]>([])
+  const [stubs,         setStubs]         = useState<RegistryStub[]>([])
   const [totalCount,    setTotalCount]    = useState(0)
   const [loading,       setLoading]       = useState(true)
   const [filterLoading, setFilterLoading] = useState(false)
@@ -446,6 +449,7 @@ function DashboardContent() {
 
       setApiError(null)
       setLenders(data.results)
+      setStubs(data.stubs ?? [])
       setTotalCount(data.total)
     } catch (err: unknown) {
       if (thisRequestId !== requestIdRef.current) return
@@ -718,6 +722,23 @@ function DashboardContent() {
                 Reset All Filters
               </button>
             </div>
+
+            {stubs.length > 0 && (
+              <div className="mt-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-px flex-1 bg-gray-200" />
+                  <span className="text-xs font-medium text-gray-400 whitespace-nowrap">
+                    Also registered with RBI — data not yet available
+                  </span>
+                  <div className="h-px flex-1 bg-gray-200" />
+                </div>
+                <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {stubs.map(stub => (
+                    <StubCard key={stub.id} stub={stub} userEmail={user?.email ?? null} />
+                  ))}
+                </div>
+              </div>
+            )}
           )}
 
         </main>

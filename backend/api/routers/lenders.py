@@ -19,7 +19,8 @@ from dependencies import get_db
 from limiter import limiter
 from core.cache import get_cache, make_key, CacheTTL
 from core.metrics import metrics
-from models.lender import LenderDetail, LenderSearchResponse, LenderSummary
+from models.lender import LenderDetail, LenderSearchResponse, LenderSummary, RegistryStub
+from pydantic import BaseModel, Field as PydanticField
 from core.constants import VALID_LOAN_TYPES, VALID_COMPANY_TYPES, VALID_AUM_CATEGORIES
 
 router = APIRouter()
@@ -298,6 +299,23 @@ async def search_lenders(
     sort_sql = f"ORDER BY l.{sort_by} {sort_dir.upper()} NULLS LAST"
     offset   = (page - 1) * limit
 
+    _SELECT_COLS = """
+        l.id, l.company_name, l.company_type, l.rbi_category,
+        l.aum_crores, l.aum_category, l.hq_state, l.hq_location,
+        l.operating_intensity, l.business_sector, l.pan_india,
+        l.primary_loan_segments, l.operating_states, l.website,
+        l.quality_score, l.employee_count, l.established_year,
+        l.is_listed, l.phone, l.email, l.last_year_revenue,
+        (
+            SELECT COUNT(*)::int FROM policies p
+            WHERE p.lender_id = l.id
+              AND p.is_active = true
+              AND p.approval_status = 'approved'
+        ) AS policy_count
+    """
+
+    stubs: List[RegistryStub] = []
+
     try:
         async with db.acquire() as conn:
             total = await conn.fetchval(
@@ -305,19 +323,7 @@ async def search_lenders(
             )
             rows = await conn.fetch(
                 f"""
-                SELECT
-                    l.id, l.company_name, l.company_type, l.rbi_category,
-                    l.aum_crores, l.aum_category, l.hq_state, l.hq_location,
-                    l.operating_intensity, l.business_sector, l.pan_india,
-                    l.primary_loan_segments, l.operating_states, l.website,
-                    l.quality_score, l.employee_count, l.established_year,
-                    l.is_listed, l.phone, l.email, l.last_year_revenue,
-                    (
-                        SELECT COUNT(*)::int FROM policies p
-                        WHERE p.lender_id = l.id
-                          AND p.is_active = true
-                          AND p.approval_status = 'approved'
-                    ) AS policy_count
+                SELECT {_SELECT_COLS}
                 FROM lenders l
                 WHERE {where}
                 {sort_sql}
@@ -325,6 +331,50 @@ async def search_lenders(
                 """,
                 *params, limit, offset,
             )
+
+            # Phase 2: trigram fallback when ILIKE returned < 3 results
+            fuzzy_rows: list = []
+            if q_clean and len(q_clean) >= 3 and (total or 0) < 3:
+                existing_ids = [r["id"] for r in rows]
+                fuzzy_rows = await conn.fetch(
+                    f"""
+                    SELECT {_SELECT_COLS}
+                    FROM lenders l
+                    WHERE l.approval_status = 'approved'
+                      AND similarity(l.company_name, $1) > 0.25
+                      AND l.id <> ALL($2::bigint[])
+                    ORDER BY similarity(l.company_name, $1) DESC
+                    LIMIT 10
+                    """,
+                    q_clean, existing_ids,
+                )
+
+            # Phase 3: registry stubs when still no results at all
+            if q_clean and len(q_clean) >= 3 and (total or 0) == 0 and not fuzzy_rows:
+                stub_rows = await conn.fetch(
+                    """
+                    SELECT id, company_name, cin, rbi_registration_number,
+                           regulatory_tier, hq_state, established_year
+                    FROM rbi_registry
+                    WHERE similarity(company_name, $1) > 0.3
+                    ORDER BY similarity(company_name, $1) DESC
+                    LIMIT 5
+                    """,
+                    q_clean,
+                )
+                stubs = [
+                    RegistryStub(
+                        id=r["id"],
+                        company_name=r["company_name"],
+                        cin=r["cin"],
+                        rbi_registration_number=r["rbi_registration_number"],
+                        regulatory_tier=r["regulatory_tier"],
+                        hq_state=r["hq_state"],
+                        established_year=r["established_year"],
+                    )
+                    for r in stub_rows
+                ]
+
     except Exception as exc:
         logger.error("search_lenders DB error: %s | request_id=%s",
                      exc, getattr(request.state, "request_id", ""))
@@ -335,11 +385,48 @@ async def search_lenders(
         total=total,
         page=page,
         limit=limit,
-        results=[_row_to_summary(r) for r in rows],
+        results=[_row_to_summary(r) for r in rows] + [_row_to_summary(r) for r in fuzzy_rows],
+        stubs=stubs,
     )
 
     await cache.set(cache_key, result.model_dump(), ttl=CacheTTL.SEARCH)
     return result
+
+
+# ── Lender request ──────────────────────────────────────────────────────────────
+
+class LenderRequestBody(BaseModel):
+    company_name: str = PydanticField(..., min_length=2, max_length=200)
+    cin: Optional[str] = PydanticField(None, max_length=30)
+    requested_by: Optional[str] = PydanticField(None, max_length=200)
+    notes: Optional[str] = PydanticField(None, max_length=500)
+
+
+@router.post("/request", summary="Submit a request to enrich a missing lender")
+@limiter.limit("10/hour")
+async def request_lender(
+    request: Request,
+    body: LenderRequestBody,
+    db: asyncpg.Pool = Depends(get_db),
+):
+    try:
+        async with db.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO lender_requests (company_name, cin, requested_by, notes)
+                VALUES ($1, $2, $3, $4)
+                """,
+                body.company_name,
+                body.cin,
+                body.requested_by or "anonymous",
+                body.notes,
+            )
+    except Exception as exc:
+        logger.error("request_lender DB error: %s", exc)
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
+
+    logger.info("LENDER_REQUEST company=%s by=%s", body.company_name, body.requested_by)
+    return {"status": "submitted"}
 
 
 @router.get("/stats", summary="Public platform stats (lender count, policies, states)")

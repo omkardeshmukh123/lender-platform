@@ -139,6 +139,27 @@ class PipelineRunRow(BaseModel):
     estimated_cost_usd: Optional[float] = None
 
 
+class LenderRequestRow(BaseModel):
+    id: int
+    company_name: str
+    cin: Optional[str] = None
+    requested_by: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: str
+    status: str
+
+
+class LenderRequestsResponse(BaseModel):
+    total: int
+    page: int
+    limit: int
+    results: List[LenderRequestRow]
+
+
+class UpdateRequestStatus(BaseModel):
+    status: str = Field(..., pattern="^(pending|in_progress|done|rejected)$")
+
+
 # ── Endpoints ──────────────────────────────────────────────────────────────────
 
 
@@ -748,3 +769,92 @@ async def get_stats(
     if d.get("computed_at"):
         d["computed_at"] = d["computed_at"].isoformat()
     return d
+
+
+@router.get(
+    "/lender-requests",
+    response_model=LenderRequestsResponse,
+    summary="List lender enrichment requests (paginated)",
+)
+async def get_lender_requests(
+    request: Request,
+    admin: AdminUser,
+    db: asyncpg.Pool = Depends(get_db),
+    status: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+):
+    offset = (page - 1) * limit
+    conditions: list = []
+    params: list = []
+    idx = 1
+
+    if status:
+        conditions.append(f"status = ${idx}")
+        params.append(status)
+        idx += 1
+
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    try:
+        async with db.acquire() as conn:
+            total = await conn.fetchval(
+                f"SELECT COUNT(*) FROM lender_requests {where}", *params
+            )
+            rows = await conn.fetch(
+                f"""
+                SELECT id, company_name, cin, requested_by, notes, created_at, status
+                FROM lender_requests
+                {where}
+                ORDER BY created_at DESC
+                LIMIT ${idx} OFFSET ${idx + 1}
+                """,
+                *params, limit, offset,
+            )
+    except Exception as exc:
+        logger.error("get_lender_requests DB error: %s", exc)
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
+
+    return LenderRequestsResponse(
+        total=total or 0,
+        page=page,
+        limit=limit,
+        results=[
+            LenderRequestRow(
+                id=r["id"],
+                company_name=r["company_name"],
+                cin=r["cin"],
+                requested_by=r["requested_by"],
+                notes=r["notes"],
+                created_at=r["created_at"].isoformat(),
+                status=r["status"],
+            )
+            for r in rows
+        ],
+    )
+
+
+@router.post(
+    "/lender-requests/{request_id}/status",
+    summary="Update status of a lender enrichment request",
+)
+async def update_lender_request_status(
+    request: Request,
+    request_id: int,
+    body: UpdateRequestStatus,
+    admin: AdminUser,
+    db: asyncpg.Pool = Depends(get_db),
+):
+    try:
+        async with db.acquire() as conn:
+            row = await conn.fetchrow(
+                "UPDATE lender_requests SET status = $1 WHERE id = $2 RETURNING id",
+                body.status, request_id,
+            )
+    except Exception as exc:
+        logger.error("update_lender_request_status DB error: %s", exc)
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
+
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Request {request_id} not found")
+
+    return {"id": request_id, "status": body.status}
