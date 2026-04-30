@@ -180,67 +180,72 @@ function PolicyCard({ policy, website }: { policy: Policy; website: string | nul
           )}
         </div>
 
-        {/* Key metrics row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="flex items-center gap-1 text-xs text-gray-400 mb-1">
-              <Percent className="w-3 h-3" />
-              Interest Rate
-            </div>
-            <div className="text-sm font-bold text-gray-900">
-              {hasRate
-                ? policy.interest_rate_min !== null && policy.interest_rate_max !== null
-                  ? `${policy.interest_rate_min}–${policy.interest_rate_max}%`
-                  : `${policy.interest_rate_min ?? policy.interest_rate_max}% p.a.`
-                : <span className="text-gray-400 font-normal text-xs">Not disclosed</span>
-              }
-            </div>
+        {/* Key metrics — only render boxes that have real data */}
+        {(hasRate || hasAmount || hasTenure || hasScore) ? (
+          <div className="flex flex-wrap gap-3">
+            {hasRate && (
+              <div className="bg-gray-50 rounded-lg p-3 min-w-[120px]">
+                <div className="flex items-center gap-1 text-xs text-gray-400 mb-1">
+                  <Percent className="w-3 h-3" />
+                  Interest Rate
+                </div>
+                <div className="text-sm font-bold text-gray-900">
+                  {policy.interest_rate_min !== null && policy.interest_rate_max !== null
+                    ? `${policy.interest_rate_min}–${policy.interest_rate_max}%`
+                    : `${policy.interest_rate_min ?? policy.interest_rate_max}% p.a.`}
+                </div>
+              </div>
+            )}
+            {hasAmount && (
+              <div className="bg-gray-50 rounded-lg p-3 min-w-[140px]">
+                <div className="flex items-center gap-1 text-xs text-gray-400 mb-1">
+                  <IndianRupee className="w-3 h-3" />
+                  Loan Amount
+                </div>
+                <div className="text-sm font-bold text-gray-900">
+                  {policy.loan_amount_min !== null && policy.loan_amount_max !== null
+                    ? `${formatAmount(policy.loan_amount_min)} – ${formatAmount(policy.loan_amount_max)}`
+                    : formatAmount(policy.loan_amount_min ?? policy.loan_amount_max)}
+                </div>
+              </div>
+            )}
+            {hasTenure && (
+              <div className="bg-gray-50 rounded-lg p-3 min-w-[120px]">
+                <div className="flex items-center gap-1 text-xs text-gray-400 mb-1">
+                  <Clock className="w-3 h-3" />
+                  Tenure
+                </div>
+                <div className="text-sm font-bold text-gray-900">
+                  {policy.tenure_min !== null && policy.tenure_max !== null
+                    ? `${formatTenure(policy.tenure_min)} – ${formatTenure(policy.tenure_max)}`
+                    : formatTenure(policy.tenure_min ?? policy.tenure_max)}
+                </div>
+              </div>
+            )}
+            {hasScore && (
+              <div className="bg-gray-50 rounded-lg p-3 min-w-[100px]">
+                <div className="flex items-center gap-1 text-xs text-gray-400 mb-1">
+                  <TrendingUp className="w-3 h-3" />
+                  Min CIBIL
+                </div>
+                <div className="text-sm font-bold text-gray-900">
+                  {policy.credit_score_min}
+                </div>
+              </div>
+            )}
+            {policy.data_source && policy.data_source !== 'heuristic' && (
+              <div className="self-end pb-3">
+                <span className="text-[10px] text-gray-400 px-2 py-0.5 bg-gray-50 rounded border border-gray-100">
+                  source: {policy.data_source}
+                </span>
+              </div>
+            )}
           </div>
-
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="flex items-center gap-1 text-xs text-gray-400 mb-1">
-              <IndianRupee className="w-3 h-3" />
-              Loan Amount
-            </div>
-            <div className="text-sm font-bold text-gray-900">
-              {hasAmount
-                ? policy.loan_amount_min !== null && policy.loan_amount_max !== null
-                  ? `${formatAmount(policy.loan_amount_min)} – ${formatAmount(policy.loan_amount_max)}`
-                  : formatAmount(policy.loan_amount_min ?? policy.loan_amount_max)
-                : <span className="text-gray-400 font-normal text-xs">Not disclosed</span>
-              }
-            </div>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="flex items-center gap-1 text-xs text-gray-400 mb-1">
-              <Clock className="w-3 h-3" />
-              Tenure
-            </div>
-            <div className="text-sm font-bold text-gray-900">
-              {hasTenure
-                ? policy.tenure_min !== null && policy.tenure_max !== null
-                  ? `${formatTenure(policy.tenure_min)} – ${formatTenure(policy.tenure_max)}`
-                  : formatTenure(policy.tenure_min ?? policy.tenure_max)
-                : <span className="text-gray-400 font-normal text-xs">Not disclosed</span>
-              }
-            </div>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="flex items-center gap-1 text-xs text-gray-400 mb-1">
-              <TrendingUp className="w-3 h-3" />
-              Min CIBIL
-            </div>
-            <div className="text-sm font-bold text-gray-900">
-              {hasScore
-                ? policy.credit_score_min
-                : <span className="text-gray-400 font-normal text-xs">Not specified</span>
-              }
-            </div>
-          </div>
-        </div>
+        ) : (
+          <p className="text-xs text-gray-400 italic">
+            Rate data not yet available — visit the lender&apos;s website for current terms.
+          </p>
+        )}
       </div>
 
       {/* Expandable details */}
