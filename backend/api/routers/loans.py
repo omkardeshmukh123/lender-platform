@@ -124,7 +124,7 @@ async def match_loans(
                            anomaly_flags, completeness_score,
                            review_priority,
                            rates_as_of, data_source_confidence
-                    FROM policies
+                    FROM policies_enriched
                     WHERE id = ANY($1::bigint[])
                     """,
                     policy_ids,
@@ -254,7 +254,7 @@ async def compare_loans(
                     p.collateral_required, p.employment_types,
                     p.prepayment_allowed, p.eligibility_notes,
                     l.company_name, l.website
-                FROM policies p
+                FROM policies_enriched p
                 JOIN lenders l ON l.id = p.lender_id
                 WHERE p.id = ANY($1::int[])
                   AND p.is_active = true

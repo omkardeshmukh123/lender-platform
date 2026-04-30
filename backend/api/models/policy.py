@@ -29,6 +29,8 @@ class Policy(BaseModel):
     eligibility_notes: Optional[str] = None
     completeness_score: Optional[float] = None
     data_source: Optional[str] = None
+    interest_rate_source: Optional[str] = None
+    loan_amount_source: Optional[str] = None
 
 
 class PolicyFilterParams(BaseModel):

@@ -67,6 +67,8 @@ def _row_to_policy(row) -> Policy:
         eligibility_notes=d.get("eligibility_notes"),
         completeness_score=d.get("completeness_score"),
         data_source=d.get("data_source"),
+        interest_rate_source=d.get("interest_rate_source"),
+        loan_amount_source=d.get("loan_amount_source"),
     )
 
 
@@ -201,14 +203,15 @@ async def filter_policies(
             p.eligible_states, p.min_age, p.max_age,
             p.min_monthly_income, p.prepayment_allowed,
             p.eligibility_notes, p.completeness_score,
-            p.data_source, l.company_name
-        FROM policies p
+            p.data_source, p.interest_rate_source, p.loan_amount_source,
+            l.company_name
+        FROM policies_enriched p
         JOIN lenders l ON l.id = p.lender_id
         WHERE {where}
         ORDER BY p.completeness_score DESC NULLS LAST, p.interest_rate_min ASC NULLS LAST
         LIMIT ${idx} OFFSET ${idx + 1}
     """
-    count_sql = f"SELECT COUNT(*) FROM policies p JOIN lenders l ON l.id = p.lender_id WHERE {where}"
+    count_sql = f"SELECT COUNT(*) FROM policies_enriched p JOIN lenders l ON l.id = p.lender_id WHERE {where}"
 
     try:
         async with db.acquire() as conn:
