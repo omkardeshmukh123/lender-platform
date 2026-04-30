@@ -87,3 +87,45 @@ def test_fpc_enricher_returns_empty_on_no_website():
     enricher = FPCPDFEnricher()
     results = enricher.enrich_lender(lender_id="1", website_url=None, policy_map={"MSME Loan": "101"})
     assert results == []
+
+
+from enrichers.bankbazaar import BankBazaarEnricher, parse_bankbazaar_rate_table
+
+
+def test_parse_bankbazaar_rate_table_extracts_ranges():
+    html = """
+    <table>
+      <tr><th>Bank/NBFC</th><th>Interest Rate</th><th>Loan Amount</th><th>Tenure</th></tr>
+      <tr><td>ABC Finance</td><td>12.5% - 18%</td><td>5 Lakh - 500 Lakh</td><td>12 - 60 months</td></tr>
+    </table>
+    """
+    results = parse_bankbazaar_rate_table(html, lender_name="ABC Finance")
+    assert len(results) == 1
+    assert results[0]["interest_rate_min"] == 12.5
+    assert results[0]["interest_rate_max"] == 18.0
+    assert results[0]["loan_amount_min"]   == 5.0
+    assert results[0]["loan_amount_max"]   == 500.0
+    assert results[0]["tenure_min"]        == 12
+    assert results[0]["tenure_max"]        == 60
+
+
+def test_parse_bankbazaar_skips_non_matching_rows():
+    html = """
+    <table>
+      <tr><th>Bank</th><th>Interest Rate</th></tr>
+      <tr><td>XYZ Bank</td><td>9% - 12%</td></tr>
+      <tr><td>ABC Finance</td><td>12.5% - 18%</td></tr>
+    </table>
+    """
+    results = parse_bankbazaar_rate_table(html, lender_name="ABC Finance")
+    assert len(results) == 1
+    assert results[0]["interest_rate_min"] == 12.5
+
+
+def test_bankbazaar_enricher_returns_empty_for_unknown_loan_type():
+    enricher = BankBazaarEnricher()
+    results = enricher.enrich_lender(
+        lender_id="1", lender_name="ABC Finance",
+        policy_map={"Unknown Loan Type": "101"}
+    )
+    assert results == []
