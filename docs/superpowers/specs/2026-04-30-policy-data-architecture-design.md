@@ -10,7 +10,7 @@
 The `policies` table has 1,876 rows but critical financial fields are nearly empty:
 - `interest_rate`: 38 / 1,876 populated (2%)
 - `loan_amount`: 180 / 1,876 populated (10%)
-- `cibil_score`: 34 / 1,876 populated (2%)
+- `credit_score`: 34 / 1,876 populated (2%)
 
 Additionally, multiple enrichment scripts write directly to `policies`, creating write conflicts with no trust hierarchy or audit trail.
 
@@ -70,7 +70,7 @@ Financial fields removed. All other existing columns are kept intact:
 `id`, `lender_id`, `product_name`, `loan_type`, `employment_types`, `operating_states`, `approval_status`, `notes`, `processing_notes`, `created_at`, `updated_at`.
 
 **Removed columns** (migrated to `policy_enrichments`):
-`interest_rate_min`, `interest_rate_max`, `loan_amount_min`, `loan_amount_max`, `tenure_min`, `tenure_max`, `cibil_score_min`, `processing_fee_min`, `processing_fee_max`.
+`interest_rate_min`, `interest_rate_max`, `loan_amount_min`, `loan_amount_max`, `tenure_min`, `tenure_max`, `credit_score_min`, `processing_fee_min`, `processing_fee_max`.
 
 ### `source_rank_rules` table
 
@@ -91,7 +91,7 @@ Seeded with `bse_xbrl` (4), `fpc_pdf` (3), `bankbazaar` (2), `legacy` (1).
 CREATE TABLE policy_enrichments (
     id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     policy_id        UUID REFERENCES policies(id) ON DELETE CASCADE,
-    field            TEXT NOT NULL,        -- 'interest_rate' | 'loan_amount' | 'tenure' | 'cibil_score' | 'processing_fee'
+    field            TEXT NOT NULL,        -- 'interest_rate' | 'loan_amount' | 'tenure' | 'credit_score' | 'processing_fee'
     value_min        NUMERIC,
     value_max        NUMERIC,
     source           TEXT REFERENCES source_rank_rules(source),
@@ -110,7 +110,7 @@ CREATE INDEX idx_pe_validated    ON policy_enrichments (policy_id, field, source
     WHERE validated = true;
 ```
 
-Fields covered: `interest_rate`, `loan_amount`, `tenure`, `cibil_score`, `processing_fee`.
+Fields covered: `interest_rate`, `loan_amount`, `tenure`, `credit_score`, `processing_fee`.
 
 ### `policies_enriched` materialized view — the counter
 
@@ -128,7 +128,7 @@ SELECT
     la.source     AS loan_amount_source,
     t.value_min   AS tenure_min,
     t.value_max   AS tenure_max,
-    cs.value_min  AS cibil_score_min,
+    cs.value_min  AS credit_score_min,
     pf.value_min  AS processing_fee_min,
     pf.value_max  AS processing_fee_max
 FROM policies p
@@ -137,7 +137,7 @@ LEFT JOIN LATERAL (
     WHERE policy_id = p.id AND field = 'interest_rate' AND validated = true
     ORDER BY source_rank DESC LIMIT 1
 ) ir ON true
--- same LATERAL pattern for loan_amount, tenure, cibil_score, processing_fee
+-- same LATERAL pattern for loan_amount, tenure, credit_score, processing_fee
 WITH DATA;
 
 CREATE UNIQUE INDEX ON policies_enriched (id);
@@ -165,7 +165,7 @@ Hard floors and ceilings derived from RBI circulars:
 | interest_rate | 8.0 | 48.0 | % per annum |
 | loan_amount | 0.5 | 50,000 | ₹ Lakhs |
 | tenure | 1 | 360 | months |
-| cibil_score | 300 | 900 | score |
+| credit_score | 300 | 900 | score |
 | processing_fee | 0.0 | 5.0 | % of loan amount |
 
 Violations: rejected, `rejection_reason='guardrail_violation'`, not stored.
@@ -233,7 +233,7 @@ class EnrichmentPayload:
 - Emits `EnrichmentPayload` objects, routes through `bank_manager.py`
 - No longer writes directly to `policies`
 - Confidence: 0.70 fixed
-- Fills: `interest_rate`, `loan_amount`, `tenure`, `cibil_score`
+- Fills: `interest_rate`, `loan_amount`, `tenure`, `credit_score`
 
 ### Airflow DAG — `policy_enrichment_dag.py` (Saturdays 3am)
 
@@ -255,10 +255,10 @@ Gemini is not a task. Gaps remain null.
 
 | Migration | What |
 |---|---|
-| 033_source_rank_rules.sql | Create `source_rank_rules`, seed 3 sources |
-| 034_policy_enrichments.sql | Create `policy_enrichments` table + indexes |
-| 035_backfill_enrichments.sql | Migrate existing `policies` financial data → `policy_enrichments` with `source='legacy'` (rank 1) |
-| 036_policies_enriched_view.sql | Create `policies_enriched` materialized view |
+| 037_source_rank_rules.sql | Create `source_rank_rules`, seed 3 sources |
+| 038_policy_enrichments.sql | Create `policy_enrichments` table + indexes |
+| 039_backfill_enrichments.sql | Migrate existing `policies` financial data → `policy_enrichments` with `source='legacy'` (rank 1) |
+| 040_policies_enriched_view.sql | Create `policies_enriched` materialized view |
 
 ### Phase 2 — Switch API reads
 
@@ -269,7 +269,7 @@ Run enrichment pipeline once to populate the vault.
 ### Phase 3 — Drop legacy columns (2-week soak)
 
 ```sql
--- Migration 037 (after 2-week soak)
+-- Migration 041 (after 2-week soak)
 ALTER TABLE policies
     DROP COLUMN interest_rate_min,
     DROP COLUMN interest_rate_max,
@@ -277,9 +277,9 @@ ALTER TABLE policies
     DROP COLUMN loan_amount_max,
     DROP COLUMN tenure_min,
     DROP COLUMN tenure_max,
-    DROP COLUMN cibil_score_min,
-    DROP COLUMN processing_fee_min,
-    DROP COLUMN processing_fee_max;
+    DROP COLUMN credit_score_min,
+    DROP COLUMN credit_score_max,
+    DROP COLUMN processing_fee;
 ```
 
 ### Rollout Risk Table
@@ -302,10 +302,10 @@ backend/enrichers/__init__.py
 backend/enrichers/bse_xbrl.py
 backend/enrichers/fpc_pdf.py
 backend/enrichers/bankbazaar.py        ← refactored from enrich_policies_db.py
-backend/migrations/033_source_rank_rules.sql
-backend/migrations/034_policy_enrichments.sql
-backend/migrations/035_backfill_enrichments.sql
-backend/migrations/036_policies_enriched_view.sql
+backend/migrations/037_source_rank_rules.sql
+backend/migrations/038_policy_enrichments.sql
+backend/migrations/039_backfill_enrichments.sql
+backend/migrations/040_policies_enriched_view.sql
 airflow/dags/policy_enrichment_dag.py
 ```
 
@@ -318,7 +318,7 @@ backend/api/models/lender.py           ← add interest_rate_source, loan_amount
 
 ### Deferred (Phase 3 — after soak)
 ```
-backend/migrations/037_drop_legacy_policy_columns.sql
+backend/migrations/041_drop_legacy_policy_columns.sql
 ```
 
 ---
