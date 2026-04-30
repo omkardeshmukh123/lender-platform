@@ -293,14 +293,14 @@ def run(args: argparse.Namespace) -> None:
                 updates.append({'id': lid, **update})
             stats['total_updated'] += 1
 
-    # Batch upsert
+    # Update each row individually (upsert can fail if required columns are null on new rows)
     if not args.dry_run and updates:
-        for i in range(0, len(updates), BATCH_SIZE):
-            batch = updates[i : i + BATCH_SIZE]
+        for row in updates:
+            lid = row.pop('id')
             try:
-                supa.table('lenders').upsert(batch, on_conflict='id').execute()
+                supa.table('lenders').update(row).eq('id', lid).execute()
             except Exception as exc:
-                log.error(f"Upsert batch {i//BATCH_SIZE} failed: {exc}")
+                log.error(f"Update failed for lender {lid}: {exc}")
 
     log.info("=" * 55)
     log.info(f"Lenders updated:       {stats['total_updated']}")
