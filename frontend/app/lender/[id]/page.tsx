@@ -233,13 +233,6 @@ function PolicyCard({ policy, website }: { policy: Policy; website: string | nul
                 </div>
               </div>
             )}
-            {policy.data_source && policy.data_source !== 'heuristic' && (
-              <div className="self-end pb-3">
-                <span className="text-[10px] text-gray-400 px-2 py-0.5 bg-gray-50 rounded border border-gray-100">
-                  source: {policy.data_source}
-                </span>
-              </div>
-            )}
           </div>
         ) : (
           <p className="text-xs text-gray-400 italic">
