@@ -23,8 +23,9 @@ interface Lender {
   phone?:          string | null
   email?:          string | null
   website?:        string | null
-  qualityScore?:   number | null
-  policyCount?:    number | null
+  qualityScore?:     number | null
+  policyCount?:      number | null
+  minInterestRate?:  number | null
 }
 
 interface LenderCardProps {
@@ -225,14 +226,20 @@ export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onS
         </div>
       )}
 
-      {/* Policy count badge */}
+      {/* Policy count + rate badge */}
       {lender.policyCount != null && lender.policyCount > 0 && (
-        <div className="mb-3">
+        <div className="mb-3 flex flex-wrap gap-1.5">
           <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold rounded-md"
                 style={{ background: '#F0FDF4', color: '#16A34A', border: '1px solid #BBF7D0' }}>
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
-            {lender.policyCount} {lender.policyCount === 1 ? 'policy' : 'policies'} available
+            {lender.policyCount} {lender.policyCount === 1 ? 'policy' : 'policies'}
           </span>
+          {lender.minInterestRate != null && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold rounded-md"
+                  style={{ background: '#FFF7ED', color: '#C2410C', border: '1px solid #FED7AA' }}>
+              From {lender.minInterestRate}% p.a.
+            </span>
+          )}
         </div>
       )}
 

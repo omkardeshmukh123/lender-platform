@@ -26,6 +26,7 @@ class LenderSummary(BaseModel):
     email: Optional[str] = None
     policy_count: Optional[int] = None
     last_year_revenue: Optional[float] = None
+    min_interest_rate: Optional[float] = None
 
 
 class LenderDetail(LenderSummary):

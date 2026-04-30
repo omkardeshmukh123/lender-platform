@@ -74,6 +74,7 @@ def _row_to_summary(row) -> LenderSummary:
         email=d.get("email"),
         policy_count=d.get("policy_count"),
         last_year_revenue=d.get("last_year_revenue"),
+        min_interest_rate=d.get("min_interest_rate"),
     )
 
 
@@ -311,7 +312,14 @@ async def search_lenders(
             WHERE p.lender_id = l.id
               AND p.is_active = true
               AND p.approval_status = 'approved'
-        ) AS policy_count
+        ) AS policy_count,
+        (
+            SELECT MIN(pe.interest_rate_min)::float FROM policies_enriched pe
+            WHERE pe.lender_id = l.id
+              AND pe.is_active = true
+              AND pe.approval_status = 'approved'
+              AND pe.interest_rate_min IS NOT NULL
+        ) AS min_interest_rate
     """
 
     stubs: List[RegistryStub] = []

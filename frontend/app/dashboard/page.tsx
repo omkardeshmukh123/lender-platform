@@ -86,6 +86,7 @@ interface LenderSummary {
   email:                 string | null
   policy_count:          number | null
   last_year_revenue:     number | null
+  min_interest_rate:     number | null
 }
 
 interface LenderSearchResponse {
@@ -499,8 +500,9 @@ function DashboardContent() {
     phone:           l.phone                 || null,
     email:           l.email                 || null,
     website:         l.website               || null,
-    qualityScore:    l.quality_score         ?? null,
-    policyCount:     l.policy_count          ?? null,
+    qualityScore:       l.quality_score         ?? null,
+    policyCount:        l.policy_count          ?? null,
+    minInterestRate:    l.min_interest_rate     ?? null,
   }))
 
   // ── Render ──────────────────────────────────────────────────
