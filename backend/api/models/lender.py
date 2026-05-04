@@ -29,7 +29,17 @@ class LenderSummary(BaseModel):
     min_interest_rate: Optional[float] = None
 
 
+class GrievanceOfficer(BaseModel):
+    name: Optional[str] = None
+    designation: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    source_url: Optional[str] = None
+    last_verified_at: Optional[str] = None
+
+
 class LenderDetail(LenderSummary):
+    grievance_officer: Optional[GrievanceOfficer] = None
     branch_count: Optional[int] = None
     stock_symbol: Optional[str] = None
     last_scraped_at: Optional[str] = None

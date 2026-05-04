@@ -19,7 +19,7 @@ from dependencies import get_db
 from limiter import limiter
 from core.cache import get_cache, make_key, CacheTTL
 from core.metrics import metrics
-from models.lender import LenderDetail, LenderSearchResponse, LenderSummary, RegistryStub
+from models.lender import GrievanceOfficer, LenderDetail, LenderSearchResponse, LenderSummary, RegistryStub
 from pydantic import BaseModel, Field as PydanticField
 from core.constants import VALID_LOAN_TYPES, VALID_COMPANY_TYPES, VALID_AUM_CATEGORIES
 
@@ -82,6 +82,19 @@ def _row_to_detail(row) -> LenderDetail:
     d = dict(row)
     hq_location = d.get("hq_location") or ""
     hq_city = hq_location.split(",")[0].strip() or None
+
+    gro = None
+    if any(d.get(f"gro_{k}") for k in ("name", "email", "phone", "designation")):
+        gro = GrievanceOfficer(
+            name=d.get("gro_name"),
+            designation=d.get("gro_designation"),
+            email=d.get("gro_email"),
+            phone=d.get("gro_phone"),
+            source_url=d.get("gro_source_url"),
+            last_verified_at=d["gro_last_verified_at"].isoformat()
+                if d.get("gro_last_verified_at") else None,
+        )
+
     return LenderDetail(
         id=d["id"],
         company_name=d["company_name"],
@@ -118,6 +131,7 @@ def _row_to_detail(row) -> LenderDetail:
         recent_funding_amount=d.get("recent_funding_amount"),
         recent_funding_year=d.get("recent_funding_year"),
         financial_source=d.get("financial_source"),
+        grievance_officer=gro,
     )
 
 
@@ -509,19 +523,28 @@ async def get_lender(
         async with db.acquire() as conn:
             row = await conn.fetchrow(
                 """
-                SELECT id, company_name, company_type, rbi_category,
-                       aum_crores, aum_category, hq_state, hq_location,
-                       operating_intensity, business_sector, pan_india, primary_loan_segments,
-                       operating_states, website, quality_score,
-                       employee_count, branch_count, established_year, is_listed,
-                       stock_symbol, phone, email,
-                       last_scraped_at, data_source, schema_version,
-                       cin, company_status, authorized_capital_lakhs,
-                       paid_up_capital_lakhs, mca21_status,
-                       last_year_revenue, recent_funding, recent_funding_amount,
-                       recent_funding_year, financial_source
-                FROM lenders
-                WHERE id = $1 AND approval_status = 'approved'
+                SELECT l.id, l.company_name, l.company_type, l.rbi_category,
+                       l.aum_crores, l.aum_category, l.hq_state, l.hq_location,
+                       l.operating_intensity, l.business_sector, l.pan_india,
+                       l.primary_loan_segments, l.operating_states, l.website,
+                       l.quality_score, l.employee_count, l.branch_count,
+                       l.established_year, l.is_listed, l.stock_symbol,
+                       l.phone, l.email,
+                       l.last_scraped_at, l.data_source, l.schema_version,
+                       l.cin, l.company_status, l.authorized_capital_lakhs,
+                       l.paid_up_capital_lakhs, l.mca21_status,
+                       l.last_year_revenue, l.recent_funding,
+                       l.recent_funding_amount, l.recent_funding_year,
+                       l.financial_source,
+                       g.name        AS gro_name,
+                       g.designation AS gro_designation,
+                       g.email       AS gro_email,
+                       g.phone       AS gro_phone,
+                       g.source_url  AS gro_source_url,
+                       g.last_verified_at AS gro_last_verified_at
+                FROM lenders l
+                LEFT JOIN grievance_officers g ON g.lender_id = l.id
+                WHERE l.id = $1 AND l.approval_status = 'approved'
                 """,
                 lender_id,
             )

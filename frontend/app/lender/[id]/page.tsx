@@ -7,12 +7,21 @@ import {
   MapPin, Globe, Phone, Mail, Building2, Users, GitBranch,
   Calendar, TrendingUp, BadgeCheck, ArrowLeft, ExternalLink,
   IndianRupee, Percent, Clock, Shield, ChevronDown, ChevronUp,
-  FileText,
+  FileText, AlertCircle,
 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
 // ─────────────────────────────────────────────────────────────
+
+interface GrievanceOfficer {
+  name: string | null
+  designation: string | null
+  email: string | null
+  phone: string | null
+  source_url: string | null
+  last_verified_at: string | null
+}
 
 interface LenderDetail {
   id: number
@@ -50,6 +59,8 @@ interface LenderDetail {
   recent_funding_amount: number | null
   recent_funding_year: number | null
   financial_source: string | null
+  // Grievance officer
+  grievance_officer: GrievanceOfficer | null
 }
 
 interface Policy {
@@ -619,6 +630,61 @@ export default function LenderDetailPage() {
             {lender.financial_source && (
               <p className="text-[11px] text-gray-400 mt-3">
                 Source: {lender.financial_source}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* ── GRIEVANCE OFFICER ────────────────────────────────── */}
+        {lender.grievance_officer && (
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" style={{ color: '#1A7070' }} />
+              Grievance Redressal Officer
+            </h2>
+            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+              <div className="flex-1 space-y-2">
+                {lender.grievance_officer.name && (
+                  <p className="text-sm font-semibold text-gray-900">{lender.grievance_officer.name}</p>
+                )}
+                {lender.grievance_officer.designation && (
+                  <p className="text-xs text-gray-500">{lender.grievance_officer.designation}</p>
+                )}
+                <div className="flex flex-wrap gap-4 pt-1">
+                  {lender.grievance_officer.email && (
+                    <a href={`mailto:${lender.grievance_officer.email}`}
+                       className="inline-flex items-center gap-1.5 text-sm hover:underline"
+                       style={{ color: '#1A7070' }}>
+                      <Mail className="w-3.5 h-3.5" />
+                      {lender.grievance_officer.email}
+                    </a>
+                  )}
+                  {lender.grievance_officer.phone && (
+                    <a href={`tel:${lender.grievance_officer.phone}`}
+                       className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900">
+                      <Phone className="w-3.5 h-3.5" />
+                      {lender.grievance_officer.phone}
+                    </a>
+                  )}
+                </div>
+              </div>
+              {lender.grievance_officer.source_url && (
+                <a href={lender.grievance_officer.source_url}
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5
+                              text-xs font-medium rounded-lg border transition-colors hover:bg-gray-50"
+                   style={{ color: '#3D6363', borderColor: '#A8DADA' }}>
+                  <ExternalLink className="w-3 h-3" />
+                  Source
+                </a>
+              )}
+            </div>
+            {lender.grievance_officer.last_verified_at && (
+              <p className="text-[11px] text-gray-400 mt-3">
+                Verified {new Date(lender.grievance_officer.last_verified_at).toLocaleDateString('en-IN', {
+                  day: 'numeric', month: 'long', year: 'numeric',
+                })}
               </p>
             )}
           </div>
