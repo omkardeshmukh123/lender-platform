@@ -815,10 +815,7 @@ export default function LenderDetailPage() {
 
         {lender.last_scraped_at && (
           <p className="text-xs text-gray-400 text-center pb-4">
-            Data last updated {new Date(lender.last_scraped_at).toLocaleDateString('en-IN', {
-              day: 'numeric', month: 'long', year: 'numeric',
-            })}
-            {lender.data_source ? ` · ${lender.data_source}` : ''}
+            Mitram360
           </p>
         )}
       </div>
