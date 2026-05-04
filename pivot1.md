@@ -42,7 +42,7 @@
 - [x] On "Visit Website" click: show a small modal (loan type dropdown + phone field)
 - [x] Store as lead in new `leads` table (migration 043, POST /v1/leads)
 - [x] Then redirect to lender's website
-- [ ] Apply migration 043 in Supabase (pending)
+- [x] Apply migration 043 in Supabase
 
 ---
 
