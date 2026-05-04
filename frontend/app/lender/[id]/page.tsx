@@ -246,9 +246,24 @@ function PolicyCard({ policy, website }: { policy: Policy; website: string | nul
             )}
           </div>
         ) : (
-          <p className="text-xs text-gray-400 italic">
-            Rate data not yet available — visit the lender&apos;s website for current terms.
-          </p>
+          <div className="flex items-center gap-3 p-3 rounded-lg" style={{ background: '#F7FAFA', border: '1px solid #E6F4F4' }}>
+            <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#7A9E9E' }} />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium" style={{ color: '#3D6363' }}>
+                Detailed rates not published online
+              </p>
+              <p className="text-[11px] mt-0.5" style={{ color: '#7A9E9E' }}>
+                Contact lender directly for current terms
+              </p>
+            </div>
+            {website && (
+              <a href={website} target="_blank" rel="noopener noreferrer"
+                 className="text-xs font-semibold px-2.5 py-1 rounded-lg flex-shrink-0"
+                 style={{ background: '#E6F4F4', color: '#1A7070' }}>
+                Visit Site
+              </a>
+            )}
+          </div>
         )}
       </div>
 

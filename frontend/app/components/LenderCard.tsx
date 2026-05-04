@@ -1,10 +1,100 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import {
   MapPin, Calendar, TrendingUp, Users,
-  Phone, Mail, Globe, ArrowRight, Bookmark, BookmarkCheck, Scale,
+  Phone, Mail, Globe, ArrowRight, Bookmark, BookmarkCheck, Scale, X,
 } from 'lucide-react'
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+
+const LOAN_TYPES = [
+  'MSME Loan','Personal Loan','Home Loan','Business Loan','Vehicle Loan',
+  'Gold Loan','Education Loan','Micro Loan','Loan Against Property',
+  'Working Capital','Agriculture Loan','EV Loan','Two Wheeler Loan',
+  'Rural Loan','Microfinance','Supply Chain Finance','Consumer Durable Loan','Credit Card',
+]
+
+function IntentModal({ lenderName, website, onClose }: { lenderName: string; website: string; onClose: () => void }) {
+  const [phone, setPhone]       = useState('')
+  const [loanType, setLoanType] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  const proceed = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+    if (phone.trim() || loanType) {
+      try {
+        await fetch(`${API_URL}/v1/leads`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: phone.trim(), loan_type: loanType, lender_name: lenderName }),
+        })
+      } catch { /* non-blocking */ }
+    }
+    window.open(website, '_blank', 'noopener,noreferrer')
+    onClose()
+  }
+
+  const skip = () => {
+    window.open(website, '_blank', 'noopener,noreferrer')
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style={{ background: 'rgba(13,51,51,0.5)', backdropFilter: 'blur(2px)' }}
+         onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl"
+           onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="font-bold text-sm" style={{ color: '#0F4848' }}>Quick question before you go</p>
+            <p className="text-xs mt-0.5" style={{ color: '#7A9E9E' }}>Visiting {lenderName}</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            <X className="w-4 h-4 text-gray-400" />
+          </button>
+        </div>
+
+        <form onSubmit={proceed} className="space-y-3">
+          <div>
+            <label className="block text-xs font-semibold mb-1.5" style={{ color: '#3D6363' }}>
+              What loan are you looking for?
+            </label>
+            <select value={loanType} onChange={e => setLoanType(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#1A7070]/20 focus:border-[#1A7070]"
+                    style={{ borderColor: '#D8EBEB', color: loanType ? '#0F4848' : '#9CA3AF' }}>
+              <option value="">Select loan type (optional)</option>
+              {LOAN_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold mb-1.5" style={{ color: '#3D6363' }}>
+              Your phone number (optional)
+            </label>
+            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
+                   placeholder="10-digit mobile number"
+                   maxLength={10}
+                   className="w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#1A7070]/20 focus:border-[#1A7070]"
+                   style={{ borderColor: '#D8EBEB' }} />
+          </div>
+          <button type="submit" disabled={submitting}
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)' }}>
+            Continue to Website →
+          </button>
+          <button type="button" onClick={skip}
+                  className="w-full text-xs text-center py-1 transition-colors"
+                  style={{ color: '#7A9E9E' }}>
+            Skip and go directly
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
 
 interface Lender {
   id:              string
@@ -66,6 +156,7 @@ function qualityDot(score: number | null | undefined) {
 }
 
 export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onSave, isComparing = false, onCompare }: LenderCardProps) {
+  const [intentOpen, setIntentOpen] = useState(false)
   const hasContactInfo = lender.website || lender.phone || lender.email
   const badgeStyle     = companyTypeBadgeStyle(lender.companyType)
   const quality        = qualityDot(lender.qualityScore)
@@ -277,17 +368,21 @@ export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onS
         )}
       </div>
 
+      {intentOpen && lender.website && (
+        <IntentModal lenderName={lender.name} website={lender.website} onClose={() => setIntentOpen(false)} />
+      )}
+
       {/* Contact row */}
       {hasContactInfo && (
         <div className="flex flex-wrap gap-1.5 pt-2 mt-auto border-t" style={{ borderColor: '#F0F9F9' }}>
           {lender.website && (
-            <a href={lender.website} target="_blank" rel="noopener noreferrer"
+            <button type="button" onClick={() => setIntentOpen(true)}
                className="inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-semibold
                           text-white rounded-lg hover:shadow-md transition-all duration-200 hover:-translate-y-0.5"
                style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)' }}>
               <Globe className="w-3 h-3" />
               Website
-            </a>
+            </button>
           )}
           {lender.phone && (
             <a href={`tel:${lender.phone}`}
