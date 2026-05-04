@@ -137,7 +137,7 @@ export default function LandingPage() {
                               rounded-full border mb-6"
                    style={{ background: 'rgba(201,162,39,0.15)', borderColor: 'rgba(201,162,39,0.3)', color: '#F5D97A' }}>
                 <Handshake className="w-3.5 h-3.5" />
-                Empowering Bharat · Phygital Lending Platform
+                For DSAs, Loan Officers &amp; Borrowers · Free Forever
               </div>
 
               <h1 className="font-extrabold text-white leading-[1.1] mb-6 tracking-tight"
@@ -152,9 +152,9 @@ export default function LandingPage() {
 
               <p className="text-lg leading-relaxed mb-8 max-w-xl"
                  style={{ color: 'rgba(255,255,255,0.68)' }}>
-                Instantly search and compare{' '}
-                <span className="text-white font-semibold">1,000+ lenders</span> by loan type,
-                state, AUM, eligibility criteria, and more. No middlemen. Free forever.
+                Search and shortlist{' '}
+                <span className="text-white font-semibold">784 RBI-registered lenders</span> by loan type,
+                state, AUM and company type. Built for loan agents, DSAs, and borrowers doing their own research.
               </p>
 
               <div className="flex flex-wrap gap-3 mb-6">
