@@ -203,11 +203,11 @@ export default function LandingPage() {
                    style={{ color: 'rgba(255,255,255,0.45)' }}>Live Platform Stats</p>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: 'NBFCs',      value: stats ? Math.floor(stats.total_lenders * 0.84) : 934 },
-                    { label: 'Banks',      value: 177 },
-                    { label: 'States',     value: stats?.states_covered ?? 28 },
-                    { label: 'Loan Types', value: 18 },
-                  ].map(({ label, value }) => (
+                    { label: 'Lenders',    value: stats?.total_lenders ?? 0 },
+                    { label: 'Policies',   value: stats?.total_policies ?? 0 },
+                    { label: 'States',     value: stats?.states_covered ?? 0 },
+                    { label: 'Types',      value: stats?.company_types ?? 0 },
+                  ].filter(({ value }) => value > 0).map(({ label, value }) => (
                     <div key={label} className="rounded-xl p-3"
                          style={{ background: 'rgba(255,255,255,0.06)' }}>
                       <div className="text-2xl font-extrabold text-white mb-0.5">
