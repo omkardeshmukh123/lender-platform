@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
@@ -253,7 +253,7 @@ export default function AdminPage() {
   if (!authDone) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#3B5CCC]" />
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#1A7070]" />
       </div>
     )
   }
@@ -267,7 +267,7 @@ export default function AdminPage() {
       {/* Nav */}
       <nav className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Building2 className="w-5 h-5 text-[#3B5CCC]" />
+          <Building2 className="w-5 h-5 text-[#1A7070]" />
           <span className="font-semibold text-lg">MITRAM360 Admin</span>
         </div>
         <button onClick={() => router.push('/dashboard')} className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
@@ -290,7 +290,7 @@ export default function AdminPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <div className="text-2xl font-bold text-[#3B5CCC]">{lenderTotal}</div>
+            <div className="text-2xl font-bold text-[#1A7070]">{lenderTotal}</div>
             <div className="text-xs text-gray-500 mt-1">Pending Lenders</div>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
@@ -315,7 +315,7 @@ export default function AdminPage() {
               onClick={() => { setTab(t); setLenderPage(1); setPolicyPage(1); setRequestPage(1) }}
               className={[
                 'px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5',
-                tab === t ? 'bg-white text-[#3B5CCC] shadow-sm' : 'text-gray-500 hover:text-gray-700',
+                tab === t ? 'bg-white text-[#1A7070] shadow-sm' : 'text-gray-500 hover:text-gray-700',
               ].join(' ')}
             >
               {t === 'policies' && <FileText className="w-3.5 h-3.5" />}
@@ -380,7 +380,7 @@ export default function AdminPage() {
                         <td className="px-4 py-3">
                           <div className="font-medium text-gray-900 max-w-xs truncate">{l.company_name}</div>
                           {l.website && (
-                            <a href={l.website} target="_blank" rel="noopener noreferrer" className="text-xs text-[#3B5CCC] hover:underline truncate block max-w-xs">{l.website}</a>
+                            <a href={l.website} target="_blank" rel="noopener noreferrer" className="text-xs text-[#1A7070] hover:underline truncate block max-w-xs">{l.website}</a>
                           )}
                           {l.admin_notes && (
                             <div className="flex items-center gap-1 mt-1">
@@ -390,7 +390,7 @@ export default function AdminPage() {
                           )}
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">{l.company_type}</span>
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#E6F4F4] text-[#1A7070]">{l.company_type}</span>
                         </td>
                         <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">{l.hq_state ?? '—'}</td>
                         <td className="px-4 py-3 hidden lg:table-cell">
@@ -591,7 +591,7 @@ export default function AdminPage() {
                           <select
                             value={r.status}
                             onChange={e => handleUpdateRequestStatus(r.id, e.target.value)}
-                            className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#3B5CCC]"
+                            className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#1A7070]"
                           >
                             <option value="pending">Pending</option>
                             <option value="in_progress">In Progress</option>
@@ -621,3 +621,4 @@ export default function AdminPage() {
     </div>
   )
 }
+

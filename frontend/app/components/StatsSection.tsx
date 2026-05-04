@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Building2, MapPinned, TrendingUp } from 'lucide-react'
 
@@ -29,7 +29,7 @@ export function StatsSection({ totalLenders = 928 }: StatsSectionProps) {
   ]
 
   return (
-    <section className="relative py-16 bg-gradient-to-b from-blue-50/30 to-gray-50/50">
+    <section className="relative py-16 bg-gradient-to-b from-[#E6F4F4]/30 to-gray-50/50">
       <div className="max-w-7xl mx-auto px-8">
         <div className="grid md:grid-cols-3 gap-8">
           {stats.map((stat, index) => {
@@ -39,8 +39,8 @@ export function StatsSection({ totalLenders = 928 }: StatsSectionProps) {
                 key={index}
                 className="bg-white border border-[#E5E7EB] rounded-xl p-8 text-center"
               >
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-50 rounded-lg mb-4">
-                  <Icon className="w-6 h-6 text-[#3B5CCC]" />
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-[#E6F4F4] rounded-lg mb-4">
+                  <Icon className="w-6 h-6 text-[#1A7070]" />
                 </div>
                 <div className="text-4xl font-semibold text-gray-900 mb-2">
                   {stat.value}

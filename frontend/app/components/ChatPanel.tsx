@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
@@ -150,7 +150,7 @@ function LenderDetailCard({ lender }: { lender: LenderResult }) {
           </p>
         </div>
         <a href={`/lender/${lender.id}`}
-           className="flex-shrink-0 flex items-center gap-1 text-[#3B5CCC] hover:underline text-[11px] font-semibold">
+           className="flex-shrink-0 flex items-center gap-1 text-[#1A7070] hover:underline text-[11px] font-semibold">
           <ExternalLink className="w-3 h-3" /> Profile
         </a>
       </div>
@@ -176,7 +176,7 @@ function LenderDetailCard({ lender }: { lender: LenderResult }) {
           <div className="px-3 py-1.5 flex gap-2">
             <Globe className="w-3 h-3 text-gray-300 mt-0.5 flex-shrink-0" />
             <a href={lender.website} target="_blank" rel="noopener noreferrer"
-               className="text-[#3B5CCC] underline underline-offset-2 break-all">
+               className="text-[#1A7070] underline underline-offset-2 break-all">
               {lender.website.replace(/^https?:\/\//, '')}
             </a>
           </div>
@@ -190,7 +190,7 @@ function LenderDetailCard({ lender }: { lender: LenderResult }) {
         {lender.email && (
           <div className="px-3 py-1.5 flex gap-2">
             <Mail className="w-3 h-3 text-gray-300 mt-0.5 flex-shrink-0" />
-            <a href={`mailto:${lender.email}`} className="text-[#3B5CCC] underline underline-offset-2">
+            <a href={`mailto:${lender.email}`} className="text-[#1A7070] underline underline-offset-2">
               {lender.email}
             </a>
           </div>
@@ -243,7 +243,7 @@ function CompareTable({ lenders }: { lenders: LenderResult[] }) {
               <th className="px-3 py-2 text-left font-semibold text-gray-400 whitespace-nowrap text-[11px] uppercase tracking-wide">Field</th>
               {lenders.map(l => (
                 <th key={l.id} className="px-3 py-2 text-left font-bold text-[#1A2B6B]">
-                  <a href={`/lender/${l.id}`} className="hover:text-[#3B5CCC] hover:underline">{l.company_name}</a>
+                  <a href={`/lender/${l.id}`} className="hover:text-[#1A7070] hover:underline">{l.company_name}</a>
                 </th>
               ))}
             </tr>
@@ -270,7 +270,7 @@ function FilterMiniCards({ lenders }: { lenders: LenderResult[] }) {
       {lenders.slice(0, 3).map(l => (
         <a key={l.id} href={`/lender/${l.id}`}
            className="flex items-center gap-3 rounded-xl border border-gray-100 px-3 py-2 bg-white
-                      hover:border-[#3B5CCC]/30 hover:bg-[#EEF2FF]/30 transition-all duration-200 text-xs">
+                      hover:border-[#1A7070]/30 hover:bg-[#EEF2FF]/30 transition-all duration-200 text-xs">
           <div className="flex-1 min-w-0">
             <p className="font-bold text-[#1A2B6B] truncate">{l.company_name}</p>
             <p className="text-gray-400 mt-0.5 flex gap-2">
@@ -282,7 +282,7 @@ function FilterMiniCards({ lenders }: { lenders: LenderResult[] }) {
         </a>
       ))}
       {lenders.length > 3 && (
-        <p className="text-[11px] text-[#3B5CCC] font-semibold px-1">
+        <p className="text-[11px] text-[#1A7070] font-semibold px-1">
           +{lenders.length - 3} more shown in the grid above
         </p>
       )}
@@ -337,7 +337,7 @@ function BotBubble({
           <div className="mt-2 flex flex-wrap gap-1.5 px-1">
             {msg.suggested_actions.map(s => (
               <button key={s} onClick={() => onSuggestion(s)}
-                className="text-[11px] px-2.5 py-1 rounded-full border border-[#3B5CCC]/30 text-[#3B5CCC] bg-blue-50/60 hover:bg-blue-100 transition-colors">
+                className="text-[11px] px-2.5 py-1 rounded-full border border-[#1A7070]/30 text-[#1A7070] bg-[#E6F4F4]/60 hover:bg-blue-100 transition-colors">
                 {s}
               </button>
             ))}
@@ -756,3 +756,4 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
     </>
   )
 }
+

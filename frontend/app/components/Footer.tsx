@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Mail, MapPin, Phone } from 'lucide-react'
 
@@ -11,7 +11,7 @@ export function Footer() {
           <div>
             <div className="flex items-center gap-3 mb-4">
               {/* Simple logo placeholder - no image import needed */}
-              <div className="h-8 w-8 bg-[#3B5CCC] rounded-lg flex items-center justify-center text-white font-bold text-sm">
+              <div className="h-8 w-8 bg-[#1A7070] rounded-lg flex items-center justify-center text-white font-bold text-sm">
                 M
               </div>
               <h3 className="text-white font-semibold">MITRAM360</h3>

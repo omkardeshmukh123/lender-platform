@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -93,11 +93,11 @@ export default function ResetPassword() {
             </div>
           ) : !sessionReady ? (
             <div className="text-center py-10">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#3B5CCC] mx-auto mb-4" />
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#1A7070] mx-auto mb-4" />
               <p className="text-sm text-gray-500">Verifying your reset link…</p>
               <p className="text-xs text-gray-400 mt-2">
                 If this takes too long,{' '}
-                <Link href="/forgot-password" className="text-[#3B5CCC] hover:underline">
+                <Link href="/forgot-password" className="text-[#1A7070] hover:underline">
                   request a new link
                 </Link>
               </p>
@@ -128,7 +128,7 @@ export default function ResetPassword() {
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      className="w-full pl-12 pr-12 py-3.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3B5CCC]/20 focus:border-[#3B5CCC] transition-all placeholder:text-gray-400"
+                      className="w-full pl-12 pr-12 py-3.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#1A7070]/20 focus:border-[#1A7070] transition-all placeholder:text-gray-400"
                       placeholder="Min 8 characters"
                       disabled={loading}
                     />
@@ -153,7 +153,7 @@ export default function ResetPassword() {
                       type={showPassword ? 'text' : 'password'}
                       value={confirm}
                       onChange={e => setConfirm(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3B5CCC]/20 focus:border-[#3B5CCC] transition-all placeholder:text-gray-400"
+                      className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#1A7070]/20 focus:border-[#1A7070] transition-all placeholder:text-gray-400"
                       placeholder="Repeat your password"
                       disabled={loading}
                     />
@@ -163,10 +163,10 @@ export default function ResetPassword() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 px-4 bg-[#3B5CCC] text-white rounded-xl font-medium
-                             hover:bg-[#2d4aa8] focus:outline-none focus:ring-2 focus:ring-[#3B5CCC]/20
+                  className="w-full py-3.5 px-4 bg-[#1A7070] text-white rounded-xl font-medium
+                             hover:bg-[#0F4848] focus:outline-none focus:ring-2 focus:ring-[#1A7070]/20
                              transition-all disabled:opacity-50 disabled:cursor-not-allowed
-                             hover:shadow-lg hover:shadow-[#3B5CCC]/25 hover:scale-[1.02] active:scale-[0.98]"
+                             hover:shadow-lg hover:shadow-[#1A7070]/25 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   {loading ? 'Updating…' : 'Update Password'}
                 </button>
@@ -178,3 +178,4 @@ export default function ResetPassword() {
     </div>
   )
 }
+

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 /**
  * SearchFilter.tsx — Final production version
@@ -228,7 +228,7 @@ function MultiSelectDropdown({
               aria-label={`Clear all ${label} selections`}
               onClick={clearAll}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onChange([]) } }}
-              className="p-0.5 rounded hover:bg-blue-200/60 text-[#3B5CCC]"
+              className="p-0.5 rounded hover:bg-[#E6F4F4] text-[#1A7070]"
             >
               <X className="w-3 h-3" />
             </span>
@@ -1013,3 +1013,4 @@ export function SearchFilter({
     </section>
   )
 }
+

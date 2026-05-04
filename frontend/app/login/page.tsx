@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -124,7 +124,7 @@ function LoginContent() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3B5CCC]/20 focus:border-[#3B5CCC] transition-all placeholder:text-gray-400"
+                  className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#1A7070]/20 focus:border-[#1A7070] transition-all placeholder:text-gray-400"
                   placeholder="Enter your email"
                   disabled={loading}
                 />
@@ -143,7 +143,7 @@ function LoginContent() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-12 py-3.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3B5CCC]/20 focus:border-[#3B5CCC] transition-all placeholder:text-gray-400"
+                  className="w-full pl-12 pr-12 py-3.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#1A7070]/20 focus:border-[#1A7070] transition-all placeholder:text-gray-400"
                   placeholder="Enter your password"
                   disabled={loading}
                 />
@@ -163,7 +163,7 @@ function LoginContent() {
 
             {/* Forgot Password */}
             <div className="flex justify-end">
-              <Link href="/forgot-password" className="text-sm text-[#3B5CCC] hover:text-[#2d4aa8] transition-colors">
+              <Link href="/forgot-password" className="text-sm text-[#1A7070] hover:text-[#0F4848] transition-colors">
                 Forgot password?
               </Link>
             </div>
@@ -172,7 +172,7 @@ function LoginContent() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 px-4 bg-[#3B5CCC] text-white rounded-xl font-medium hover:bg-[#2d4aa8] focus:outline-none focus:ring-2 focus:ring-[#3B5CCC]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-[#3B5CCC]/25 hover:scale-[1.02] active:scale-[0.98]"
+              className="w-full py-3.5 px-4 bg-[#1A7070] text-white rounded-xl font-medium hover:bg-[#0F4848] focus:outline-none focus:ring-2 focus:ring-[#1A7070]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-[#1A7070]/25 hover:scale-[1.02] active:scale-[0.98]"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
@@ -182,7 +182,7 @@ function LoginContent() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <Link href="/signup" className="text-[#3B5CCC] font-semibold hover:text-[#2d4aa8] transition-colors">
+              <Link href="/signup" className="text-[#1A7070] font-semibold hover:text-[#0F4848] transition-colors">
                 Sign Up
               </Link>
             </p>
@@ -197,7 +197,7 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B5CCC]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1A7070]"></div>
       </div>
     }>
       <LoginContent />

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 export default function GlobalError({
   error,
@@ -18,7 +18,7 @@ export default function GlobalError({
             </p>
             <button
               onClick={reset}
-              className="px-6 py-2.5 bg-[#3B5CCC] text-white rounded-xl font-medium hover:bg-[#2d4aa8] transition-colors"
+              className="px-6 py-2.5 bg-[#1A7070] text-white rounded-xl font-medium hover:bg-[#0F4848] transition-colors"
             >
               Try again
             </button>
@@ -28,3 +28,4 @@ export default function GlobalError({
     </html>
   )
 }
+

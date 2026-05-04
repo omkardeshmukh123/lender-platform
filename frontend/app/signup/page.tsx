@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -154,7 +154,7 @@ export default function SignUp() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3B5CCC]/20 focus:border-[#3B5CCC] transition-all placeholder:text-gray-400"
+                      className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#1A7070]/20 focus:border-[#1A7070] transition-all placeholder:text-gray-400"
                       placeholder="Enter your email"
                       disabled={loading}
                     />
@@ -173,7 +173,7 @@ export default function SignUp() {
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3B5CCC]/20 focus:border-[#3B5CCC] transition-all placeholder:text-gray-400"
+                      className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#1A7070]/20 focus:border-[#1A7070] transition-all placeholder:text-gray-400"
                       placeholder="Enter 10-digit mobile number"
                       maxLength={10}
                       disabled={loading}
@@ -196,7 +196,7 @@ export default function SignUp() {
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-12 pr-12 py-3.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3B5CCC]/20 focus:border-[#3B5CCC] transition-all placeholder:text-gray-400"
+                      className="w-full pl-12 pr-12 py-3.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#1A7070]/20 focus:border-[#1A7070] transition-all placeholder:text-gray-400"
                       placeholder="Create a password"
                       disabled={loading}
                     />
@@ -229,7 +229,7 @@ export default function SignUp() {
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full pl-12 pr-12 py-3.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3B5CCC]/20 focus:border-[#3B5CCC] transition-all placeholder:text-gray-400"
+                      className="w-full pl-12 pr-12 py-3.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#1A7070]/20 focus:border-[#1A7070] transition-all placeholder:text-gray-400"
                       placeholder="Confirm your password"
                       disabled={loading}
                     />
@@ -251,7 +251,7 @@ export default function SignUp() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 px-4 bg-[#3B5CCC] text-white rounded-xl font-medium hover:bg-[#2d4aa8] focus:outline-none focus:ring-2 focus:ring-[#3B5CCC]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-[#3B5CCC]/25 hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full py-3.5 px-4 bg-[#1A7070] text-white rounded-xl font-medium hover:bg-[#0F4848] focus:outline-none focus:ring-2 focus:ring-[#1A7070]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-[#1A7070]/25 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   {loading ? 'Creating account...' : 'Create Account'}
                 </button>
@@ -259,11 +259,11 @@ export default function SignUp() {
                 {/* Terms */}
                 <p className="text-center text-xs text-gray-500">
                   By signing up, you agree to our{' '}
-                  <Link href="#" className="text-[#3B5CCC] hover:text-[#2d4aa8] transition-colors">
+                  <Link href="#" className="text-[#1A7070] hover:text-[#0F4848] transition-colors">
                     Terms of Service
                   </Link>{' '}
                   and{' '}
-                  <Link href="#" className="text-[#3B5CCC] hover:text-[#2d4aa8] transition-colors">
+                  <Link href="#" className="text-[#1A7070] hover:text-[#0F4848] transition-colors">
                     Privacy Policy
                   </Link>
                 </p>
@@ -273,7 +273,7 @@ export default function SignUp() {
               <div className="mt-6 text-center">
                 <p className="text-sm text-gray-600">
                   Already have an account?{' '}
-                  <Link href="/login" className="text-[#3B5CCC] font-semibold hover:text-[#2d4aa8] transition-colors">
+                  <Link href="/login" className="text-[#1A7070] font-semibold hover:text-[#0F4848] transition-colors">
                     Sign In
                   </Link>
                 </p>
@@ -290,14 +290,14 @@ export default function SignUp() {
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-3">Check Your Email!</h2>
                 <p className="text-gray-600 mb-2">We sent a confirmation link to:</p>
-                <p className="font-semibold text-[#3B5CCC] mb-4">{email}</p>
+                <p className="font-semibold text-[#1A7070] mb-4">{email}</p>
                 <p className="text-sm text-gray-600">Click the link in the email to activate your account.</p>
                 <p className="text-xs text-gray-500 mt-4">Didn't receive the email? Check your spam folder.</p>
               </div>
               <div className="mt-6">
                 <Link 
                   href="/login" 
-                  className="inline-flex items-center gap-2 text-[#3B5CCC] font-semibold hover:text-[#2d4aa8] transition-colors"
+                  className="inline-flex items-center gap-2 text-[#1A7070] font-semibold hover:text-[#0F4848] transition-colors"
                 >
                   Go to Sign In
                   <ArrowLeft className="w-4 h-4 rotate-180" />

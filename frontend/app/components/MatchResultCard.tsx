@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 /**
  * MatchResultCard.tsx
@@ -107,14 +107,14 @@ interface MetricTileProps {
 }
 function MetricTile({ icon, label, value, accent }: MetricTileProps) {
   return (
-    <div className={`rounded-xl p-3 ${accent ? 'bg-blue-50' : 'bg-gray-50'}`}>
+    <div className={`rounded-xl p-3 ${accent ? 'bg-[#E6F4F4]' : 'bg-gray-50'}`}>
       <div className="flex items-center gap-1.5 mb-1">
         {icon}
         <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold">
           {label}
         </span>
       </div>
-      <div className={`text-sm font-bold ${accent ? 'text-[#3B5CCC]' : 'text-gray-800'}`}>
+      <div className={`text-sm font-bold ${accent ? 'text-[#1A7070]' : 'text-gray-800'}`}>
         {value}
       </div>
     </div>
@@ -150,7 +150,7 @@ export function MatchResultCard({ item, rank }: Props) {
     .filter(Boolean).join(' – ') + (item.tenure_min || item.tenure_max ? ' mo' : '')
 
   const metrics: MetricTileProps[] = [
-    ...(rate      ? [{ icon: <Percent    className="w-3.5 h-3.5 text-[#3B5CCC]" />, label: 'Interest', value: `${rate} p.a.`, accent: true  }] : []),
+    ...(rate      ? [{ icon: <Percent    className="w-3.5 h-3.5 text-[#1A7070]" />, label: 'Interest', value: `${rate} p.a.`, accent: true  }] : []),
     ...(amtRange  ? [{ icon: <IndianRupee className="w-3.5 h-3.5 text-gray-400" />, label: 'Loan range', value: amtRange }] : []),
     ...((item.tenure_min || item.tenure_max) ? [{ icon: <Clock className="w-3.5 h-3.5 text-gray-400" />, label: 'Tenure', value: tenureText }] : []),
     ...(item.processing_fee != null ? [{ icon: <Percent className="w-3.5 h-3.5 text-gray-400" />, label: 'Proc. fee', value: `${item.processing_fee}%` }] : []),
@@ -226,7 +226,7 @@ export function MatchResultCard({ item, rank }: Props) {
                          text-sm font-medium text-gray-700 transition-colors"
             >
               <span className="flex items-center gap-1.5">
-                <BadgeCheck className="w-3.5 h-3.5 text-[#3B5CCC]" />
+                <BadgeCheck className="w-3.5 h-3.5 text-[#1A7070]" />
                 Why this match?
               </span>
               {reasonsOpen
@@ -261,8 +261,8 @@ export function MatchResultCard({ item, rank }: Props) {
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 inline-flex items-center justify-center gap-2
-                         px-4 py-2.5 bg-[#3B5CCC] text-white text-sm font-semibold
-                         rounded-xl hover:bg-[#2d4aa8] transition-colors"
+                         px-4 py-2.5 bg-[#1A7070] text-white text-sm font-semibold
+                         rounded-xl hover:bg-[#0F4848] transition-colors"
             >
               <Globe className="w-4 h-4" />
               Apply Now
@@ -279,8 +279,8 @@ export function MatchResultCard({ item, rank }: Props) {
             title={saved ? 'Remove from shortlist' : 'Shortlist this lender'}
             className={`p-2.5 rounded-xl border transition-all ${
               saved
-                ? 'bg-[#EEF2FF] border-blue-200 text-[#3B5CCC]'
-                : 'bg-white border-gray-200 text-gray-400 hover:text-[#3B5CCC] hover:border-blue-200'
+                ? 'bg-[#EEF2FF] border-blue-200 text-[#1A7070]'
+                : 'bg-white border-gray-200 text-gray-400 hover:text-[#1A7070] hover:border-blue-200'
             }`}
           >
             {saved
@@ -292,3 +292,4 @@ export function MatchResultCard({ item, rank }: Props) {
     </div>
   )
 }
+

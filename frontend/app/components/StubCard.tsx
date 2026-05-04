@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { Building2, MapPin, CheckCircle, AlertCircle } from 'lucide-react'
@@ -22,7 +22,7 @@ const TIER_LABELS: Record<string, string> = {
 }
 const TIER_COLORS: Record<string, string> = {
   'ND-UL': 'bg-purple-50 text-purple-700',
-  'ND-ML': 'bg-blue-50 text-blue-700',
+  'ND-ML': 'bg-[#E6F4F4] text-[#1A7070]',
   'ND-BL': 'bg-gray-100 text-gray-600',
 }
 
@@ -109,7 +109,7 @@ export default function StubCard({ stub, userEmail }: Props) {
           <button
             onClick={handleRequest}
             disabled={state === 'loading'}
-            className="text-xs font-medium text-[#3B5CCC] hover:underline disabled:opacity-50"
+            className="text-xs font-medium text-[#1A7070] hover:underline disabled:opacity-50"
           >
             {state === 'loading' ? 'Submitting…' : 'Request full profile →'}
           </button>
@@ -118,3 +118,4 @@ export default function StubCard({ stub, userEmail }: Props) {
     </div>
   )
 }
+
