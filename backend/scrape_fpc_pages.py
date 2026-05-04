@@ -249,14 +249,11 @@ def _save_checkpoint(conn, lender_id: int) -> None:
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO scraper_checkpoints (job_name, done_ids, updated_at)
-                VALUES ('scrape_fpc_pages', ARRAY[%s::bigint], NOW())
+                VALUES ('scrape_fpc_pages', jsonb_build_array(%s::bigint), NOW())
                 ON CONFLICT (job_name) DO UPDATE
-                SET done_ids   = array_append(
-                        COALESCE(scraper_checkpoints.done_ids, ARRAY[]::bigint[]),
-                        EXCLUDED.done_ids[1]
-                    ),
+                SET done_ids   = scraper_checkpoints.done_ids || jsonb_build_array(%s::bigint),
                     updated_at = NOW()
-            """, [lender_id])
+            """, [lender_id, lender_id])
         conn.commit()
     except Exception as exc:
         log.debug('Checkpoint save failed: %s', exc)

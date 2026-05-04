@@ -282,17 +282,15 @@ def _upsert_gro(lender_id: int, data: Dict[str, Any], dry_run: bool) -> bool:
 
 
 def _save_checkpoint(lender_id: int) -> None:
+    # done_ids column is jsonb, not a pg array — use jsonb concatenation
     sql = """
         INSERT INTO scraper_checkpoints (job_name, done_ids, updated_at)
-        VALUES ('scrape_grievance_officers', ARRAY[%s::bigint], NOW())
+        VALUES ('scrape_grievance_officers', jsonb_build_array(%s::bigint), NOW())
         ON CONFLICT (job_name) DO UPDATE
-        SET done_ids   = array_append(
-                COALESCE(scraper_checkpoints.done_ids, ARRAY[]::bigint[]),
-                EXCLUDED.done_ids[1]
-            ),
+        SET done_ids   = scraper_checkpoints.done_ids || jsonb_build_array(%s::bigint),
             updated_at = NOW()
     """
-    if not _db_execute(sql, [lender_id]):
+    if not _db_execute(sql, [lender_id, lender_id]):
         log.warning('Checkpoint save failed after retries for lender %d — will retry next run', lender_id)
 
 
