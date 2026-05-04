@@ -49,6 +49,7 @@ from routers import lenders
 from routers import admin as admin_router
 from routers import chat as chat_router
 from routers import policies as policies_router
+from routers import leads as leads_router
 from middleware.logging import StructuredLoggingMiddleware
 from middleware.security import SecurityHeadersMiddleware
 from core.cache import create_redis_cache
@@ -189,6 +190,7 @@ app.include_router(lenders.router,         prefix=f"{_V1}/lenders",  tags=["Lend
 app.include_router(policies_router.router, prefix=f"{_V1}/policies", tags=["Policies"])
 app.include_router(admin_router.router,    prefix=f"{_V1}/admin",    tags=["Admin"])
 app.include_router(chat_router.router,     prefix=f"{_V1}/chat",     tags=["Chat"])
+app.include_router(leads_router.router,    prefix=f"{_V1}/leads",    tags=["Leads"])
 
 
 @app.get("/", tags=["Health"])

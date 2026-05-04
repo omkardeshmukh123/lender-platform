@@ -16,33 +16,33 @@
 - [ ] No frontend/backend code existed — nothing else to remove
 
 ## Step 2 — Reposition landing page for DSA/Loan Officers
-- [ ] Update hero headline and subtext to speak to DSAs + loan officers, not just borrowers
-- [ ] Add "For Loan Agents & DSAs" section/badge on landing
-- [ ] Keep borrower messaging secondary, not primary
+- [x] Update hero headline and subtext to speak to DSAs + loan officers, not just borrowers
+- [x] Add "For Loan Agents & DSAs" section/badge on landing
+- [x] Keep borrower messaging secondary, not primary
 
 ## Step 3 — State + Loan Type SEO landing pages
-- [ ] Create `/lenders/[state]` dynamic route with static generation (28 states)
-- [ ] Create `/lenders/[loan-type]` dynamic route (18 loan types)
-- [ ] Each page: filtered lender list + meta title/description for SEO
-- [ ] Add sitemap.xml covering all lender detail pages + state/loan-type pages
+- [x] Create `/lenders/[state]` dynamic route with static generation (33 states)
+- [x] Create `/lenders/[loan-type]` dynamic route (18 loan types)
+- [x] Each page: filtered lender list + meta title/description for SEO
+- [x] Add sitemap.xml covering all lender detail pages + state/loan-type pages
 
 ## Step 4 — "Is This Lender Legit?" verification page
-- [ ] Create `/verify` page: search NBFC by name
-- [ ] Show: RBI category, CIN, MCA21 company_status, established year, AUM if available
-- [ ] Uses existing DB data — zero new scraping needed
-- [ ] Unique feature: no competitor does this cleanly for free
+- [x] Create `/verify` page: search NBFC by name
+- [x] Show: RBI category, CIN, MCA21 company_status, established year, AUM if available
+- [x] Uses existing DB data — zero new scraping needed
+- [x] Unique feature: no competitor does this cleanly for free
 
 ## Step 5 — Show sparse policy data honestly
-- [ ] On lender detail page: show policy cards even without rates
-- [ ] Display what IS available: loan type, amount range, tenure, processing fee
-- [ ] Replace "—" with contextual labels: "Rate: Contact lender" instead of empty dash
-- [ ] Policy count badge already shows on cards — make it mean something
+- [x] On lender detail page: show policy cards even without rates
+- [x] Display what IS available: loan type, amount range, tenure, processing fee
+- [x] Replace "—" with contextual labels: "Rate: Contact lender" instead of empty dash
+- [x] Policy count badge already shows on cards — make it mean something
 
 ## Step 6 — Intent capture before "Visit Website"
-- [ ] On "Visit Website" click: show a small modal (loan type dropdown + phone field)
-- [ ] Store as lead in `lender_requests` or new `leads` table
-- [ ] Then redirect to lender's website
-- [ ] This is the future monetization foundation — qualified leads per lender
+- [x] On "Visit Website" click: show a small modal (loan type dropdown + phone field)
+- [x] Store as lead in new `leads` table (migration 043, POST /v1/leads)
+- [x] Then redirect to lender's website
+- [ ] Apply migration 043 in Supabase (pending)
 
 ---
 
