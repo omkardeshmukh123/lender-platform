@@ -9,7 +9,7 @@ import {
   IndianRupee, Percent, Clock, Shield, ChevronDown, ChevronUp,
   FileText, AlertCircle,
 } from 'lucide-react'
-import { IntentModal } from '../components/LenderCard'
+import { IntentModal } from '../../components/LenderCard'
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
