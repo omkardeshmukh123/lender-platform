@@ -22,12 +22,13 @@ but the admin check happens in Python before any DB call.
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import List, Optional
 
 import asyncpg
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 import sys
 from pathlib import Path
@@ -158,6 +159,62 @@ class LenderRequestsResponse(BaseModel):
 
 class UpdateRequestStatus(BaseModel):
     status: str = Field(..., pattern="^(pending|in_progress|done|rejected)$")
+
+
+class LenderListRow(BaseModel):
+    id: int
+    company_name: str
+    company_type: str
+    hq_state: Optional[str] = None
+    website: Optional[str] = None
+    quality_score: Optional[float] = None
+    approval_status: str
+    created_at: Optional[str] = None
+    admin_notes: Optional[str] = None
+
+
+class LenderListResponse(BaseModel):
+    total: int
+    page: int
+    limit: int
+    results: List[LenderListRow]
+
+
+_JSONB_FIELDS = frozenset({"operating_states", "primary_loan_segments"})
+_VALID_EDIT_STATUSES = frozenset({"pending", "approved", "rejected", "needs_update"})
+
+
+class LenderEditRequest(BaseModel):
+    website:               Optional[str]       = None
+    phone:                 Optional[str]       = None
+    email:                 Optional[str]       = None
+    hq_location:           Optional[str]       = None
+    hq_state:              Optional[str]       = None
+    rbi_category:          Optional[str]       = None
+    aum_crores:            Optional[float]     = None
+    pan_india:             Optional[bool]      = None
+    operating_states:      Optional[List[str]] = None
+    primary_loan_segments: Optional[List[str]] = None
+
+    @field_validator("website")
+    @classmethod
+    def _check_website(cls, v: Optional[str]) -> Optional[str]:
+        if not v:
+            return v
+        v = v.strip()
+        if v and not v.startswith(("http://", "https://")):
+            raise ValueError("website must start with http:// or https://")
+        return v[:500]
+
+    @field_validator("phone")
+    @classmethod
+    def _check_phone(cls, v: Optional[str]) -> Optional[str]:
+        return v.strip()[:20] if v else v
+
+    @field_validator("email")
+    @classmethod
+    def _check_email(cls, v: Optional[str]) -> Optional[str]:
+        return v.strip()[:300] if v else v
 
 
 class LeadRow(BaseModel):
@@ -904,7 +961,7 @@ async def get_leads(
         logger.error("get_leads DB error: %s", exc)
         raise HTTPException(status_code=503, detail="Service temporarily unavailable")
 
-    return LeadsResponse(
+    return LeadsResponse(  # noqa: E128  (continuation indent – kept for readability)
         total=total or 0,
         page=page,
         limit=limit,
@@ -919,3 +976,310 @@ async def get_leads(
             for r in rows
         ],
     )
+
+
+@router.get(
+    "/lenders",
+    response_model=LenderListResponse,
+    summary="List all lenders with optional status filter (paginated)",
+)
+async def get_lenders(
+    request: Request,
+    admin: AdminUser,
+    db: asyncpg.Pool = Depends(get_db),
+    status: Optional[str] = Query(None, description="Filter by approval_status"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+):
+    if status and status not in _VALID_EDIT_STATUSES:
+        raise HTTPException(status_code=422, detail=f"status must be one of: {sorted(_VALID_EDIT_STATUSES)}")
+    offset = (page - 1) * limit
+    params: list = []
+    idx = 1
+    where = ""
+    if status:
+        where = f"WHERE approval_status = ${idx}"
+        params.append(status)
+        idx += 1
+    try:
+        async with db.acquire() as conn:
+            total = await conn.fetchval(f"SELECT COUNT(*) FROM lenders {where}", *params)
+            rows = await conn.fetch(
+                f"""
+                SELECT id, company_name, company_type, hq_state, website,
+                       quality_score, approval_status, created_at, admin_notes
+                FROM lenders
+                {where}
+                ORDER BY
+                    CASE approval_status
+                        WHEN 'pending' THEN 1 WHEN 'needs_update' THEN 2
+                        WHEN 'approved' THEN 3 WHEN 'rejected' THEN 4 ELSE 5
+                    END,
+                    quality_score DESC NULLS LAST
+                LIMIT ${idx} OFFSET ${idx + 1}
+                """,
+                *params, limit, offset,
+            )
+    except Exception as exc:
+        logger.error("get_lenders DB error: %s", exc)
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
+    return LenderListResponse(
+        total=total or 0,
+        page=page,
+        limit=limit,
+        results=[
+            LenderListRow(
+                id=r["id"],
+                company_name=r["company_name"],
+                company_type=r["company_type"],
+                hq_state=r["hq_state"],
+                website=r["website"],
+                quality_score=r["quality_score"],
+                approval_status=r["approval_status"],
+                created_at=r["created_at"].isoformat() if r["created_at"] else None,
+                admin_notes=r["admin_notes"],
+            )
+            for r in rows
+        ],
+    )
+
+
+@router.get(
+    "/lenders/{lender_id}/detail",
+    summary="Fetch editable fields + GRO record for a single lender (admin, any status)",
+)
+async def get_lender_admin_detail(
+    request: Request,
+    lender_id: int,
+    admin: AdminUser,
+    db: asyncpg.Pool = Depends(get_db),
+):
+    try:
+        async with db.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT l.website, l.phone, l.email, l.hq_location, l.hq_state,
+                       l.rbi_category, l.aum_crores, l.pan_india,
+                       l.primary_loan_segments, l.operating_states,
+                       g.name             AS gro_name,
+                       g.designation      AS gro_designation,
+                       g.email            AS gro_email,
+                       g.phone            AS gro_phone,
+                       g.source_url       AS gro_source_url,
+                       g.source_type      AS gro_source_type,
+                       g.last_verified_at AS gro_last_verified_at
+                FROM lenders l
+                LEFT JOIN grievance_officers g ON g.lender_id = l.id
+                WHERE l.id = $1
+                """,
+                lender_id,
+            )
+    except Exception as exc:
+        logger.error("get_lender_admin_detail DB error: id=%d | %s", lender_id, exc)
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
+    if not row:
+        raise HTTPException(status_code=404, detail="Lender not found")
+    d = dict(row)
+    for f in _JSONB_FIELDS:
+        if isinstance(d.get(f), str):
+            try:
+                d[f] = json.loads(d[f])
+            except Exception:
+                d[f] = []
+    if d.get("gro_last_verified_at"):
+        d["gro_last_verified_at"] = d["gro_last_verified_at"].isoformat()
+    return d
+
+
+@router.patch(
+    "/lenders/{lender_id}",
+    summary="Edit a lender's fields (admin manual edit — writes audit log)",
+)
+async def edit_lender(
+    request: Request,
+    lender_id: int,
+    body: LenderEditRequest,
+    admin: AdminUser,
+    db: asyncpg.Pool = Depends(get_db),
+    cache=Depends(get_cache),
+):
+    payload = body.model_dump(exclude_none=True)
+    if not payload:
+        raise HTTPException(status_code=422, detail="No fields provided")
+    _, actor_email = _actor_info(admin)
+    set_parts: List[str] = []
+    params: list = []
+    idx = 1
+    for field, value in payload.items():
+        if field in _JSONB_FIELDS:
+            set_parts.append(f"{field} = ${idx}::jsonb")
+            params.append(json.dumps(value))
+        else:
+            set_parts.append(f"{field} = ${idx}")
+            params.append(value)
+        idx += 1
+    params.append(lender_id)
+    try:
+        async with db.acquire() as conn:
+            row = await conn.fetchrow(
+                f"UPDATE lenders SET {', '.join(set_parts)} WHERE id = ${idx} RETURNING id, company_name",
+                *params,
+            )
+            if not row:
+                raise HTTPException(status_code=404, detail=f"Lender {lender_id} not found")
+            await conn.execute(
+                """
+                INSERT INTO lender_audit_log
+                    (entity_type, entity_id, company_name, action, actor, notes)
+                VALUES ('lender', $1, $2, 'admin_edit', $3, $4)
+                """,
+                lender_id,
+                row["company_name"],
+                actor_email,
+                json.dumps({k: str(v) for k, v in payload.items()}),
+            )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("edit_lender DB error: lender=%d | %s", lender_id, exc)
+        raise HTTPException(status_code=503, detail="Edit service temporarily unavailable")
+    await cache.delete_pattern(f"lp:lender_detail:{lender_id}:*")
+    await cache.delete_pattern("lp:lenders_search:*")
+    logger.info("ADMIN_EDIT lender=%d actor=%s fields=%s", lender_id, actor_email, list(payload.keys()))
+    return {"lender_id": lender_id, "action": "updated", "fields": list(payload.keys())}
+
+
+_VALID_GRO_SOURCE_TYPES = frozenset({"website", "rbi_circular", "annual_report", "manual"})
+
+
+class GROUpsertRequest(BaseModel):
+    name:        Optional[str] = None
+    designation: Optional[str] = None
+    email:       Optional[str] = None
+    phone:       Optional[str] = None
+    source_url:  Optional[str] = None
+    source_type: Optional[str] = Field(None, description="website | rbi_circular | annual_report | manual")
+
+    @field_validator("source_type")
+    @classmethod
+    def _check_source_type(cls, v: Optional[str]) -> Optional[str]:
+        if v and v not in _VALID_GRO_SOURCE_TYPES:
+            raise ValueError(f"source_type must be one of: {sorted(_VALID_GRO_SOURCE_TYPES)}")
+        return v
+
+    @field_validator("email")
+    @classmethod
+    def _check_email(cls, v: Optional[str]) -> Optional[str]:
+        return v.strip()[:200] if v else v
+
+    @field_validator("phone")
+    @classmethod
+    def _check_phone(cls, v: Optional[str]) -> Optional[str]:
+        return v.strip()[:50] if v else v
+
+
+@router.patch(
+    "/lenders/{lender_id}/grievance-officer",
+    summary="Upsert Grievance Officer for a lender (admin manual — sets last_verified_at=NOW())",
+)
+async def upsert_grievance_officer(
+    request: Request,
+    lender_id: int,
+    body: GROUpsertRequest,
+    admin: AdminUser,
+    db: asyncpg.Pool = Depends(get_db),
+    cache=Depends(get_cache),
+):
+    _, actor_email = _actor_info(admin)
+    try:
+        async with db.acquire() as conn:
+            lender = await conn.fetchrow(
+                "SELECT id, company_name FROM lenders WHERE id = $1", lender_id
+            )
+            if not lender:
+                raise HTTPException(status_code=404, detail=f"Lender {lender_id} not found")
+            await conn.execute(
+                """
+                INSERT INTO grievance_officers
+                    (lender_id, name, designation, email, phone, source_url, source_type, last_verified_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+                ON CONFLICT (lender_id) DO UPDATE SET
+                    name             = EXCLUDED.name,
+                    designation      = EXCLUDED.designation,
+                    email            = EXCLUDED.email,
+                    phone            = EXCLUDED.phone,
+                    source_url       = EXCLUDED.source_url,
+                    source_type      = EXCLUDED.source_type,
+                    last_verified_at = NOW()
+                """,
+                lender_id,
+                body.name,
+                body.designation,
+                body.email,
+                body.phone,
+                body.source_url,
+                body.source_type or "manual",
+            )
+            await conn.execute(
+                """
+                INSERT INTO lender_audit_log
+                    (entity_type, entity_id, company_name, action, actor, notes)
+                VALUES ('lender', $1, $2, 'gro_upsert', $3, $4)
+                """,
+                lender_id,
+                lender["company_name"],
+                actor_email,
+                json.dumps({k: str(v) for k, v in body.model_dump(exclude_none=True).items()}),
+            )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("upsert_grievance_officer DB error: lender=%d | %s", lender_id, exc)
+        raise HTTPException(status_code=503, detail="GRO upsert service temporarily unavailable")
+    await cache.delete_pattern(f"lp:lender_detail:{lender_id}:*")
+    logger.info("ADMIN_GRO_UPSERT lender=%d actor=%s", lender_id, actor_email)
+    return {"lender_id": lender_id, "action": "gro_upserted"}
+
+
+@router.delete(
+    "/lenders/{lender_id}/grievance-officer",
+    summary="Remove Grievance Officer record for a lender",
+)
+async def delete_grievance_officer(
+    request: Request,
+    lender_id: int,
+    admin: AdminUser,
+    db: asyncpg.Pool = Depends(get_db),
+    cache=Depends(get_cache),
+):
+    _, actor_email = _actor_info(admin)
+    try:
+        async with db.acquire() as conn:
+            lender = await conn.fetchrow(
+                "SELECT id, company_name FROM lenders WHERE id = $1", lender_id
+            )
+            if not lender:
+                raise HTTPException(status_code=404, detail=f"Lender {lender_id} not found")
+            result = await conn.execute(
+                "DELETE FROM grievance_officers WHERE lender_id = $1", lender_id
+            )
+            deleted = int(result.split()[-1]) if result else 0
+            if deleted:
+                await conn.execute(
+                    """
+                    INSERT INTO lender_audit_log
+                        (entity_type, entity_id, company_name, action, actor, notes)
+                    VALUES ('lender', $1, $2, 'gro_delete', $3, 'GRO record removed')
+                    """,
+                    lender_id,
+                    lender["company_name"],
+                    actor_email,
+                )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("delete_grievance_officer DB error: lender=%d | %s", lender_id, exc)
+        raise HTTPException(status_code=503, detail="GRO delete service temporarily unavailable")
+    await cache.delete_pattern(f"lp:lender_detail:{lender_id}:*")
+    logger.info("ADMIN_GRO_DELETE lender=%d actor=%s", lender_id, actor_email)
+    return {"lender_id": lender_id, "action": "gro_deleted"}

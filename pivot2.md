@@ -29,30 +29,30 @@ Show captured leads (from the Visit Website modal) in the admin dashboard.
 
 Build UI + API so any lender's data can be corrected manually.
 
-- [ ] `PATCH /v1/admin/lenders/{id}` — editable fields: website, phone, email, hq_location, hq_state, rbi_category, aum_crores, pan_india, operating_states[], primary_loan_segments[]
-- [ ] Admin UI: "Edit" button per lender row → slide-out form with all editable fields
-- [ ] On save: write audit log entry (reuse lender_audit_log table, source='admin_manual')
-- [ ] Validation: website must start with http, phone max 20 chars
+- [x] `PATCH /v1/admin/lenders/{id}` — editable fields: website, phone, email, hq_location, hq_state, rbi_category, aum_crores, pan_india, operating_states[], primary_loan_segments[]
+- [x] Admin UI: "Edit" button per lender row → slide-out form with all editable fields
+- [x] On save: write audit log entry (reuse lender_audit_log table, source='admin_manual')
+- [x] Validation: website must start with http, phone max 20 chars
 
 ## Step 3 — Admin "Grievance Officer" editor
 
 Make GRO data manually maintainable — the one feature we're betting accuracy on.
 
-- [ ] `PATCH /v1/admin/lenders/{id}/grievance-officer` — upsert: name, designation, email, phone, source_url
-- [ ] `DELETE /v1/admin/lenders/{id}/grievance-officer` — remove stale/wrong record
-- [ ] Admin UI: GRO sub-section in lender edit form — shows current record, inline edit, delete button
-- [ ] source_type field: dropdown — 'website', 'rbi_circular', 'annual_report', 'manual'
-- [ ] last_verified_at: auto-set to NOW() on every admin save
+- [x] `PATCH /v1/admin/lenders/{id}/grievance-officer` — upsert: name, designation, email, phone, source_url
+- [x] `DELETE /v1/admin/lenders/{id}/grievance-officer` — remove stale/wrong record
+- [x] Admin UI: GRO sub-section in lender edit form — shows current record, inline edit, delete button
+- [x] source_type field: dropdown — 'website', 'rbi_circular', 'annual_report', 'manual'
+- [x] last_verified_at: auto-set to NOW() on every admin save
 
 ## Step 4 — RBI structured data import (no scraping)
 
 Replace brute-force website scraping with structured public datasets.
 
-- [ ] Download RBI master NBFC list (Excel from rbi.org.in/Scripts/NBFC_List.aspx) → `backend/import_rbi_nbfc_list.py` → bulk-upsert rbi_category, cin, registration_number into lenders
-- [ ] Download RBI's NBFC ombudsman circulars (PDF) → manual extraction → CSV → import GRO contacts
-- [ ] For listed NBFCs: annual reports mandate GRO disclosure — check BSE filing portal for structured data
-- [ ] Script output: dry-run first (`--dry-run`), then `--apply`
-- [ ] Do NOT run new website scrapers — structured data only
+- [x] Download RBI master NBFC list (Excel from rbi.org.in/Scripts/NBFC_List.aspx) → `backend/import_rbi_nbfc_list.py` → bulk-upsert rbi_category, cin, registration_number into lenders
+- [x] Download RBI's NBFC ombudsman circulars (PDF) → manual extraction → CSV → import GRO contacts (`backend/import_gro_csv.py`)
+- [x] For listed NBFCs: annual reports mandate GRO disclosure — check BSE filing portal for structured data
+- [x] Script output: dry-run first (default), then `--apply`
+- [x] Do NOT run new website scrapers — structured data only
 
 ## Step 5 — AI chatbot domain guardrails
 

@@ -1,14 +1,15 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 import {
   CheckCircle, XCircle, Clock, AlertTriangle,
-  RefreshCw, Building2, ChevronLeft, ChevronRight, FileText, Phone,
+  RefreshCw, Building2, ChevronLeft, ChevronRight, FileText, Phone, Pencil,
 } from 'lucide-react'
+import EditLenderPanel from './EditLenderPanel'
 
-interface PendingLender {
+interface LenderRow {
   id: number
   company_name: string
   company_type: string
@@ -18,6 +19,7 @@ interface PendingLender {
   data_source: string | null
   created_at: string | null
   admin_notes: string | null
+  approval_status: string
 }
 
 interface PendingPolicy {
@@ -72,11 +74,18 @@ function maskPhone(phone: string | null): string {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
-function badge(score: number | null) {
+function qualityBadge(score: number | null) {
   if (score === null) return 'bg-gray-100 text-gray-500'
   if (score >= 0.7) return 'bg-green-100 text-green-700'
   if (score >= 0.4) return 'bg-yellow-100 text-yellow-700'
   return 'bg-red-100 text-red-700'
+}
+
+const STATUS_BADGE: Record<string, string> = {
+  approved: 'bg-green-100 text-green-700',
+  pending: 'bg-yellow-100 text-yellow-700',
+  rejected: 'bg-red-100 text-red-700',
+  needs_update: 'bg-orange-100 text-orange-700',
 }
 
 export default function AdminPage() {
@@ -85,9 +94,14 @@ export default function AdminPage() {
   const [authDone, setAuthDone] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
 
-  const [lenders, setLenders] = useState<PendingLender[]>([])
+  const [lenders, setLenders] = useState<LenderRow[]>([])
   const [lenderTotal, setLenderTotal] = useState(0)
   const [lenderPage, setLenderPage] = useState(1)
+  const [lenderStatus, setLenderStatus] = useState<string>('pending')
+  const [pendingCount, setPendingCount] = useState(0)
+
+  const [editLenderId, setEditLenderId] = useState<number | null>(null)
+  const [editLenderName, setEditLenderName] = useState('')
 
   const [policies, setPolicies] = useState<PendingPolicy[]>([])
   const [policyTotal, setPolicyTotal] = useState(0)
@@ -140,17 +154,20 @@ export default function AdminPage() {
     setTimeout(() => setToast(null), 3500)
   }
 
-  const fetchLenders = useCallback(async () => {
+  const fetchLenders = useCallback(async (statusOverride?: string) => {
     if (!token) return
+    const s = statusOverride ?? lenderStatus
     setLoading(true)
     try {
-      const data = await apiGet(`/v1/admin/lenders/pending?page=${lenderPage}&limit=${PAGE_SIZE}`)
+      const qs = s ? `status=${s}&` : ''
+      const data = await apiGet(`/v1/admin/lenders?${qs}page=${lenderPage}&limit=${PAGE_SIZE}`)
       setLenders(data.results ?? [])
       setLenderTotal(data.total ?? 0)
+      if (s === 'pending') setPendingCount(data.total ?? 0)
     } catch (e: any) {
       showToast(`Failed to load lenders: ${e.message}`, false)
     } finally { setLoading(false) }
-  }, [token, lenderPage, apiGet])
+  }, [token, lenderPage, lenderStatus, apiGet])
 
   const fetchPolicies = useCallback(async () => {
     if (!token) return
@@ -199,7 +216,7 @@ export default function AdminPage() {
     } finally { setLoading(false) }
   }, [token, leadsPage, apiGet])
 
-  // On initial auth, load all counts so the stats row is populated
+  // On initial auth, load all counts so stats row is populated; default lenderStatus='pending' sets pendingCount
   useEffect(() => {
     if (!authDone) return
     fetchLenders()
@@ -282,6 +299,19 @@ export default function AdminPage() {
     } catch (e: any) { showToast(`Update failed: ${e.message}`, false) }
   }
 
+  const openEdit = (id: number, name: string) => {
+    setEditLenderId(id)
+    setEditLenderName(name)
+  }
+
+  const closeEdit = () => setEditLenderId(null)
+
+  const handleEditSaved = () => {
+    closeEdit()
+    showToast('Lender updated', true)
+    fetchLenders()
+  }
+
   if (!authDone) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -322,7 +352,7 @@ export default function AdminPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <div className="text-2xl font-bold text-[#1A7070]">{lenderTotal}</div>
+            <div className="text-2xl font-bold text-[#1A7070]">{pendingCount}</div>
             <div className="text-xs text-gray-500 mt-1">Pending Lenders</div>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
@@ -356,7 +386,7 @@ export default function AdminPage() {
             >
               {t === 'policies' && <FileText className="w-3.5 h-3.5" />}
               {t === 'leads' && <Phone className="w-3.5 h-3.5" />}
-              {t === 'lenders' ? 'Pending Lenders'
+              {t === 'lenders' ? 'Lenders'
                 : t === 'policies' ? `Pending Policies${policyTotal > 0 ? ` (${policyTotal})` : ''}`
                 : t === 'leads' ? `Leads${leadsTotal > 0 ? ` (${leadsTotal})` : ''}`
                 : t === 'requests' ? `Requests${requestTotal > 0 ? ` (${requestTotal})` : ''}`
@@ -365,9 +395,28 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* Refresh */}
+        {/* Refresh + lender filter */}
         <div className="flex items-center justify-between mb-4">
-          <div />
+          <div>
+            {tab === 'lenders' && (
+              <select
+                value={lenderStatus}
+                onChange={e => {
+                  setLenderStatus(e.target.value)
+                  setLenderPage(1)
+                  // fetchLenders uses lenderStatus state; trigger via callback with override
+                  fetchLenders(e.target.value)
+                }}
+                className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#1A7070]"
+              >
+                <option value="">All</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="needs_update">Needs Update</option>
+              </select>
+            )}
+          </div>
           <div className="flex items-center gap-3">
             {tab === 'policies' && policyTotal > 0 && (
               <button
@@ -397,8 +446,8 @@ export default function AdminPage() {
             ) : lenders.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
                 <CheckCircle className="w-10 h-10 text-green-400 mx-auto mb-3" />
-                <p className="font-medium text-gray-700">No pending lenders</p>
-                <p className="text-sm text-gray-400 mt-1">All lenders have been reviewed.</p>
+                <p className="font-medium text-gray-700">No lenders found</p>
+                <p className="text-sm text-gray-400 mt-1">Try a different status filter.</p>
               </div>
             ) : (
               <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
@@ -409,6 +458,7 @@ export default function AdminPage() {
                       <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Type</th>
                       <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">State</th>
                       <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Quality</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">Status</th>
                       <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
                     </tr>
                   </thead>
@@ -433,13 +483,22 @@ export default function AdminPage() {
                         <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">{l.hq_state ?? '—'}</td>
                         <td className="px-4 py-3 hidden lg:table-cell">
                           {l.quality_score !== null ? (
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${badge(l.quality_score)}`}>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${qualityBadge(l.quality_score)}`}>
                               {(l.quality_score * 100).toFixed(0)}%
                             </span>
                           ) : '—'}
                         </td>
+                        <td className="px-4 py-3 hidden xl:table-cell">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[l.approval_status] ?? 'bg-gray-100 text-gray-600'}`}>
+                            {l.approval_status}
+                          </span>
+                        </td>
                         <td className="px-4 py-3 text-right">
                           <div className="inline-flex gap-2">
+                            <button onClick={() => openEdit(l.id, l.company_name)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors">
+                              <Pencil className="w-3.5 h-3.5" />Edit
+                            </button>
                             <button onClick={() => handleApproveLender(l.id)} disabled={acting === l.id}
                               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-50 transition-colors">
                               <CheckCircle className="w-3.5 h-3.5" />Approve
@@ -513,7 +572,7 @@ export default function AdminPage() {
                         </td>
                         <td className="px-4 py-3 hidden xl:table-cell">
                           {p.completeness_score !== null ? (
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${badge(p.completeness_score)}`}>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${qualityBadge(p.completeness_score)}`}>
                               {(p.completeness_score * 100).toFixed(0)}%
                             </span>
                           ) : '—'}
@@ -714,7 +773,17 @@ export default function AdminPage() {
           </>
         )}
       </div>
+
+      {/* Edit Lender slide-out panel */}
+      {editLenderId !== null && token && (
+        <EditLenderPanel
+          lenderId={editLenderId}
+          lenderName={editLenderName}
+          token={token}
+          onClose={closeEdit}
+          onSaved={handleEditSaved}
+        />
+      )}
     </div>
   )
 }
-
