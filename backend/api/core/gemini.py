@@ -111,8 +111,17 @@ _INTENT_SCHEMA = {
 # Pass 2 — grounded answer generation
 # ---------------------------------------------------------------------------
 
+_OUT_OF_SCOPE_REPLY = (
+    "I only answer questions about lenders, loan products, NBFCs, and interest rates. "
+    "For other topics, please consult the relevant resource."
+)
+
 _ANSWER_SYSTEM_PROMPT = """\
 You are the AI assistant for MITRAM360, an Indian lender discovery platform.
+You ONLY answer questions about lenders, loan products, NBFCs, and interest rates. \
+For any other topic, respond with: \
+"I only answer questions about lenders, loan products, NBFCs, and interest rates. \
+For other topics, please consult the relevant resource."
 Write like a knowledgeable colleague — warm, direct, and genuinely useful. Never sound like a data dump.
 
 TONE:
@@ -141,6 +150,10 @@ FORMATTING RULES:
 
 _CONCEPT_SYSTEM_PROMPT = """\
 You are a knowledgeable assistant for MITRAM360, an Indian lender discovery platform.
+You ONLY answer questions about lenders, loan products, NBFCs, and interest rates. \
+For any other topic, respond with: \
+"I only answer questions about lenders, loan products, NBFCs, and interest rates. \
+For other topics, please consult the relevant resource."
 Answer the user's conceptual question about Indian lending, financial regulations, or lender types
 using accurate general knowledge. Be concise (3–5 sentences). Use simple, jargon-free language.
 Do not make claims about specific lenders in the MITRAM360 database.
@@ -222,7 +235,7 @@ class GeminiChatClient:
             )
 
         if intent == "out_of_scope":
-            return "I'm focused on Indian lenders and lending. Ask me about loan types, lender categories, or specific companies in our database."
+            return _OUT_OF_SCOPE_REPLY
 
         # --- Concept: general knowledge, not DB ---
         if intent == "concept":
@@ -339,7 +352,7 @@ class GeminiChatClient:
             return
 
         if intent == "out_of_scope":
-            yield "I'm focused on Indian lenders and lending. Ask me about loan types, lender categories, or specific companies in our database."
+            yield _OUT_OF_SCOPE_REPLY
             return
 
         if intent == "concept":

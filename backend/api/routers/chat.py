@@ -447,6 +447,7 @@ async def _save_turn(
     assistant_msg: str,
     intent: str,
     filters_used: Optional[dict],
+    refusal: bool = False,
 ) -> Optional[int]:
     import json as _json
     async with db.acquire() as conn:
@@ -455,15 +456,26 @@ async def _save_turn(
                 "INSERT INTO chat_messages (session_id, role, content) VALUES ($1::uuid, 'user', $2)",
                 session_id, user_msg,
             )
-            row = await conn.fetchrow(
-                """
-                INSERT INTO chat_messages (session_id, role, content, intent, filters_used)
-                VALUES ($1::uuid, 'assistant', $2, $3, $4::jsonb)
-                RETURNING id
-                """,
-                session_id, assistant_msg, intent,
-                _json.dumps(filters_used) if filters_used else None,
-            )
+            if refusal:
+                row = await conn.fetchrow(
+                    """
+                    INSERT INTO chat_messages (session_id, role, content, intent, filters_used, refusal)
+                    VALUES ($1::uuid, 'assistant', $2, $3, $4::jsonb, true)
+                    RETURNING id
+                    """,
+                    session_id, assistant_msg, intent,
+                    _json.dumps(filters_used) if filters_used else None,
+                )
+            else:
+                row = await conn.fetchrow(
+                    """
+                    INSERT INTO chat_messages (session_id, role, content, intent, filters_used)
+                    VALUES ($1::uuid, 'assistant', $2, $3, $4::jsonb)
+                    RETURNING id
+                    """,
+                    session_id, assistant_msg, intent,
+                    _json.dumps(filters_used) if filters_used else None,
+                )
             return int(row["id"]) if row else None
 
 
@@ -554,6 +566,14 @@ async def chat(
                 body.message, intent, [], gemini_history
             ),
         )
+        message_id = None
+        if session_ok and intent == "out_of_scope":
+            try:
+                message_id = await _save_turn(
+                    db, body.session_id, body.message, answer, intent, None, refusal=True
+                )
+            except Exception as exc:
+                logger.warning("chat: failed to save refusal turn: %s", exc)
         return ChatResponse(
             answer=answer,
             intent=intent,
@@ -561,6 +581,7 @@ async def chat(
             applied_filters=None,
             unmatched_names=[],
             session_id=body.session_id,
+            message_id=message_id,
         )
 
     # ------------------------------------------------------------------
@@ -853,6 +874,7 @@ async def chat_stream(
                 message_id = await _save_turn(
                     db, body.session_id, body.message,
                     "".join(full_parts), intent, applied_filters,
+                    refusal=intent == "out_of_scope",
                 )
             except Exception as exc:
                 logger.warning("chat_stream: save failed: %s", exc)

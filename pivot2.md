@@ -58,10 +58,10 @@ Replace brute-force website scraping with structured public datasets.
 
 Restrict the Gemini chatbot to loan/lender questions only.
 
-- [ ] Update system prompt: add explicit refusal instruction for non-loan topics ("I only answer questions about lenders, loan products, NBFCs, and interest rates. For other topics, please consult the relevant resource.")
-- [ ] Add 10 off-topic test queries to a `backend/tests/test_chatbot_guardrails.py` — each must return a refusal, not an answer
-- [ ] Run same on-topic query 10 times → check variance in output (aim: consistent lender name, rate format)
-- [ ] Log refusals: add `refusal: bool` field to chat_logs table (migration 044)
+- [x] Update system prompt: add explicit refusal instruction for non-loan topics ("I only answer questions about lenders, loan products, NBFCs, and interest rates. For other topics, please consult the relevant resource.")
+- [x] Add 10 off-topic test queries to a `backend/tests/test_chatbot_guardrails.py` — each must return a refusal, not an answer
+- [x] Run same on-topic query 10 times → check variance in output (aim: consistent lender name, rate format)
+- [x] Log refusals: add `refusal: bool` field to chat_logs table (migration 044)
 
 ## Step 6 — Real-user testing (DSAs / loan agents)
 
