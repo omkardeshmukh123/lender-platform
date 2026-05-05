@@ -160,6 +160,21 @@ class UpdateRequestStatus(BaseModel):
     status: str = Field(..., pattern="^(pending|in_progress|done|rejected)$")
 
 
+class LeadRow(BaseModel):
+    id: int
+    lender_name: str
+    loan_type: Optional[str] = None
+    phone: Optional[str] = None
+    created_at: str
+
+
+class LeadsResponse(BaseModel):
+    total: int
+    page: int
+    limit: int
+    results: List[LeadRow]
+
+
 # ── Endpoints ──────────────────────────────────────────────────────────────────
 
 
@@ -858,3 +873,49 @@ async def update_lender_request_status(
         raise HTTPException(status_code=404, detail=f"Request {request_id} not found")
 
     return {"id": request_id, "status": body.status}
+
+
+@router.get(
+    "/leads",
+    response_model=LeadsResponse,
+    summary="Leads captured from Visit Website modal (paginated, newest first)",
+)
+async def get_leads(
+    request: Request,
+    admin: AdminUser,
+    db: asyncpg.Pool = Depends(get_db),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+):
+    offset = (page - 1) * limit
+    try:
+        async with db.acquire() as conn:
+            total = await conn.fetchval("SELECT COUNT(*) FROM leads")
+            rows = await conn.fetch(
+                """
+                SELECT id, lender_name, loan_type, phone, created_at
+                FROM leads
+                ORDER BY created_at DESC
+                LIMIT $1 OFFSET $2
+                """,
+                limit, offset,
+            )
+    except Exception as exc:
+        logger.error("get_leads DB error: %s", exc)
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
+
+    return LeadsResponse(
+        total=total or 0,
+        page=page,
+        limit=limit,
+        results=[
+            LeadRow(
+                id=r["id"],
+                lender_name=r["lender_name"],
+                loan_type=r["loan_type"],
+                phone=r["phone"],
+                created_at=r["created_at"].isoformat(),
+            )
+            for r in rows
+        ],
+    )

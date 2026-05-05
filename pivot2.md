@@ -21,9 +21,9 @@
 
 Show captured leads (from the Visit Website modal) in the admin dashboard.
 
-- [ ] `GET /v1/admin/leads` — paginated, sortable by date; returns lender_name, loan_type, phone, created_at
-- [ ] Admin UI: "Leads" tab in admin page — table with date, lender, loan type, phone (masked: last 4 digits visible)
-- [ ] Running count in admin stats card
+- [x] `GET /v1/admin/leads` — paginated, sortable by date; returns lender_name, loan_type, phone, created_at
+- [x] Admin UI: "Leads" tab in admin page — table with date, lender, loan type, phone (masked: last 4 digits visible)
+- [x] Running count in admin stats card
 
 ## Step 2 — Admin "Edit Lender" interface
 

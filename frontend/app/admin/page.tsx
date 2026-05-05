@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 import {
   CheckCircle, XCircle, Clock, AlertTriangle,
-  RefreshCw, Building2, ChevronLeft, ChevronRight, FileText,
+  RefreshCw, Building2, ChevronLeft, ChevronRight, FileText, Phone,
 } from 'lucide-react'
 
 interface PendingLender {
@@ -55,6 +55,21 @@ interface LenderRequest {
   status: string
 }
 
+interface Lead {
+  id: number
+  lender_name: string
+  loan_type: string | null
+  phone: string | null
+  created_at: string
+}
+
+function maskPhone(phone: string | null): string {
+  if (!phone) return '—'
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length <= 4) return phone
+  return '••••' + digits.slice(-4)
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 function badge(score: number | null) {
@@ -82,7 +97,10 @@ export default function AdminPage() {
   const [requests, setRequests] = useState<LenderRequest[]>([])
   const [requestTotal, setRequestTotal] = useState(0)
   const [requestPage, setRequestPage] = useState(1)
-  const [tab, setTab] = useState<'lenders' | 'policies' | 'pipeline' | 'requests'>('lenders')
+  const [leads, setLeads] = useState<Lead[]>([])
+  const [leadsTotal, setLeadsTotal] = useState(0)
+  const [leadsPage, setLeadsPage] = useState(1)
+  const [tab, setTab] = useState<'lenders' | 'policies' | 'pipeline' | 'requests' | 'leads'>('lenders')
   const [loading, setLoading] = useState(false)
   const [acting, setActing] = useState<number | null>(null)
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
@@ -169,12 +187,25 @@ export default function AdminPage() {
     } finally { setLoading(false) }
   }, [token, requestPage, apiGet])
 
+  const fetchLeads = useCallback(async () => {
+    if (!token) return
+    setLoading(true)
+    try {
+      const data = await apiGet(`/v1/admin/leads?page=${leadsPage}&limit=${PAGE_SIZE}`)
+      setLeads(data.results ?? [])
+      setLeadsTotal(data.total ?? 0)
+    } catch (e: any) {
+      showToast(`Failed to load leads: ${e.message}`, false)
+    } finally { setLoading(false) }
+  }, [token, leadsPage, apiGet])
+
   // On initial auth, load all counts so the stats row is populated
   useEffect(() => {
     if (!authDone) return
     fetchLenders()
     fetchPolicies()
     fetchRuns()
+    fetchLeads()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authDone])
 
@@ -184,8 +215,9 @@ export default function AdminPage() {
     if (tab === 'lenders') fetchLenders()
     else if (tab === 'policies') fetchPolicies()
     else if (tab === 'requests') fetchRequests()
+    else if (tab === 'leads') fetchLeads()
     else fetchRuns()
-  }, [tab, lenderPage, policyPage, requestPage, fetchLenders, fetchPolicies, fetchRequests, fetchRuns])
+  }, [tab, lenderPage, policyPage, requestPage, leadsPage, fetchLenders, fetchPolicies, fetchRequests, fetchRuns, fetchLeads])
 
   const handleApproveLender = async (id: number) => {
     setActing(id)
@@ -288,7 +320,7 @@ export default function AdminPage() {
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <div className="text-2xl font-bold text-[#1A7070]">{lenderTotal}</div>
             <div className="text-xs text-gray-500 mt-1">Pending Lenders</div>
@@ -296,6 +328,10 @@ export default function AdminPage() {
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <div className="text-2xl font-bold text-orange-500">{policyTotal}</div>
             <div className="text-xs text-gray-500 mt-1">Pending Policies</div>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 text-center cursor-pointer hover:border-[#1A7070] transition-colors" onClick={() => setTab('leads')}>
+            <div className="text-2xl font-bold text-purple-600">{leadsTotal}</div>
+            <div className="text-xs text-gray-500 mt-1">Total Leads</div>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <div className="text-2xl font-bold text-green-600">{runs.filter(r => r.success_count > 0).length}</div>
@@ -308,19 +344,21 @@ export default function AdminPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-gray-100 rounded-xl p-1 w-fit">
-          {(['lenders', 'policies', 'requests', 'pipeline'] as const).map(t => (
+        <div className="flex flex-wrap gap-1 mb-6 bg-gray-100 rounded-xl p-1 w-fit">
+          {(['lenders', 'policies', 'leads', 'requests', 'pipeline'] as const).map(t => (
             <button
               key={t}
-              onClick={() => { setTab(t); setLenderPage(1); setPolicyPage(1); setRequestPage(1) }}
+              onClick={() => { setTab(t); setLenderPage(1); setPolicyPage(1); setRequestPage(1); setLeadsPage(1) }}
               className={[
                 'px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5',
                 tab === t ? 'bg-white text-[#1A7070] shadow-sm' : 'text-gray-500 hover:text-gray-700',
               ].join(' ')}
             >
               {t === 'policies' && <FileText className="w-3.5 h-3.5" />}
+              {t === 'leads' && <Phone className="w-3.5 h-3.5" />}
               {t === 'lenders' ? 'Pending Lenders'
                 : t === 'policies' ? `Pending Policies${policyTotal > 0 ? ` (${policyTotal})` : ''}`
+                : t === 'leads' ? `Leads${leadsTotal > 0 ? ` (${leadsTotal})` : ''}`
                 : t === 'requests' ? `Requests${requestTotal > 0 ? ` (${requestTotal})` : ''}`
                 : 'Pipeline Runs'}
             </button>
@@ -342,7 +380,7 @@ export default function AdminPage() {
               </button>
             )}
             <button
-              onClick={() => tab === 'lenders' ? fetchLenders() : tab === 'policies' ? fetchPolicies() : fetchRuns()}
+              onClick={() => tab === 'lenders' ? fetchLenders() : tab === 'policies' ? fetchPolicies() : tab === 'leads' ? fetchLeads() : tab === 'requests' ? fetchRequests() : fetchRuns()}
               className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
             >
               <RefreshCw className={['w-3.5 h-3.5', loading ? 'animate-spin' : ''].join(' ')} />
@@ -549,6 +587,64 @@ export default function AdminPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Leads tab ── */}
+        {tab === 'leads' && (
+          <>
+            {loading && leads.length === 0 ? (
+              <div className="text-center py-16 text-gray-400">Loading…</div>
+            ) : leads.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+                <Phone className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                <p className="font-medium text-gray-700">No leads yet</p>
+                <p className="text-sm text-gray-400 mt-1">Leads appear when users click "Visit Website" on a lender.</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Lender</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Loan Type</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Phone</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {leads.map(lead => (
+                      <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 font-medium text-gray-900 max-w-xs truncate">{lead.lender_name}</td>
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          {lead.loan_type
+                            ? <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700">{lead.loan_type}</span>
+                            : <span className="text-gray-400 text-xs">—</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          {lead.phone
+                            ? <span className="font-mono text-xs text-gray-700" title={lead.phone}>{maskPhone(lead.phone)}</span>
+                            : <span className="text-gray-400 text-xs">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-gray-400 hidden lg:table-cell">
+                          {new Date(lead.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {Math.ceil(leadsTotal / PAGE_SIZE) > 1 && (
+                  <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+                    <span className="text-xs text-gray-500">{((leadsPage - 1) * PAGE_SIZE) + 1}–{Math.min(leadsPage * PAGE_SIZE, leadsTotal)} of {leadsTotal}</span>
+                    <div className="flex gap-2">
+                      <button onClick={() => setLeadsPage(p => Math.max(1, p - 1))} disabled={leadsPage === 1} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
+                      <span className="text-xs text-gray-500 flex items-center">{leadsPage} / {Math.ceil(leadsTotal / PAGE_SIZE)}</span>
+                      <button onClick={() => setLeadsPage(p => Math.min(Math.ceil(leadsTotal / PAGE_SIZE), p + 1))} disabled={leadsPage === Math.ceil(leadsTotal / PAGE_SIZE)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 disabled:opacity-30"><ChevronRight className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </>
