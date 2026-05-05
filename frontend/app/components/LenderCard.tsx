@@ -16,7 +16,7 @@ const LOAN_TYPES = [
   'Rural Loan','Microfinance','Supply Chain Finance','Consumer Durable Loan','Credit Card',
 ]
 
-function IntentModal({ lenderName, website, onClose }: { lenderName: string; website: string; onClose: () => void }) {
+export function IntentModal({ lenderName, website, onClose }: { lenderName: string; website: string; onClose: () => void }) {
   const [phone, setPhone]       = useState('')
   const [loanType, setLoanType] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -76,7 +76,7 @@ function IntentModal({ lenderName, website, onClose }: { lenderName: string; web
             </label>
             <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
                    placeholder="10-digit mobile number"
-                   maxLength={10}
+                   maxLength={15}
                    className="w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#1A7070]/20 focus:border-[#1A7070]"
                    style={{ borderColor: '#D8EBEB' }} />
           </div>

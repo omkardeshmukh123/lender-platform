@@ -9,6 +9,7 @@ import {
   IndianRupee, Percent, Clock, Shield, ChevronDown, ChevronUp,
   FileText, AlertCircle,
 } from 'lucide-react'
+import { IntentModal } from '../components/LenderCard'
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -363,6 +364,7 @@ export default function LenderDetailPage() {
   const [loading,         setLoading]         = useState(true)
   const [policiesLoading, setPoliciesLoading] = useState(true)
   const [error,           setError]           = useState<string | null>(null)
+  const [intentOpen,      setIntentOpen]      = useState(false)
 
   // Fetch lender
   useEffect(() => {
@@ -447,10 +449,8 @@ export default function LenderDetailPage() {
           </button>
           <span className="text-sm truncate flex-1" style={{ color: '#3D6363' }}>{lender.company_name}</span>
           {lender.website && (
-            <a
-              href={lender.website}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => setIntentOpen(true)}
               className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-1.5
                          text-white text-sm font-semibold rounded-lg
                          transition-all hover:-translate-y-0.5 hover:shadow-lg"
@@ -459,7 +459,7 @@ export default function LenderDetailPage() {
               <Globe className="w-3.5 h-3.5" />
               Visit Website
               <ExternalLink className="w-3.5 h-3.5" />
-            </a>
+            </button>
           )}
         </div>
       </nav>
@@ -716,10 +716,8 @@ export default function LenderDetailPage() {
               )}
             </h2>
             {lender.website && (
-              <a
-                href={lender.website}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => setIntentOpen(true)}
                 className="inline-flex items-center gap-1.5 px-4 py-2
                            text-white text-sm font-semibold rounded-xl
                            transition-all hover:-translate-y-0.5 hover:shadow-lg"
@@ -728,7 +726,7 @@ export default function LenderDetailPage() {
                 <Globe className="w-4 h-4" />
                 Apply on Website
                 <ExternalLink className="w-3.5 h-3.5" />
-              </a>
+              </button>
             )}
           </div>
 
@@ -819,6 +817,14 @@ export default function LenderDetailPage() {
           </p>
         )}
       </div>
+
+      {intentOpen && lender.website && (
+        <IntentModal
+          lenderName={lender.company_name}
+          website={lender.website}
+          onClose={() => setIntentOpen(false)}
+        />
+      )}
     </div>
   )
 }
