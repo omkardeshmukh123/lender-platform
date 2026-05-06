@@ -23,76 +23,135 @@ type User = {
 type AuthContextType = {
   user: User | null
   loading: boolean
+  phoneRequired: boolean
+  profileChecking: boolean
   signUp: (email: string, password: string) => Promise<{ data: any; error: any }>
   signIn: (email: string, password: string) => Promise<{ data: any; error: any }>
+  signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
+  savePhone: (phone: string) => Promise<{ error: string | null }>
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  phoneRequired: false,
+  profileChecking: false,
   signUp: async () => ({ data: null, error: null }),
   signIn: async () => ({ data: null, error: null }),
+  signInWithGoogle: async () => {},
   signOut: async () => {},
+  savePhone: async () => ({ error: null }),
 })
+
+async function checkPhoneRequired(userId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('user_profiles')
+    .select('phone')
+    .eq('user_id', userId)
+    .maybeSingle()
+  return !data?.phone
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [phoneRequired, setPhoneRequired] = useState(false)
+  const [profileChecking, setProfileChecking] = useState(false)
 
   useEffect(() => {
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    let cancelled = false
+
+    // Page load: restore existing session and check phone for Google users
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (cancelled) return
       if (session?.user) {
         setUser({
           id: session.user.id,
           email: session.user.email || '',
           access_token: session.access_token,
         })
+        if (session.user.app_metadata?.provider === 'google') {
+          setProfileChecking(true)
+          const required = await checkPhoneRequired(session.user.id)
+          if (!cancelled) {
+            setPhoneRequired(required)
+            setProfileChecking(false)
+          }
+        }
       } else {
         setUser(null)
       }
-      setLoading(false)
+      if (!cancelled) setLoading(false)
     })
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email || '',
-          access_token: session.access_token,
-        })
-      } else {
-        setUser(null)
+    // Auth state changes (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            access_token: session.access_token,
+          })
+          // Check phone only on explicit sign-in, not on every token refresh
+          if (event === 'SIGNED_IN' && session.user.app_metadata?.provider === 'google') {
+            setProfileChecking(true)
+            const required = await checkPhoneRequired(session.user.id)
+            setPhoneRequired(required)
+            setProfileChecking(false)
+          }
+        } else {
+          setUser(null)
+          setPhoneRequired(false)
+          setProfileChecking(false)
+        }
       }
-    })
+    )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signUp = async (email: string, password: string) => {
-    const result = await supabase.auth.signUp({
-      email,
-      password,
-    })
+    const result = await supabase.auth.signUp({ email, password })
     return { data: result.data, error: result.error }
   }
 
   const signIn = async (email: string, password: string) => {
-    const result = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const result = await supabase.auth.signInWithPassword({ email, password })
     return { data: result.data, error: result.error }
+  }
+
+  const signInWithGoogle = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
+    })
   }
 
   const signOut = async () => {
     await supabase.auth.signOut()
   }
 
+  const savePhone = async (phone: string): Promise<{ error: string | null }> => {
+    if (!user) return { error: 'Not authenticated' }
+    const { error } = await supabase
+      .from('user_profiles')
+      .upsert({ user_id: user.id, email: user.email, phone }, { onConflict: 'user_id' })
+    if (error) return { error: error.message }
+    setPhoneRequired(false)
+    return { error: null }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider
+      value={{ user, loading, phoneRequired, profileChecking, signUp, signIn, signInWithGoogle, signOut, savePhone }}
+    >
       {children}
     </AuthContext.Provider>
   )
