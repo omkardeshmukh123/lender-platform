@@ -48,7 +48,7 @@ function LoginContent() {
     const { error: signInError } = await signIn(email, password)
 
     if (signInError) {
-      setError(signInError.message)
+      setError(signInError.message || 'Sign in failed. Please check your email and password.')
       setLoading(false)
     } else {
       // Success - redirect to dashboard
