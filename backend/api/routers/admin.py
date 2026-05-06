@@ -988,6 +988,7 @@ async def get_lenders(
     admin: AdminUser,
     db: asyncpg.Pool = Depends(get_db),
     status: Optional[str] = Query(None, description="Filter by approval_status"),
+    q: Optional[str] = Query(None, description="Search by company name"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
 ):
@@ -996,11 +997,16 @@ async def get_lenders(
     offset = (page - 1) * limit
     params: list = []
     idx = 1
-    where = ""
+    conditions: list = []
     if status:
-        where = f"WHERE approval_status = ${idx}"
+        conditions.append(f"approval_status = ${idx}")
         params.append(status)
         idx += 1
+    if q and q.strip():
+        conditions.append(f"company_name ILIKE ${idx}")
+        params.append(f"%{q.strip()}%")
+        idx += 1
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
     try:
         async with db.acquire() as conn:
             total = await conn.fetchval(f"SELECT COUNT(*) FROM lenders {where}", *params)

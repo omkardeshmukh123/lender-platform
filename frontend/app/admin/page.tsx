@@ -65,6 +65,19 @@ interface Lead {
   created_at: string
 }
 
+interface AuditRow {
+  id: number
+  logged_at: string
+  entity_type: string
+  entity_id: number
+  company_name: string | null
+  action: string
+  old_status: string | null
+  new_status: string | null
+  actor: string | null
+  notes: string | null
+}
+
 function maskPhone(phone: string | null): string {
   if (!phone) return '—'
   const digits = phone.replace(/\D/g, '')
@@ -114,7 +127,9 @@ export default function AdminPage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [leadsTotal, setLeadsTotal] = useState(0)
   const [leadsPage, setLeadsPage] = useState(1)
-  const [tab, setTab] = useState<'lenders' | 'policies' | 'pipeline' | 'requests' | 'leads'>('lenders')
+  const [auditRows, setAuditRows] = useState<AuditRow[]>([])
+  const [lenderSearch, setLenderSearch] = useState('')
+  const [tab, setTab] = useState<'lenders' | 'policies' | 'pipeline' | 'requests' | 'leads' | 'audit'>('lenders')
   const [loading, setLoading] = useState(false)
   const [acting, setActing] = useState<number | null>(null)
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
@@ -154,20 +169,23 @@ export default function AdminPage() {
     setTimeout(() => setToast(null), 3500)
   }
 
-  const fetchLenders = useCallback(async (statusOverride?: string) => {
+  const fetchLenders = useCallback(async (statusOverride?: string, searchOverride?: string) => {
     if (!token) return
     const s = statusOverride ?? lenderStatus
+    const sq = searchOverride !== undefined ? searchOverride : lenderSearch
     setLoading(true)
     try {
-      const qs = s ? `status=${s}&` : ''
-      const data = await apiGet(`/v1/admin/lenders?${qs}page=${lenderPage}&limit=${PAGE_SIZE}`)
+      const params = new URLSearchParams({ page: String(lenderPage), limit: String(PAGE_SIZE) })
+      if (s) params.set('status', s)
+      if (sq.trim()) params.set('q', sq.trim())
+      const data = await apiGet(`/v1/admin/lenders?${params}`)
       setLenders(data.results ?? [])
       setLenderTotal(data.total ?? 0)
-      if (s === 'pending') setPendingCount(data.total ?? 0)
+      if (s === 'pending' && !sq.trim()) setPendingCount(data.total ?? 0)
     } catch (e: any) {
       showToast(`Failed to load lenders: ${e.message}`, false)
     } finally { setLoading(false) }
-  }, [token, lenderPage, lenderStatus, apiGet])
+  }, [token, lenderPage, lenderStatus, lenderSearch, apiGet])
 
   const fetchPolicies = useCallback(async () => {
     if (!token) return
@@ -216,6 +234,17 @@ export default function AdminPage() {
     } finally { setLoading(false) }
   }, [token, leadsPage, apiGet])
 
+  const fetchAudit = useCallback(async () => {
+    if (!token) return
+    setLoading(true)
+    try {
+      const data = await apiGet('/v1/admin/audit?limit=100')
+      setAuditRows(data ?? [])
+    } catch (e: any) {
+      showToast(`Failed to load audit log: ${e.message}`, false)
+    } finally { setLoading(false) }
+  }, [token, apiGet])
+
   // On initial auth, load all counts so stats row is populated; default lenderStatus='pending' sets pendingCount
   useEffect(() => {
     if (!authDone) return
@@ -233,8 +262,9 @@ export default function AdminPage() {
     else if (tab === 'policies') fetchPolicies()
     else if (tab === 'requests') fetchRequests()
     else if (tab === 'leads') fetchLeads()
+    else if (tab === 'audit') fetchAudit()
     else fetchRuns()
-  }, [tab, lenderPage, policyPage, requestPage, leadsPage, fetchLenders, fetchPolicies, fetchRequests, fetchRuns, fetchLeads])
+  }, [tab, lenderPage, policyPage, requestPage, leadsPage, fetchLenders, fetchPolicies, fetchRequests, fetchRuns, fetchLeads, fetchAudit])
 
   const handleApproveLender = async (id: number) => {
     setActing(id)
@@ -268,6 +298,7 @@ export default function AdminPage() {
   }
 
   const handleRejectPolicy = async (id: number) => {
+    if (!window.confirm('Reject this policy? This cannot be undone.')) return
     setActing(id)
     try {
       await apiPost(`/v1/admin/policies/${id}/reject`, { notes: null })
@@ -375,7 +406,7 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-1 mb-6 bg-gray-100 rounded-xl p-1 w-fit">
-          {(['lenders', 'policies', 'leads', 'requests', 'pipeline'] as const).map(t => (
+          {(['lenders', 'policies', 'leads', 'requests', 'pipeline', 'audit'] as const).map(t => (
             <button
               key={t}
               onClick={() => { setTab(t); setLenderPage(1); setPolicyPage(1); setRequestPage(1); setLeadsPage(1) }}
@@ -390,6 +421,7 @@ export default function AdminPage() {
                 : t === 'policies' ? `Pending Policies${policyTotal > 0 ? ` (${policyTotal})` : ''}`
                 : t === 'leads' ? `Leads${leadsTotal > 0 ? ` (${leadsTotal})` : ''}`
                 : t === 'requests' ? `Requests${requestTotal > 0 ? ` (${requestTotal})` : ''}`
+                : t === 'audit' ? 'Audit Log'
                 : 'Pipeline Runs'}
             </button>
           ))}
@@ -397,24 +429,36 @@ export default function AdminPage() {
 
         {/* Refresh + lender filter */}
         <div className="flex items-center justify-between mb-4">
-          <div>
+          <div className="flex items-center gap-2">
             {tab === 'lenders' && (
-              <select
-                value={lenderStatus}
-                onChange={e => {
-                  setLenderStatus(e.target.value)
-                  setLenderPage(1)
-                  // fetchLenders uses lenderStatus state; trigger via callback with override
-                  fetchLenders(e.target.value)
-                }}
-                className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#1A7070]"
-              >
-                <option value="">All</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-                <option value="needs_update">Needs Update</option>
-              </select>
+              <>
+                <select
+                  value={lenderStatus}
+                  onChange={e => {
+                    setLenderStatus(e.target.value)
+                    setLenderPage(1)
+                    fetchLenders(e.target.value, lenderSearch)
+                  }}
+                  className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#1A7070]"
+                >
+                  <option value="">All</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                  <option value="needs_update">Needs Update</option>
+                </select>
+                <input
+                  type="search"
+                  placeholder="Search lenders…"
+                  value={lenderSearch}
+                  onChange={e => {
+                    setLenderSearch(e.target.value)
+                    setLenderPage(1)
+                    fetchLenders(lenderStatus, e.target.value)
+                  }}
+                  className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#1A7070] w-48"
+                />
+              </>
             )}
           </div>
           <div className="flex items-center gap-3">
@@ -429,7 +473,7 @@ export default function AdminPage() {
               </button>
             )}
             <button
-              onClick={() => tab === 'lenders' ? fetchLenders() : tab === 'policies' ? fetchPolicies() : tab === 'leads' ? fetchLeads() : tab === 'requests' ? fetchRequests() : fetchRuns()}
+              onClick={() => tab === 'lenders' ? fetchLenders() : tab === 'policies' ? fetchPolicies() : tab === 'leads' ? fetchLeads() : tab === 'requests' ? fetchRequests() : tab === 'audit' ? fetchAudit() : fetchRuns()}
               className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
             >
               <RefreshCw className={['w-3.5 h-3.5', loading ? 'animate-spin' : ''].join(' ')} />
@@ -773,6 +817,68 @@ export default function AdminPage() {
           </>
         )}
       </div>
+
+      {/* ── Audit Log tab ── */}
+      {tab === 'audit' && (
+        <>
+          {loading && auditRows.length === 0 ? (
+            <div className="text-center py-16 text-gray-400">Loading…</div>
+          ) : auditRows.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+              <Clock className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+              <p className="font-medium text-gray-700">No audit entries yet</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">When</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Company</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Action</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Status Change</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">Actor</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {auditRows.map(r => {
+                    const actionColor: Record<string, string> = {
+                      approved: 'bg-green-100 text-green-700',
+                      rejected: 'bg-red-100 text-red-700',
+                      needs_update: 'bg-orange-100 text-orange-700',
+                      admin_edit: 'bg-blue-100 text-blue-700',
+                      gro_upsert: 'bg-teal-100 text-teal-700',
+                      gro_delete: 'bg-red-100 text-red-700',
+                    }
+                    return (
+                      <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">
+                          {new Date(r.logged_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-gray-900 truncate max-w-[200px]">{r.company_name ?? `#${r.entity_id}`}</div>
+                          <div className="text-xs text-gray-400">{r.entity_type}</div>
+                        </td>
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${actionColor[r.action] ?? 'bg-gray-100 text-gray-600'}`}>
+                            {r.action.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-gray-500 hidden lg:table-cell">
+                          {r.old_status && r.new_status ? `${r.old_status} → ${r.new_status}` : r.new_status ?? '—'}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-gray-400 truncate max-w-[160px] hidden xl:table-cell">
+                          {r.actor ?? '—'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Edit Lender slide-out panel */}
       {editLenderId !== null && token && (
