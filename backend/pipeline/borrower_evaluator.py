@@ -289,7 +289,7 @@ def evaluate_policy(profile: Dict[str, Any],
 
     # 7. FOIR — total repayment burden (new loan + existing obligations)
     # Use requested tenure if provided, else policy max tenure (borrower's best case)
-    foir_tenure = req_tenure or policy.get('tenure_max')
+    foir_tenure = req_tenure if req_tenure is not None else policy.get('tenure_max')
     ir_for_foir = policy.get('interest_rate_min')
     if income and loan_amount and foir_tenure and ir_for_foir is not None:
         foir = _compute_foir(loan_amount, ir_for_foir, foir_tenure, income, existing_emi)
