@@ -22,6 +22,7 @@ import { StatsSection }  from '../components/StatsSection'
 import { Footer }        from '../components/Footer'
 import { ChatPanel }      from '../components/ChatPanel'
 import { ErrorBoundary }  from '../components/ErrorBoundary'
+import { PhoneModal }      from '../components/PhoneModal'
 
 // ─────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -400,7 +401,7 @@ function exportShortlistCSV(saved: SavedLender[]) {
 // ─────────────────────────────────────────────────────────────
 
 function DashboardContent() {
-  const { user, signOut, loading: authLoading } = useAuth()
+  const { user, signOut, loading: authLoading, phoneRequired, profileChecking } = useAuth()
   const { saved, count: savedCount, isSaved, toggle: toggleSave } = useSaved()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -927,6 +928,8 @@ function DashboardContent() {
 
       <StatsSection totalLenders={totalCount} />
       <Footer />
+
+      {user && phoneRequired && !profileChecking && <PhoneModal />}
     </div>
   )
 }
