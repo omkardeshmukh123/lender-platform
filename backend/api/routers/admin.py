@@ -580,7 +580,7 @@ async def approve_lender(
         logger.error("approve_lender DB error: lender=%d | %s", lender_id, exc)
         raise HTTPException(status_code=503, detail="Approval service temporarily unavailable")
 
-    if not row:
+    if not row or row[0] is None:
         raise HTTPException(status_code=404, detail=f"Lender {lender_id} not found")
 
     # Invalidate all search/detail caches that might include this lender
@@ -588,7 +588,7 @@ async def approve_lender(
     await cache.delete_pattern(f"lp:lender_detail:{lender_id}:*")
     await cache.delete_pattern("lp:loans_match:*")
 
-    result = dict(row[0]) if row[0] else {}
+    result = dict(row[0])
     logger.info(
         "ADMIN_APPROVE lender=%d actor=%s policies_activated=%s request_id=%s",
         lender_id, actor_email, result.get("policies_activated"), request_id,

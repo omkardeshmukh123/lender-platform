@@ -538,7 +538,7 @@ async def chat(
 
     try:
         client = get_gemini_client()
-        parsed = await asyncio.get_event_loop().run_in_executor(
+        parsed = await asyncio.get_running_loop().run_in_executor(
             None, client.parse_intent, classified_message, gemini_history
         )
     except ValueError:
@@ -560,7 +560,7 @@ async def chat(
     # Short-circuit for intents that need no DB lookup
     # ------------------------------------------------------------------
     if intent in ("greeting", "out_of_scope", "concept"):
-        answer = await asyncio.get_event_loop().run_in_executor(
+        answer = await asyncio.get_running_loop().run_in_executor(
             None,
             lambda: client.generate_grounded_answer(
                 body.message, intent, [], gemini_history
@@ -633,7 +633,7 @@ async def chat(
     # ------------------------------------------------------------------
     lender_dicts = [l.model_dump() for l in lenders]
     try:
-        answer = await asyncio.get_event_loop().run_in_executor(
+        answer = await asyncio.get_running_loop().run_in_executor(
             None,
             lambda: client.generate_grounded_answer(
                 body.message, intent, lender_dicts, gemini_history,
@@ -764,7 +764,7 @@ async def chat_stream(
 
     try:
         client = get_gemini_client()
-        parsed = await asyncio.get_event_loop().run_in_executor(
+        parsed = await asyncio.get_running_loop().run_in_executor(
             None, client.parse_intent, classified_msg, gemini_history
         )
     except ValueError:
@@ -834,7 +834,7 @@ async def chat_stream(
 
         full_parts: list[str] = []
         had_error = False
-        loop  = asyncio.get_event_loop()
+        loop  = asyncio.get_running_loop()
         queue: asyncio.Queue = asyncio.Queue()
 
         def _worker():

@@ -48,6 +48,7 @@ from limiter import limiter
 from routers import lenders
 from routers import admin as admin_router
 from routers import chat as chat_router
+from routers import loans as loans_router
 from routers import policies as policies_router
 from routers import leads as leads_router
 from middleware.logging import StructuredLoggingMiddleware
@@ -187,6 +188,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 _V1 = "/v1"
 app.include_router(lenders.router,         prefix=f"{_V1}/lenders",  tags=["Lenders"])
+app.include_router(loans_router.router,    prefix=f"{_V1}/loans",    tags=["Loans"])
 app.include_router(policies_router.router, prefix=f"{_V1}/policies", tags=["Policies"])
 app.include_router(admin_router.router,    prefix=f"{_V1}/admin",    tags=["Admin"])
 app.include_router(chat_router.router,     prefix=f"{_V1}/chat",     tags=["Chat"])

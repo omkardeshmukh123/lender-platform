@@ -56,6 +56,7 @@ interface ChatMessage {
   unmatched_names?:   string[]
   suggested_actions?: string[]
   message_id?:        number
+  _streamId?:         string
 }
 
 interface ChatPanelProps {
@@ -523,8 +524,8 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
       // Consume SSE stream
       const reader  = res.body!.getReader()
       const decoder = new TextDecoder()
-      let buffer       = ''
-      let assistantIdx = -1
+      let buffer          = ''
+      const assistantStreamId = generateUUID()
 
       while (true) {
         const { done, value } = await reader.read()
@@ -548,11 +549,9 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
                 lenders:           data.lenders           ?? [],
                 unmatched_names:   data.unmatched_names   ?? [],
                 suggested_actions: data.suggested_actions ?? [],
+                _streamId:         assistantStreamId,
               }
-              setMessages(prev => {
-                assistantIdx = prev.length
-                return [...prev, newMsg]
-              })
+              setMessages(prev => [...prev, newMsg])
               if (data.lenders?.length) {
                 setLastLenderNames(data.lenders.slice(0, 3).map((l: LenderResult) => l.company_name))
               }
@@ -561,30 +560,27 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
                 onFiltersApplied(apiFiltersToMultiFilters(data.applied_filters))
               }
 
-            } else if (data.type === 'token' && assistantIdx >= 0) {
-              setMessages(prev => {
-                const updated = [...prev]
-                const cur = updated[assistantIdx]
-                if (cur) updated[assistantIdx] = { ...cur, content: cur.content + data.text }
-                return updated
-              })
+            } else if (data.type === 'token') {
+              setMessages(prev => prev.map(m =>
+                m._streamId === assistantStreamId
+                  ? { ...m, content: m.content + data.text }
+                  : m
+              ))
               scrollToBottom()
 
-            } else if (data.type === 'done' && assistantIdx >= 0 && data.message_id) {
-              setMessages(prev => {
-                const updated = [...prev]
-                const cur = updated[assistantIdx]
-                if (cur) updated[assistantIdx] = { ...cur, message_id: data.message_id }
-                return updated
-              })
+            } else if (data.type === 'done' && data.message_id) {
+              setMessages(prev => prev.map(m =>
+                m._streamId === assistantStreamId
+                  ? { ...m, message_id: data.message_id }
+                  : m
+              ))
 
-            } else if (data.type === 'error' && assistantIdx >= 0) {
-              setMessages(prev => {
-                const updated = [...prev]
-                const cur = updated[assistantIdx]
-                if (cur) updated[assistantIdx] = { ...cur, content: 'Sorry, something went wrong. Please try again.' }
-                return updated
-              })
+            } else if (data.type === 'error') {
+              setMessages(prev => prev.map(m =>
+                m._streamId === assistantStreamId
+                  ? { ...m, content: 'Sorry, something went wrong. Please try again.' }
+                  : m
+              ))
             }
           } catch { /* ignore malformed events */ }
         }

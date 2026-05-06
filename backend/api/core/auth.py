@@ -96,8 +96,8 @@ def _decode_token(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError as exc:
         raise HTTPException(status_code=401, detail=f"Invalid token: {exc}")
-    except Exception:
-        pass  # fall through to HS256 fallback
+    except Exception as exc:
+        logger.warning("JWKS verification failed, attempting HS256 fallback: %s", exc)
 
     # ── Strategy 2: HS256 with SUPABASE_JWT_SECRET ────────────
     hs_secret = os.environ.get("SUPABASE_JWT_SECRET", "")
