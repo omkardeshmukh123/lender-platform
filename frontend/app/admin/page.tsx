@@ -8,6 +8,7 @@ import {
   RefreshCw, Building2, ChevronLeft, ChevronRight, FileText, Phone, Pencil,
 } from 'lucide-react'
 import EditLenderPanel from './EditLenderPanel'
+import EditPolicyPanel from './EditPolicyPanel'
 
 interface LenderRow {
   id: number
@@ -115,6 +116,9 @@ export default function AdminPage() {
 
   const [editLenderId, setEditLenderId] = useState<number | null>(null)
   const [editLenderName, setEditLenderName] = useState('')
+
+  const [editPolicyId, setEditPolicyId] = useState<number | null>(null)
+  const [editPolicyName, setEditPolicyName] = useState('')
 
   const [policies, setPolicies] = useState<PendingPolicy[]>([])
   const [policyTotal, setPolicyTotal] = useState(0)
@@ -623,6 +627,10 @@ export default function AdminPage() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="inline-flex gap-2">
+                            <button onClick={() => { setEditPolicyId(p.id); setEditPolicyName(p.product_name ?? 'Unnamed') }}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors">
+                              <Pencil className="w-3.5 h-3.5" />Edit
+                            </button>
                             <button onClick={() => handleApprovePolicy(p.id)} disabled={acting === p.id}
                               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-50 transition-colors">
                               <CheckCircle className="w-3.5 h-3.5" />Approve
@@ -888,6 +896,21 @@ export default function AdminPage() {
           token={token}
           onClose={closeEdit}
           onSaved={handleEditSaved}
+        />
+      )}
+
+      {/* Edit Policy slide-out panel */}
+      {editPolicyId !== null && token && (
+        <EditPolicyPanel
+          policyId={editPolicyId}
+          policyName={editPolicyName}
+          token={token}
+          onClose={() => setEditPolicyId(null)}
+          onSaved={() => {
+            setEditPolicyId(null)
+            showToast('Policy updated', true)
+            fetchPolicies()
+          }}
         />
       )}
     </div>

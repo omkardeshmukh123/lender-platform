@@ -64,6 +64,7 @@ class Config:
     gemini_api_key:     str   = _str("GEMINI_API_KEY", "")
     chat_history_limit: int   = _int("CHAT_HISTORY_LIMIT", 20)
     chat_context_turns: int   = _int("CHAT_CONTEXT_TURNS", 6)
+    chat_timeout_secs:  int   = _int("CHAT_TIMEOUT_S", 45)
 
     # Environment
     env: str = _str("ENV", "production")

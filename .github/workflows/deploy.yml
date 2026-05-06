@@ -47,6 +47,14 @@ jobs:
           print('Model validation OK')
           "
 
+      - name: Install test dependencies
+        run: pip install -r backend/requirements.txt pytest
+
+      - name: Run tests
+        run: |
+          cd backend
+          python -m pytest tests/ -v --tb=short
+
   # ── Lint frontend ────────────────────────────────────────────
   lint-frontend:
     name: Lint Frontend
@@ -133,6 +141,11 @@ jobs:
           python-version: "3.11"
 
       - run: pip install psycopg2-binary python-dotenv
+
+      - name: Wait for Render deploy to complete
+        run: |
+          echo "Sleeping 90s for Render build to finish before running migrations..."
+          sleep 90
 
       - name: Run migrations
         run: python database/migrate.py

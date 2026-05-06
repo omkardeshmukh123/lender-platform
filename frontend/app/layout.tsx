@@ -1,8 +1,9 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { ReactNode } from 'react'
+import { ReactNode, Suspense } from 'react'
 import { AuthProvider } from './components/AuthContext'
 import { SaveProvider } from './components/SaveContext'
+import GoogleAnalytics from './components/GoogleAnalytics'
 
 export const metadata: Metadata = {
   title: 'MITRAM360 — India\'s Lender Intelligence Platform',
@@ -29,6 +30,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body>
+        <Suspense fallback={null}>
+          <GoogleAnalytics />
+        </Suspense>
         <AuthProvider>
           <SaveProvider>
             {children}

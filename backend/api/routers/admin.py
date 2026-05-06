@@ -451,6 +451,138 @@ async def reject_policy(
     logger.info("ADMIN_REJECT_POLICY policy=%d actor=%s", policy_id, actor_email)
     return {"policy_id": policy_id, "action": "rejected"}
 
+
+_POLICY_ARRAY_FIELDS = frozenset({"employment_types", "eligible_states", "collateral_types"})
+
+
+class PolicyEditRequest(BaseModel):
+    product_name:        Optional[str]       = None
+    loan_type:           Optional[str]       = None
+    loan_amount_min:     Optional[float]     = None
+    loan_amount_max:     Optional[float]     = None
+    interest_rate_min:   Optional[float]     = None
+    interest_rate_max:   Optional[float]     = None
+    tenure_min:          Optional[int]       = None
+    tenure_max:          Optional[int]       = None
+    processing_fee:      Optional[float]     = None
+    prepayment_allowed:  Optional[bool]      = None
+    collateral_required: Optional[bool]      = None
+    credit_score_min:    Optional[int]       = None
+    credit_score_max:    Optional[int]       = None
+    min_age:             Optional[int]       = None
+    max_age:             Optional[int]       = None
+    employment_types:    Optional[List[str]] = None
+    min_monthly_income:  Optional[float]     = None
+    eligible_states:     Optional[List[str]] = None
+    eligibility_notes:   Optional[str]       = None
+    kyc_pan_required:    Optional[bool]      = None
+    kyc_aadhaar_required: Optional[bool]     = None
+    kyc_gstin_required:  Optional[bool]      = None
+
+
+@router.get(
+    "/policies/{policy_id}/detail",
+    summary="Fetch all editable fields for a single policy (admin)",
+)
+async def get_policy_admin_detail(
+    request: Request,
+    policy_id: int,
+    admin: AdminUser,
+    db: asyncpg.Pool = Depends(get_db),
+):
+    try:
+        async with db.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT p.product_name, p.loan_type,
+                       p.loan_amount_min, p.loan_amount_max,
+                       p.interest_rate_min, p.interest_rate_max,
+                       p.tenure_min, p.tenure_max,
+                       p.processing_fee, p.prepayment_allowed, p.collateral_required,
+                       p.credit_score_min, p.credit_score_max,
+                       p.min_age, p.max_age,
+                       p.employment_types, p.min_monthly_income,
+                       p.eligible_states, p.eligibility_notes,
+                       p.kyc_pan_required, p.kyc_aadhaar_required, p.kyc_gstin_required
+                FROM policies p
+                WHERE p.id = $1
+                """,
+                policy_id,
+            )
+    except Exception as exc:
+        logger.error("get_policy_admin_detail DB error: id=%d | %s", policy_id, exc)
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
+    if not row:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    return dict(row)
+
+
+@router.patch(
+    "/policies/{policy_id}",
+    summary="Edit a policy's fields (admin manual edit — writes audit log)",
+)
+async def edit_policy(
+    request: Request,
+    policy_id: int,
+    body: PolicyEditRequest,
+    admin: AdminUser,
+    db: asyncpg.Pool = Depends(get_db),
+    cache=Depends(get_cache),
+):
+    payload = body.model_dump(exclude_none=True)
+    if not payload:
+        raise HTTPException(status_code=422, detail="No fields provided")
+    _, actor_email = _actor_info(admin)
+    set_parts: List[str] = []
+    params: list = []
+    idx = 1
+    for field, value in payload.items():
+        if field in _POLICY_ARRAY_FIELDS:
+            set_parts.append(f"{field} = ${idx}::text[]")
+            params.append(value)
+        else:
+            set_parts.append(f"{field} = ${idx}")
+            params.append(value)
+        idx += 1
+    params.append(policy_id)
+    try:
+        async with db.acquire() as conn:
+            row = await conn.fetchrow(
+                f"""
+                UPDATE policies
+                SET {', '.join(set_parts)}, last_updated = NOW()
+                WHERE id = ${idx}
+                RETURNING id, lender_id,
+                  (SELECT company_name FROM lenders WHERE id = lender_id) AS lender_name
+                """,
+                *params,
+            )
+            if not row:
+                raise HTTPException(status_code=404, detail=f"Policy {policy_id} not found")
+            await conn.execute(
+                """
+                INSERT INTO lender_audit_log
+                    (entity_type, entity_id, company_name, action, actor, notes)
+                VALUES ('policy', $1, $2, 'admin_edit', $3, $4)
+                """,
+                policy_id,
+                row["lender_name"],
+                actor_email,
+                json.dumps({k: str(v) for k, v in payload.items()}),
+            )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("edit_policy DB error: policy=%d | %s", policy_id, exc)
+        raise HTTPException(status_code=503, detail="Edit service temporarily unavailable")
+    lender_id = row["lender_id"]
+    await cache.delete_pattern("lp:policies_filter:*")
+    await cache.delete_pattern(f"lp:lender_detail:{lender_id}:*")
+    await cache.delete_pattern("lp:loans_match:*")
+    logger.info("ADMIN_EDIT_POLICY policy=%d actor=%s fields=%s", policy_id, actor_email, list(payload.keys()))
+    return {"policy_id": policy_id, "action": "updated", "fields": list(payload.keys())}
+
+
 @router.get(
     "/pipeline",
     response_model=List[PipelineRow],

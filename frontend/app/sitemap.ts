@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next'
 
-const BASE = 'https://lender-platform.vercel.app'
+const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://mitram360.com'
 
 const STATES = [
   'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh',

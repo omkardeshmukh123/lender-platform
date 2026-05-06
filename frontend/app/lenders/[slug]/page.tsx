@@ -20,6 +20,7 @@ const LOAN_TYPES = [
 ]
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://mitram360.com'
 
 export async function generateStaticParams() {
   return [
@@ -30,17 +31,20 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const value = decodeURIComponent(params.slug)
+  const canonical = `${SITE_URL}/lenders/${params.slug}`
   if (INDIA_STATES.includes(value)) {
     return {
       title: `NBFCs & Banks in ${value} — MITRAM360`,
       description: `Browse RBI-registered NBFCs and banks operating in ${value}. Find lenders by loan type, AUM, and company type. Free directory for DSAs and borrowers.`,
       keywords: `NBFC ${value}, bank ${value}, lender ${value}, MSME loan ${value}, RBI registered`,
+      alternates: { canonical },
     }
   }
   return {
     title: `Best NBFCs for ${value} in India — MITRAM360`,
     description: `Find RBI-registered NBFCs and banks offering ${value} across India. Compare lenders by state, AUM and company type. Free directory for DSAs and borrowers.`,
     keywords: `${value} NBFC, ${value} lender India, ${value} bank, RBI registered ${value}`,
+    alternates: { canonical },
   }
 }
 
@@ -72,6 +76,34 @@ async function getLendersByLoanType(loanType: string) {
   }
 }
 
+function buildJsonLd(value: string, isState: boolean, lenders: any[]) {
+  const itemList = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: isState ? `NBFCs & Banks in ${value}` : `Best NBFCs for ${value} in India`,
+    description: isState
+      ? `RBI-registered lenders operating in ${value}`
+      : `RBI-registered lenders offering ${value} across India`,
+    numberOfItems: lenders.length,
+    itemListElement: lenders.slice(0, 20).map((l: any, i: number) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: l.company_name,
+      url: `${SITE_URL}/lender/${l.id}`,
+    })),
+  }
+  const breadcrumb = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+      { '@type': 'ListItem', position: 2, name: 'Lenders', item: `${SITE_URL}/dashboard` },
+      { '@type': 'ListItem', position: 3, name: value, item: `${SITE_URL}/lenders/${encodeURIComponent(value)}` },
+    ],
+  }
+  return [itemList, breadcrumb]
+}
+
 export default async function LendersSlugPage({ params }: { params: { slug: string } }) {
   const value = decodeURIComponent(params.slug)
 
@@ -83,9 +115,12 @@ export default async function LendersSlugPage({ params }: { params: { slug: stri
     ? await getLendersByState(value)
     : await getLendersByLoanType(value)
 
+  const jsonLd = buildJsonLd(value, isState, lenders)
+
   if (isState) {
     return (
       <div className="min-h-screen" style={{ background: '#F7FAFA', fontFamily: 'Inter, sans-serif' }}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <div className="max-w-5xl mx-auto px-6 py-10">
           <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm mb-6 transition-colors"
                 style={{ color: '#1A7070' }}>
@@ -98,8 +133,11 @@ export default async function LendersSlugPage({ params }: { params: { slug: stri
               NBFCs &amp; Banks in {value}
             </h1>
           </div>
-          <p className="text-sm mb-8" style={{ color: '#7A9E9E' }}>
+          <p className="text-sm" style={{ color: '#7A9E9E' }}>
             {lenders.length} RBI-registered lenders operating in {value}
+          </p>
+          <p className="text-sm mt-2 mb-8 leading-relaxed" style={{ color: '#4A7070' }}>
+            MITRAM360 tracks RBI-registered NBFCs, private banks, PSU banks, and cooperative banks operating in {value}. All listings are sourced from public RBI and MCA21 records. Browse by loan type or institution size using the filters on the dashboard.
           </p>
 
           {lenders.length === 0 ? (
@@ -147,6 +185,7 @@ export default async function LendersSlugPage({ params }: { params: { slug: stri
 
   return (
     <div className="min-h-screen" style={{ background: '#F7FAFA', fontFamily: 'Inter, sans-serif' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-5xl mx-auto px-6 py-10">
         <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm mb-6 transition-colors"
               style={{ color: '#1A7070' }}>
@@ -159,8 +198,11 @@ export default async function LendersSlugPage({ params }: { params: { slug: stri
             Best NBFCs for {value} in India
           </h1>
         </div>
-        <p className="text-sm mb-8" style={{ color: '#7A9E9E' }}>
+        <p className="text-sm" style={{ color: '#7A9E9E' }}>
           {lenders.length} RBI-registered lenders offering {value}
+        </p>
+        <p className="text-sm mt-2 mb-8 leading-relaxed" style={{ color: '#4A7070' }}>
+          Compare RBI-registered lenders offering {value} across India. MITRAM360 tracks interest rates, eligibility criteria, processing fees, and minimum credit scores — sourced directly from lender websites and public filings.
         </p>
 
         {lenders.length === 0 ? (

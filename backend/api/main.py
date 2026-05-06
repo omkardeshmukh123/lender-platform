@@ -51,6 +51,7 @@ from routers import chat as chat_router
 from routers import loans as loans_router
 from routers import policies as policies_router
 from routers import leads as leads_router
+from routers import constants as constants_router
 from middleware.logging import StructuredLoggingMiddleware
 from middleware.security import SecurityHeadersMiddleware
 from core.cache import create_redis_cache
@@ -106,6 +107,10 @@ def _validate_startup_config() -> None:
             f"Server startup aborted — {len(errors)} config error(s):\n"
             + "\n".join(f"  • {e}" for e in errors)
         )
+    if not os.environ.get("GEMINI_API_KEY"):
+        logger.warning("GEMINI_API_KEY not set — /v1/chat endpoints will return 503 AI_NOT_CONFIGURED")
+    if not os.environ.get("REDIS_URL"):
+        logger.warning("REDIS_URL not set — response caching disabled (NullCache active)")
     logger.info("Startup config validated OK")
 
 
@@ -193,6 +198,7 @@ app.include_router(policies_router.router, prefix=f"{_V1}/policies", tags=["Poli
 app.include_router(admin_router.router,    prefix=f"{_V1}/admin",    tags=["Admin"])
 app.include_router(chat_router.router,     prefix=f"{_V1}/chat",     tags=["Chat"])
 app.include_router(leads_router.router,    prefix=f"{_V1}/leads",    tags=["Leads"])
+app.include_router(constants_router.router, prefix=f"{_V1}/constants", tags=["Constants"])
 
 
 @app.get("/", tags=["Health"])

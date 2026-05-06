@@ -21,6 +21,7 @@ import { LenderCard }    from '../components/LenderCard'
 import { StatsSection }  from '../components/StatsSection'
 import { Footer }        from '../components/Footer'
 import { ChatPanel }      from '../components/ChatPanel'
+import { ErrorBoundary }  from '../components/ErrorBoundary'
 
 // ─────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -639,6 +640,7 @@ function DashboardContent() {
 
           ) : transformedLenders.length > 0 ? (
             <>
+              <ErrorBoundary label="lender-grid">
               <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
                 {transformedLenders.map((lender, index) => (
                   <LenderCard
@@ -666,6 +668,7 @@ function DashboardContent() {
                   />
                 ))}
               </div>
+              </ErrorBoundary>
 
               {totalCount > PAGE_SIZE && (
                 <div className="flex items-center justify-center gap-4 mt-10">
@@ -765,17 +768,19 @@ function DashboardContent() {
         </main>
 
         {user && (
-          <ChatPanel
-            open={chatOpen}
-            onClose={() => setChatOpen(false)}
-            onFiltersApplied={(f) => {
-              setFilters(f)
-              setPage(0)
-              isFirstLoad.current = false
-            }}
-            apiUrl={API_URL}
-            user={user}
-          />
+          <ErrorBoundary label="chat-panel">
+            <ChatPanel
+              open={chatOpen}
+              onClose={() => setChatOpen(false)}
+              onFiltersApplied={(f) => {
+                setFilters(f)
+                setPage(0)
+                isFirstLoad.current = false
+              }}
+              apiUrl={API_URL}
+              user={user}
+            />
+          </ErrorBoundary>
         )}
 
         {/* Saved lenders drawer — auth required */}

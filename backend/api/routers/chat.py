@@ -354,15 +354,9 @@ async def _fetch_lenders_by_name(db: asyncpg.Pool, names: list[str]) -> list[Len
         return [_row_to_lender(r) for r in rows]
 
     # Tier 2: word-level fallback — only distinctive words (exclude generic finance terms)
-    _STOP = {
-        "the", "and", "of", "a", "an", "ltd", "limited", "pvt", "private", "india", "indian",
-        "finance", "financial", "capital", "credit", "services", "bank", "banking",
-        "investment", "investments", "holdings", "group", "enterprises", "solutions",
-        "microfinance", "leasing", "asset", "assets", "management", "fund", "funds",
-    }
     word_patterns: list[str] = []
     for name in names[:3]:
-        words = [w for w in name.lower().split() if len(w) > 2 and w not in _STOP]
+        words = [w for w in name.lower().split() if len(w) > 2 and w not in _NAME_STOP]
         word_patterns.extend([f"%{_esc(w)}%" for w in words[:3]])
     # If all words were generic (e.g. "XYZ Finance" → only "xyz"), still try them
     if not word_patterns:
@@ -538,11 +532,17 @@ async def chat(
 
     try:
         client = get_gemini_client()
-        parsed = await asyncio.get_running_loop().run_in_executor(
-            None, client.parse_intent, classified_message, gemini_history
+        parsed = await asyncio.wait_for(
+            asyncio.get_running_loop().run_in_executor(
+                None, client.parse_intent, classified_message, gemini_history
+            ),
+            timeout=cfg.chat_timeout_secs,
         )
     except ValueError:
         raise HTTPException(status_code=503, detail="AI_NOT_CONFIGURED")
+    except asyncio.TimeoutError:
+        logger.error("chat: intent parse timed out after %ds", cfg.chat_timeout_secs)
+        raise HTTPException(status_code=503, detail="AI_TIMEOUT")
     except Exception as exc:
         logger.error("chat: intent parse error: %s", exc)
         raise HTTPException(status_code=503, detail="AI_UNAVAILABLE")
@@ -560,12 +560,18 @@ async def chat(
     # Short-circuit for intents that need no DB lookup
     # ------------------------------------------------------------------
     if intent in ("greeting", "out_of_scope", "concept"):
-        answer = await asyncio.get_running_loop().run_in_executor(
-            None,
-            lambda: client.generate_grounded_answer(
-                body.message, intent, [], gemini_history
-            ),
-        )
+        try:
+            answer = await asyncio.wait_for(
+                asyncio.get_running_loop().run_in_executor(
+                    None,
+                    lambda: client.generate_grounded_answer(
+                        body.message, intent, [], gemini_history
+                    ),
+                ),
+                timeout=cfg.chat_timeout_secs,
+            )
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=503, detail="AI_TIMEOUT")
         message_id = None
         if session_ok and intent == "out_of_scope":
             try:
@@ -633,13 +639,19 @@ async def chat(
     # ------------------------------------------------------------------
     lender_dicts = [l.model_dump() for l in lenders]
     try:
-        answer = await asyncio.get_running_loop().run_in_executor(
-            None,
-            lambda: client.generate_grounded_answer(
-                body.message, intent, lender_dicts, gemini_history,
-                note=broadening_note,
+        answer = await asyncio.wait_for(
+            asyncio.get_running_loop().run_in_executor(
+                None,
+                lambda: client.generate_grounded_answer(
+                    body.message, intent, lender_dicts, gemini_history,
+                    note=broadening_note,
+                ),
             ),
+            timeout=cfg.chat_timeout_secs,
         )
+    except asyncio.TimeoutError:
+        logger.error("chat: answer generation timed out after %ds", cfg.chat_timeout_secs)
+        raise HTTPException(status_code=503, detail="AI_TIMEOUT")
     except Exception as exc:
         logger.error("chat: answer generation failed: %s", exc)
         raise HTTPException(status_code=503, detail="AI_UNAVAILABLE")
@@ -764,11 +776,17 @@ async def chat_stream(
 
     try:
         client = get_gemini_client()
-        parsed = await asyncio.get_running_loop().run_in_executor(
-            None, client.parse_intent, classified_msg, gemini_history
+        parsed = await asyncio.wait_for(
+            asyncio.get_running_loop().run_in_executor(
+                None, client.parse_intent, classified_msg, gemini_history
+            ),
+            timeout=cfg.chat_timeout_secs,
         )
     except ValueError:
         raise HTTPException(status_code=503, detail="AI_NOT_CONFIGURED")
+    except asyncio.TimeoutError:
+        logger.error("chat_stream: intent parse timed out after %ds", cfg.chat_timeout_secs)
+        raise HTTPException(status_code=503, detail="AI_TIMEOUT")
     except Exception as exc:
         logger.error("chat_stream: intent parse error: %s", exc)
         raise HTTPException(status_code=503, detail="AI_UNAVAILABLE")
@@ -852,7 +870,12 @@ async def chat_stream(
         future = loop.run_in_executor(None, _worker)
 
         while True:
-            kind, val = await queue.get()
+            try:
+                kind, val = await asyncio.wait_for(queue.get(), timeout=cfg.chat_timeout_secs)
+            except asyncio.TimeoutError:
+                had_error = True
+                logger.error("chat_stream: answer timed out after %ds", cfg.chat_timeout_secs)
+                break
             if kind == "t":
                 full_parts.append(val)
                 yield f"data: {_json.dumps({'type': 'token', 'text': val})}\n\n"
