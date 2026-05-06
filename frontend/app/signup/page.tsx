@@ -75,7 +75,7 @@ export default function SignUp() {
           .insert({
             user_id: authData.user.id,
             email: email,
-            phone: phone,
+            phone: phone.replace(/\D/g, ''),
           })
 
         if (profileResult.error) {
@@ -197,9 +197,10 @@ export default function SignUp() {
                       id="phone"
                       type="tel"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                       className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#1A7070]/20 focus:border-[#1A7070] transition-all placeholder:text-gray-400"
                       placeholder="Enter 10-digit mobile number"
+                      inputMode="numeric"
                       maxLength={10}
                       disabled={loading}
                     />
