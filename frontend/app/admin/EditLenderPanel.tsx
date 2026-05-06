@@ -108,10 +108,12 @@ export default function EditLenderPanel({ lenderId, lenderName, token, onClose, 
     if (fields.rbi_category) payload.rbi_category = fields.rbi_category
     if (fields.aum_crores) payload.aum_crores = parseFloat(fields.aum_crores)
     payload.pan_india = fields.pan_india
-    if (fields.primary_loan_segments)
-      payload.primary_loan_segments = fields.primary_loan_segments.split(',').map(s => s.trim()).filter(Boolean)
-    if (fields.operating_states)
-      payload.operating_states = fields.operating_states.split(',').map(s => s.trim()).filter(Boolean)
+    payload.primary_loan_segments = fields.primary_loan_segments
+      ? fields.primary_loan_segments.split(',').map(s => s.trim()).filter(Boolean)
+      : []
+    payload.operating_states = fields.operating_states
+      ? fields.operating_states.split(',').map(s => s.trim()).filter(Boolean)
+      : []
     try {
       const res = await fetch(`${API_URL}/v1/admin/lenders/${lenderId}`, {
         method: 'PATCH',

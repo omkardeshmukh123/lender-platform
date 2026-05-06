@@ -278,7 +278,7 @@ export default function AdminPage() {
   }
 
   const handleApproveAllPolicies = async () => {
-    if (!window.confirm(`Approve all ${policyTotal} pending policies?`)) return
+    if (!window.confirm(`Approve ${policies.length} policies on this page (${policyTotal} total pending)?`)) return
     setLoading(true)
     let approved = 0
     for (const p of policies) {

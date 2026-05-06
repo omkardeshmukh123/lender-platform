@@ -633,7 +633,7 @@ async def reject_lender(
         logger.error("reject_lender DB error: lender=%d | %s", lender_id, exc)
         raise HTTPException(status_code=503, detail="Rejection service temporarily unavailable")
 
-    if not row:
+    if not row or row[0] is None:
         raise HTTPException(status_code=404, detail=f"Lender {lender_id} not found")
 
     await cache.delete_pattern("lp:lenders_search:*")
