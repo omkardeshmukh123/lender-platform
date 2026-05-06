@@ -53,7 +53,7 @@ def _profile(**overrides):
         "loan_amount": 25.0,       # ₹25L
         "credit_score": 720,
         "employment_type": "business",
-        "monthly_income": 100.0,   # ₹1,00,000/month (in thousands)
+        "monthly_income": 200.0,   # ₹2,00,000/month (in thousands)
         "state": "Maharashtra",
         "tenure_months": 36,
     }

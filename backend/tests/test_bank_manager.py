@@ -65,7 +65,7 @@ def test_range_sanity_passes_valid_range():
 
 
 # Check 3 — Rank gate
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_rank_gate_accepts_when_vault_empty():
     bm = BankManager(db=None)
     bm._get_highest_validated_rank = AsyncMock(return_value=None)
@@ -73,7 +73,7 @@ async def test_rank_gate_accepts_when_vault_empty():
     assert result.valid is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_rank_gate_rejects_lower_rank():
     bm = BankManager(db=None)
     bm._get_highest_validated_rank = AsyncMock(return_value=3)
@@ -82,7 +82,7 @@ async def test_rank_gate_rejects_lower_rank():
     assert result.reason == "lower_rank_exists"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_rank_gate_accepts_higher_rank():
     bm = BankManager(db=None)
     bm._get_highest_validated_rank = AsyncMock(return_value=2)
