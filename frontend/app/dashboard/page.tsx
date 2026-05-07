@@ -471,8 +471,8 @@ function DashboardContent() {
   }, [])
 
   useEffect(() => {
-    if (!authLoading) fetchLenders(filters, page)
-  }, [authLoading, filters, page, fetchLenders])
+    fetchLenders(filters, page)
+  }, [filters, page, fetchLenders])
 
   // ── Filter change handler ───────────────────────────────────
   const handleFilterChange = useCallback(

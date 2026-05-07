@@ -59,10 +59,11 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
       if (uid) loadFromDb(uid)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const uid = session?.user?.id ?? null
       setUserId(uid)
-      if (uid) loadFromDb(uid)
+      // Only reload shortlist on actual sign-in, not on every token refresh
+      if (uid && event === 'SIGNED_IN') loadFromDb(uid)
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -89,11 +90,6 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }
 
-  const persist = (next: SavedLender[]) => {
-    setSaved(next)
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch {}
-  }
-
   const isSaved = useCallback((id: string) => saved.some(s => s.id === id), [saved])
 
   const toggle = useCallback((lender: SavedLender) => {
@@ -104,10 +100,9 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
         : [...prev.slice(-(MAX_SAVED - 1)), lender]
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch {}
 
-      // Sync to DB for logged-in users
-      supabase.auth.getUser().then(({ data }) => {
-        const uid = data.user?.id
-        if (!uid) return
+      // Sync to DB for logged-in users — use cached userId, no extra network call
+      if (userId) {
+        const uid = userId
         if (exists) {
           supabase.from('user_shortlists')
             .delete()
@@ -123,20 +118,17 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
             }, { onConflict: 'user_id,lender_id' })
             .then(() => {})
         }
-      })
+      }
 
       return next
     })
-  }, [])
+  }, [userId])
 
   const clear = useCallback(() => {
     setSaved([])
     try { localStorage.removeItem(STORAGE_KEY) } catch {}
-    supabase.auth.getUser().then(({ data }) => {
-      const uid = data.user?.id
-      if (uid) supabase.from('user_shortlists').delete().eq('user_id', uid).then(() => {})
-    })
-  }, [])
+    if (userId) supabase.from('user_shortlists').delete().eq('user_id', userId).then(() => {})
+  }, [userId])
 
   return (
     <SaveContext.Provider value={{ saved, count: saved.length, isSaved, toggle, clear }}>

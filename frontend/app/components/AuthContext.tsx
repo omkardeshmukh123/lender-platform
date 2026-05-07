@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -58,6 +58,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [phoneRequired, setPhoneRequired] = useState(false)
   const [profileChecking, setProfileChecking] = useState(false)
+  // Tracks which user ID has already had a phone check initiated, preventing
+  // duplicate checks when both getSession() and onAuthStateChange(SIGNED_IN)
+  // fire on the same page load for Google OAuth users.
+  const phoneCheckedForRef = useRef<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -71,7 +75,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: session.user.email || '',
           access_token: session.access_token,
         })
-        if (session.user.app_metadata?.provider === 'google') {
+        if (session.user.app_metadata?.provider === 'google' && phoneCheckedForRef.current !== session.user.id) {
+          phoneCheckedForRef.current = session.user.id
           setProfileChecking(true)
           const required = await checkPhoneRequired(session.user.id)
           if (!cancelled) {
@@ -94,8 +99,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: session.user.email || '',
             access_token: session.access_token,
           })
-          // Check phone only on explicit sign-in, not on every token refresh
-          if (event === 'SIGNED_IN' && session.user.app_metadata?.provider === 'google') {
+          // Check phone only on explicit sign-in, not on every token refresh,
+          // and only if getSession() didn't already initiate the check.
+          if (event === 'SIGNED_IN' && session.user.app_metadata?.provider === 'google' && phoneCheckedForRef.current !== session.user.id) {
+            phoneCheckedForRef.current = session.user.id
             setProfileChecking(true)
             const required = await checkPhoneRequired(session.user.id)
             setPhoneRequired(required)
@@ -105,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null)
           setPhoneRequired(false)
           setProfileChecking(false)
+          phoneCheckedForRef.current = null
         }
       }
     )
