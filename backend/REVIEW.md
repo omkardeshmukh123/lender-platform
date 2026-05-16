@@ -11,7 +11,7 @@
 
 The `.env` file contains live production credentials that are tracked in the repository:
 
-- `GEMINI_API_KEY=REDACTED_GEMINI_KEY` — live Google AI key
+- `GEMINI_API_KEY=[REDACTED — key rotated]` — live Google AI key
 - `SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...` — full service-role JWT (bypasses all RLS policies)
 - `DATABASE_URL=postgresql://postgres.rhyzqmujazmwwsweaddh:yEprBXGVjDcNljCq@...` — plaintext DB password
 - `SUPABASE_JWT_SECRET=JnNd68dR...` — can forge any user token
