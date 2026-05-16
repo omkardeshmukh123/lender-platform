@@ -2,7 +2,7 @@
 """
 Gemini chat client for the lender chatbot.
 Two-pass RAG pipeline:
-  1. parse_intent()  — classify + extract entities (no answer)
+  1. parse_intent()  — classify + extract entities (no answer, thinking disabled)
   2. generate_grounded_answer() — answer strictly from DB records
 """
 from __future__ import annotations
@@ -10,6 +10,9 @@ from __future__ import annotations
 import json
 import logging
 import os
+import random
+import threading
+import time
 from collections import Counter
 from typing import Iterator, Optional
 
@@ -17,6 +20,96 @@ from google import genai
 from google.genai import types
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Thinking config helper — gracefully absent on older google-genai builds
+# ---------------------------------------------------------------------------
+
+def _thinking(budget: int) -> dict:
+    """Return a thinking_config kwarg dict if ThinkingConfig is available."""
+    try:
+        return {"thinking_config": types.ThinkingConfig(thinking_budget=budget)}
+    except AttributeError:
+        return {}
+
+
+# ---------------------------------------------------------------------------
+# Transient-error retry wrapper (sync — used inside run_in_executor threads)
+# ---------------------------------------------------------------------------
+
+def _call_with_retry(fn, *, attempts: int = 2, delay: float = 2.0, label: str = ""):
+    """
+    Call fn() and retry up to `attempts` times on transient Gemini errors.
+    Retries on: 429 rate-limit, 5xx server errors, connection/timeout failures.
+    Raises the last exception if all attempts fail.
+    """
+    last_exc: Exception | None = None
+    current_delay = delay
+    for attempt in range(1, attempts + 1):
+        try:
+            return fn()
+        except Exception as exc:
+            last_exc = exc
+            err_str = str(exc).lower()
+            is_transient = (
+                "429" in err_str or "rate limit" in err_str or
+                "500" in err_str or "503" in err_str or "504" in err_str or
+                "overloaded" in err_str or
+                "connection" in err_str or "timeout" in err_str or
+                isinstance(exc, (ConnectionError, TimeoutError))
+            )
+            if not is_transient or attempt == attempts:
+                raise
+            jitter = current_delay * 0.25 * (2 * random.random() - 1)
+            wait = max(0.5, current_delay + jitter)
+            logger.warning(
+                "Gemini %s attempt %d/%d failed (%s: %s). Retrying in %.1fs",
+                label, attempt, attempts, type(exc).__name__, exc, wait,
+            )
+            time.sleep(wait)
+            current_delay *= 2
+    raise last_exc  # type: ignore[misc]
+
+
+def _retried_stream(fn, *, attempts: int = 2, delay: float = 2.0, label: str = ""):
+    """
+    Streaming retry: restart the full stream if it errors before any tokens are yielded.
+    Once tokens are flowing, errors propagate immediately (can't restart mid-output).
+    """
+    last_exc: Exception | None = None
+    current_delay = delay
+    for attempt in range(1, attempts + 1):
+        yielded = False
+        try:
+            for chunk in fn():
+                yielded = True
+                yield chunk
+            return
+        except Exception as exc:
+            if yielded:
+                raise
+            last_exc = exc
+            err_str = str(exc).lower()
+            is_transient = (
+                "429" in err_str or "rate limit" in err_str or
+                "500" in err_str or "503" in err_str or "504" in err_str or
+                "overloaded" in err_str or
+                "connection" in err_str or "timeout" in err_str or
+                isinstance(exc, (ConnectionError, TimeoutError))
+            )
+            if not is_transient or attempt == attempts:
+                raise
+            jitter = current_delay * 0.25 * (2 * random.random() - 1)
+            wait = max(0.5, current_delay + jitter)
+            logger.warning(
+                "Gemini %s stream attempt %d/%d failed (%s: %s). Retrying in %.1fs",
+                label, attempt, attempts, type(exc).__name__, exc, wait,
+            )
+            time.sleep(wait)
+            current_delay *= 2
+    raise last_exc  # type: ignore[misc]
+
 
 # ---------------------------------------------------------------------------
 # Pass 1 — intent classification only
@@ -163,22 +256,25 @@ If the user writes in Hindi or Hinglish, reply in Hinglish.
 
 
 class GeminiChatClient:
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str, model: str = "") -> None:
         if not api_key:
             raise ValueError("GEMINI_API_KEY is required for the chat feature")
         self._client = genai.Client(api_key=api_key)
-        self._model = "gemini-2.5-flash"
-        logger.info("GeminiChatClient initialized (model=%s)", self._model)
+        self._model = model or os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+        self._retries = int(os.environ.get("GEMINI_CHAT_RETRIES", "2"))
+        logger.info("GeminiChatClient initialized (model=%s, retries=%d)", self._model, self._retries)
 
     # ------------------------------------------------------------------
-    # Pass 1
+    # Pass 1 — intent classification (thinking DISABLED for speed)
     # ------------------------------------------------------------------
 
     def parse_intent(self, message: str, history: list[dict]) -> dict:
         """Classify intent and extract entities. Returns no answer text."""
-        contents = self._build_contents(history[-(2 * 2):], message)
-        try:
-            response = self._client.models.generate_content(
+        # Use up to 4 history turns for pronoun resolution — enough context, low latency
+        contents = self._build_contents(history[-8:], message)
+
+        def _call():
+            return self._client.models.generate_content(
                 model=self._model,
                 contents=contents,
                 config=types.GenerateContentConfig(
@@ -187,11 +283,15 @@ class GeminiChatClient:
                     response_schema=_INTENT_SCHEMA,
                     temperature=0.1,
                     max_output_tokens=256,
+                    **_thinking(0),  # no thinking needed for structured classification
                 ),
             )
+
+        try:
+            response = _call_with_retry(_call, attempts=self._retries, delay=1.5, label="parse_intent")
             raw = response.text
         except Exception as exc:
-            logger.error("Gemini intent parse error: %s", exc)
+            logger.error("Gemini parse_intent failed after retries: %s", exc)
             raise
 
         if not raw:
@@ -210,7 +310,7 @@ class GeminiChatClient:
         return data
 
     # ------------------------------------------------------------------
-    # Pass 2
+    # Pass 2 — grounded answer (non-streaming)
     # ------------------------------------------------------------------
 
     def generate_grounded_answer(
@@ -223,7 +323,6 @@ class GeminiChatClient:
     ) -> str:
         """Generate a natural-language answer from the provided DB records."""
 
-        # --- Static / no-DB intents ---
         if intent == "greeting":
             return (
                 "Hi! I'm the MITRAM360 AI assistant. I can help you:\n"
@@ -237,26 +336,29 @@ class GeminiChatClient:
         if intent == "out_of_scope":
             return _OUT_OF_SCOPE_REPLY
 
-        # --- Concept: general knowledge, not DB ---
         if intent == "concept":
             contents = self._build_contents(history[-(4 * 2):], question)
-            try:
-                response = self._client.models.generate_content(
+
+            def _call():
+                return self._client.models.generate_content(
                     model=self._model,
                     contents=contents,
                     config=types.GenerateContentConfig(
                         system_instruction=_CONCEPT_SYSTEM_PROMPT,
                         temperature=0.3,
-                        max_output_tokens=400,
+                        max_output_tokens=500,
+                        **_thinking(512),  # light thinking for educational answers
                     ),
                 )
+
+            try:
+                response = _call_with_retry(_call, attempts=self._retries, delay=2.0, label="concept_answer")
                 text = response.text
                 return text if text else "I couldn't generate an answer. Please try again."
             except Exception as exc:
                 logger.error("Gemini concept answer error: %s", exc)
                 raise
 
-        # --- Grounded intents ---
         if not lenders:
             if intent in ("compare", "lender_detail"):
                 return (
@@ -271,53 +373,26 @@ class GeminiChatClient:
                 )
             return "No results found. Try broadening your search — remove a filter or try a different state."
 
-        # Extract top names for contextual suggestions in the prompt
-        top_names = [
-            l.get("company_name") or l.get("name", "")
-            for l in lenders[:3]
-            if l.get("company_name") or l.get("name")
-        ]
-        name_hint = f"\nTop lender names for your suggestions: {', '.join(top_names)}" if top_names else ""
-
-        if intent == "filter":
-            slim   = [_slim_record(l) for l in lenders]
-            total  = len(lenders)
-            type_counts  = Counter(l.get("company_type") for l in lenders if l.get("company_type"))
-            state_counts = Counter(l.get("hq_state")     for l in lenders if l.get("hq_state"))
-            top_types    = ", ".join(f"{t}({c})" for t, c in type_counts.most_common(4))
-            top_states   = ", ".join(f"{s}({c})" for s, c in state_counts.most_common(4))
-            prefix = (
-                f"{note + chr(10) if note else ''}"
-                f"Stats — Total: {total}, By type: {top_types}, By HQ state: {top_states}.{name_hint}\n\n"
-            )
-            context = slim
-        else:
-            prefix  = f"{note}\n\n{name_hint}\n\n" if (note or name_hint) else ""
-            context = lenders
-
-        records_json = json.dumps(context, indent=2, default=str)
-        prompt = (
-            f"{prefix}"
-            f"Database records:\n{records_json}\n\n"
-            f"User question: {question}\n\n"
-            "Answer in natural language using ONLY the records above. Follow all tone and formatting rules."
-        )
-
+        prompt = self._build_grounded_prompt(question, intent, lenders, note)
         history_contents = self._build_contents(history[-(6 * 2):], None)
         contents = history_contents + [
             types.Content(role="user", parts=[types.Part(text=prompt)])
         ]
 
-        try:
-            response = self._client.models.generate_content(
+        def _call():
+            return self._client.models.generate_content(
                 model=self._model,
                 contents=contents,
                 config=types.GenerateContentConfig(
                     system_instruction=_ANSWER_SYSTEM_PROMPT,
                     temperature=0.3,
-                    max_output_tokens=800,
+                    max_output_tokens=1200,
+                    **_thinking(0),  # grounded answers are formatting tasks — no thinking needed
                 ),
             )
+
+        try:
+            response = _call_with_retry(_call, attempts=self._retries, delay=2.0, label="grounded_answer")
             text = response.text
             if not text:
                 logger.warning("Gemini returned empty answer response")
@@ -357,18 +432,26 @@ class GeminiChatClient:
 
         if intent == "concept":
             contents = self._build_contents(history[-(4 * 2):], question)
-            stream = self._client.models.generate_content_stream(
-                model=self._model,
-                contents=contents,
-                config=types.GenerateContentConfig(
-                    system_instruction=_CONCEPT_SYSTEM_PROMPT,
-                    temperature=0.3,
-                    max_output_tokens=400,
-                ),
-            )
-            for chunk in stream:
+
+            def _mk_concept_stream():
+                return self._client.models.generate_content_stream(
+                    model=self._model,
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        system_instruction=_CONCEPT_SYSTEM_PROMPT,
+                        temperature=0.3,
+                        max_output_tokens=500,
+                        **_thinking(512),
+                    ),
+                )
+
+            yielded = False
+            for chunk in _retried_stream(_mk_concept_stream, attempts=self._retries, delay=1.0, label="concept_stream"):
                 if chunk.text:
+                    yielded = True
                     yield chunk.text
+            if not yielded:
+                yield "I couldn't generate an answer. Please try again."
             return
 
         if not lenders:
@@ -387,6 +470,39 @@ class GeminiChatClient:
                 yield "No results found. Try broadening your search — remove a filter or try a different state."
             return
 
+        prompt = self._build_grounded_prompt(question, intent, lenders, note)
+        history_contents = self._build_contents(history[-(6 * 2):], None)
+        contents = history_contents + [
+            types.Content(role="user", parts=[types.Part(text=prompt)])
+        ]
+
+        def _mk_answer_stream():
+            return self._client.models.generate_content_stream(
+                model=self._model,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    system_instruction=_ANSWER_SYSTEM_PROMPT,
+                    temperature=0.3,
+                    max_output_tokens=1200,
+                    **_thinking(0),
+                ),
+            )
+
+        yielded = False
+        for chunk in _retried_stream(_mk_answer_stream, attempts=self._retries, delay=1.0, label="answer_stream"):
+            if chunk.text:
+                yielded = True
+                yield chunk.text
+        if not yielded:
+            yield "I couldn't generate an answer. Please try again."
+
+    # ------------------------------------------------------------------
+    # Shared helpers
+    # ------------------------------------------------------------------
+
+    def _build_grounded_prompt(
+        self, question: str, intent: str, lenders: list[dict], note: str
+    ) -> str:
         top_names = [
             l.get("company_name") or l.get("name", "")
             for l in lenders[:3]
@@ -411,34 +527,12 @@ class GeminiChatClient:
             context = lenders
 
         records_json = json.dumps(context, indent=2, default=str)
-        prompt = (
+        return (
             f"{prefix}"
             f"Database records:\n{records_json}\n\n"
             f"User question: {question}\n\n"
             "Answer in natural language using ONLY the records above. Follow all tone and formatting rules."
         )
-
-        history_contents = self._build_contents(history[-(6 * 2):], None)
-        contents = history_contents + [
-            types.Content(role="user", parts=[types.Part(text=prompt)])
-        ]
-
-        stream = self._client.models.generate_content_stream(
-            model=self._model,
-            contents=contents,
-            config=types.GenerateContentConfig(
-                system_instruction=_ANSWER_SYSTEM_PROMPT,
-                temperature=0.3,
-                max_output_tokens=800,
-            ),
-        )
-        for chunk in stream:
-            if chunk.text:
-                yield chunk.text
-
-    # ------------------------------------------------------------------
-    # Shared helpers
-    # ------------------------------------------------------------------
 
     def _build_contents(self, history: list[dict], message: str | None) -> list:
         contents = []
@@ -462,6 +556,7 @@ def _slim_record(l: dict) -> dict:
         "type":                l.get("company_type"),
         "rbi_category":        l.get("rbi_category"),
         "aum_crores":          l.get("aum_crores"),
+        "aum_category":        l.get("aum_category"),      # restored — needed for AUM band answers
         "hq_state":            l.get("hq_state"),
         "hq_location":         l.get("hq_location"),
         "pan_india":           l.get("pan_india"),
@@ -479,11 +574,22 @@ def _slim_record(l: dict) -> dict:
 
 
 _client: Optional[GeminiChatClient] = None
+_client_lock = threading.Lock()
 
 
 def get_gemini_client() -> GeminiChatClient:
     global _client
     if _client is None:
-        api_key = os.environ.get("GEMINI_API_KEY", "")
-        _client = GeminiChatClient(api_key)
+        with _client_lock:
+            if _client is None:
+                api_key = os.environ.get("GEMINI_API_KEY", "")
+                model   = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+                _client = GeminiChatClient(api_key, model=model)
     return _client
+
+
+def reset_gemini_client() -> None:
+    """Force re-creation of the singleton on next get_gemini_client() call."""
+    global _client
+    with _client_lock:
+        _client = None

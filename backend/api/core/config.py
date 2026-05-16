@@ -61,10 +61,14 @@ class Config:
     scraper_timeout_secs:      int   = _int("SCRAPER_TIMEOUT_S",         30)
 
     # Chat
-    gemini_api_key:     str   = _str("GEMINI_API_KEY", "")
-    chat_history_limit: int   = _int("CHAT_HISTORY_LIMIT", 20)
-    chat_context_turns: int   = _int("CHAT_CONTEXT_TURNS", 6)
-    chat_timeout_secs:  int   = _int("CHAT_TIMEOUT_S", 45)
+    gemini_api_key:           str   = _str("GEMINI_API_KEY", "")
+    gemini_model:             str   = _str("GEMINI_MODEL", "gemini-2.5-flash")
+    chat_history_limit:       int   = _int("CHAT_HISTORY_LIMIT", 20)
+    chat_context_turns:       int   = _int("CHAT_CONTEXT_TURNS", 6)
+    chat_timeout_secs:        int   = _int("CHAT_TIMEOUT_S", 45)          # kept for back-compat
+    chat_intent_timeout_secs: int   = _int("CHAT_INTENT_TIMEOUT_S", 20)   # Pass 1 — fast classification
+    chat_answer_timeout_secs: int   = _int("CHAT_ANSWER_TIMEOUT_S", 90)   # Pass 2 — answer generation
+    gemini_chat_retries:      int   = _int("GEMINI_CHAT_RETRIES", 2)      # attempts per Gemini call
 
     # Environment
     env: str = _str("ENV", "production")
