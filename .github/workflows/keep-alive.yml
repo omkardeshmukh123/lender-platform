@@ -10,9 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping backend
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 ${{ secrets.BACKEND_URL }}/health)
+          if [ -z "$BACKEND_URL" ]; then
+            echo "BACKEND_URL secret not set — skipping ping"
+            exit 0
+          fi
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$BACKEND_URL/health" || echo "000")
           echo "Backend responded: $STATUS"
-          if [ "$STATUS" != "200" ]; then
+          if [ "$STATUS" = "000" ]; then
+            echo "Warning: backend unreachable (timeout or connection error)"
+          elif [ "$STATUS" != "200" ]; then
             echo "Warning: backend returned $STATUS"
+          else
+            echo "OK"
           fi
