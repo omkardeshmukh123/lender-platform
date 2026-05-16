@@ -35,30 +35,25 @@ function AnimatedCounter({ target, duration = 1800 }: { target: number; duration
 }
 
 export default function LandingPage() {
-  const { user, loading: authLoading } = useAuth()
+  const { user } = useAuth()
   const [stats, setStats] = useState<PlatformStats | null>(null)
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    fetch(`${API_URL}/v1/lenders/stats`)
+    const controller = new AbortController()
+    const abortTimer = setTimeout(() => controller.abort(), 5_000)
+    fetch(`${API_URL}/v1/lenders/stats`, { signal: controller.signal })
       .then(r => r.ok ? r.json() : null)
       .then((d: PlatformStats | null) => { if (d) setStats(d) })
       .catch(() => {})
-    const t = setTimeout(() => setLoaded(true), 80)
-    return () => clearTimeout(t)
+      .finally(() => clearTimeout(abortTimer))
+    const loadedTimer = setTimeout(() => setLoaded(true), 80)
+    return () => {
+      controller.abort()
+      clearTimeout(abortTimer)
+      clearTimeout(loadedTimer)
+    }
   }, [])
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F7FAFA' }}>
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin"
-               style={{ borderColor: '#1A7070', borderTopColor: 'transparent' }} />
-          <p className="text-sm" style={{ color: '#7A9E9E' }}>Loading…</p>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen" style={{ fontFamily: 'Inter, sans-serif', background: '#F7FAFA' }}>

@@ -154,9 +154,19 @@ async function fetchFromAPI(f: MultiFilters, pg: number): Promise<LenderSearchRe
   params.set('page',  String(pg + 1))   // API is 1-indexed, our state is 0-indexed
   params.set('limit', String(PAGE_SIZE))
 
-  const res = await fetch(`${API_URL}/v1/lenders/search?${params}`)
-  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`)
-  return res.json() as Promise<LenderSearchResponse>
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 15_000)
+  try {
+    const res = await fetch(`${API_URL}/v1/lenders/search?${params}`, { signal: controller.signal })
+    if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`)
+    return res.json() as Promise<LenderSearchResponse>
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError')
+      throw new Error('Request timed out — the server is taking too long. Please try again.')
+    throw err
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 // ─────────────────────────────────────────────────────────────

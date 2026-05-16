@@ -1,9 +1,12 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { ReactNode, Suspense } from 'react'
+import { Inter } from 'next/font/google'
 import { AuthProvider } from './components/AuthContext'
 import { SaveProvider } from './components/SaveContext'
 import GoogleAnalytics from './components/GoogleAnalytics'
+
+const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
   title: 'MITRAM360 — India\'s Lender Intelligence Platform',
@@ -24,10 +27,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.className}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {process.env.NEXT_PUBLIC_API_URL && (
+          <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_URL} />
+        )}
       </head>
       <body>
         <Suspense fallback={null}>

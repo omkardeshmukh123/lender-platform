@@ -509,6 +509,8 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
           if (body.includes('AI_NOT_CONFIGURED')) {
             errMsg = 'The AI service is not configured on this server. Please contact support.'
             setAiAvailable(false)
+          } else if (body.includes('AI_TIMEOUT')) {
+            errMsg = 'The AI took too long to respond. Please try again.'
           } else if (body.includes('AI_UNAVAILABLE')) {
             errMsg = 'The AI service is temporarily unavailable. Please try again in a moment.'
           }

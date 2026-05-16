@@ -86,8 +86,8 @@ export default function SignUp() {
 
       // Redirect to dashboard
       router.push('/dashboard')
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during signup')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred during signup')
       setLoading(false)
     }
   }
@@ -285,13 +285,9 @@ export default function SignUp() {
                 {/* Terms */}
                 <p className="text-center text-xs text-gray-500">
                   By signing up, you agree to our{' '}
-                  <Link href="#" className="text-[#1A7070] hover:text-[#0F4848] transition-colors">
-                    Terms of Service
-                  </Link>{' '}
+                  <span className="text-[#1A7070]">Terms of Service</span>{' '}
                   and{' '}
-                  <Link href="#" className="text-[#1A7070] hover:text-[#0F4848] transition-colors">
-                    Privacy Policy
-                  </Link>
+                  <span className="text-[#1A7070]">Privacy Policy</span>
                 </p>
               </form>
 

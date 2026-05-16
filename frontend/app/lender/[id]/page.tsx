@@ -369,33 +369,36 @@ export default function LenderDetailPage() {
   // Fetch lender
   useEffect(() => {
     if (!id) return
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 30_000)
     setLoading(true)
-    fetch(`${API_URL}/v1/lenders/${id}`)
+    fetch(`${API_URL}/v1/lenders/${id}`, { signal: controller.signal })
       .then(r => {
         if (r.status === 404) throw new Error('Lender not found')
         if (!r.ok) throw new Error('Failed to load lender')
         return r.json()
       })
       .then((d: LenderDetail) => setLender(d))
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false))
+      .catch(e => { if (e.name !== 'AbortError') setError(e.message) })
+      .finally(() => { clearTimeout(timer); setLoading(false) })
+    return () => { controller.abort(); clearTimeout(timer) }
   }, [id])
 
   // Fetch policies (all for this lender, paginated up to 100)
   useEffect(() => {
     if (!id) return
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 30_000)
     setPoliciesLoading(true)
-    fetch(`${API_URL}/v1/policies/filter?lender_id=${id}&limit=100`)
+    fetch(`${API_URL}/v1/policies/filter?lender_id=${id}&limit=100`, { signal: controller.signal })
       .then(r => r.ok ? r.json() : { total: 0, results: [] })
       .then((d: PolicyResponse) => {
         setPolicies(d.results ?? [])
         setPolicyTotal(d.total ?? 0)
       })
-      .catch(() => {
-        setPolicies([])
-        setPolicyTotal(0)
-      })
-      .finally(() => setPoliciesLoading(false))
+      .catch(() => { setPolicies([]); setPolicyTotal(0) })
+      .finally(() => { clearTimeout(timer); setPoliciesLoading(false) })
+    return () => { controller.abort(); clearTimeout(timer) }
   }, [id])
 
   if (loading) {
@@ -813,7 +816,7 @@ export default function LenderDetailPage() {
 
         {lender.last_scraped_at && (
           <p className="text-xs text-gray-400 text-center pb-4">
-            Mitram360
+            Data last updated: {new Date(lender.last_scraped_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
           </p>
         )}
       </div>

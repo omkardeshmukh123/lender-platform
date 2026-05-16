@@ -43,8 +43,8 @@ loan_type: MSME Loan, Personal Loan, Home Loan, Business Loan, Vehicle Loan, Gol
            Supply Chain Finance, Consumer Durable Loan, Credit Card
 company_type: NBFC, Private Bank, PSU Bank, Foreign Bank, Cooperative Bank, NBFC-MFI, Small Finance Bank
 aum_category: Micro, Small, Mid, Large
-operating_intensity: Hyperlocal, Local, Regional, National
-business_sector: Agriculture, MSME, Consumer, Real Estate, Microfinance, Vehicle, Education, Healthcare, Infrastructure
+operating_intensity: Pan India, Regional, Single State
+business_sector: MSME, Housing, Gold, Vehicle, Microfinance, Agriculture, Retail
 sort_by: aum_crores, established_year, employee_count, quality_score, company_name
 sort_dir: asc, desc
 
