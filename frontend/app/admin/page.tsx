@@ -824,7 +824,6 @@ export default function AdminPage() {
             )}
           </>
         )}
-      </div>
 
       {/* ── Audit Log tab ── */}
       {tab === 'audit' && (
@@ -887,6 +886,7 @@ export default function AdminPage() {
           )}
         </>
       )}
+      </div>
 
       {/* Edit Lender slide-out panel */}
       {editLenderId !== null && token && (

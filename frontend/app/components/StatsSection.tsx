@@ -30,7 +30,7 @@ export function StatsSection({ totalLenders = 928 }: StatsSectionProps) {
 
   return (
     <section className="relative py-16 bg-gradient-to-b from-[#E6F4F4]/30 to-gray-50/50">
-      <div className="max-w-7xl mx-auto px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8">
         <div className="grid md:grid-cols-3 gap-8">
           {stats.map((stat, index) => {
             const Icon = stat.icon

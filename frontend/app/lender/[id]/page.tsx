@@ -439,7 +439,7 @@ export default function LenderDetailPage() {
     <div className="min-h-screen" style={{ background: '#F7FAFA' }}>
 
       {/* Nav */}
-      <nav className="bg-white sticky top-0 z-10" style={{ borderBottom: '1px solid #D8EBEB' }}>
+      <nav className="bg-white sticky top-0 z-30" style={{ borderBottom: '1px solid #D8EBEB' }}>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex items-center gap-3">
           <button
             onClick={() => router.back()}
@@ -735,13 +735,13 @@ export default function LenderDetailPage() {
 
           {/* Loan type filter tabs */}
           {loanTypes.length > 1 && (
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex overflow-x-auto gap-2 mb-4 pb-1 -mx-1 px-1">
               {loanTypes.map(lt => (
                 <button
                   key={lt}
                   onClick={() => setSelectedLoanType(lt)}
                   className={[
-                    'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
+                    'flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
                     selectedLoanType === lt
                       ? 'text-white'
                       : 'bg-white border-gray-200 hover:border-gray-300',

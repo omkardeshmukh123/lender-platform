@@ -36,7 +36,7 @@ export function Navbar({ authenticated = false, user, onSignOut, savedCount = 0,
 
   return (
     <nav
-      className={`sticky top-0 z-50 transition-all duration-300 ${
+      className={`sticky top-0 z-40 transition-all duration-300 ${
         isScrolled
           ? 'bg-white/96 backdrop-blur-xl shadow-sm'
           : 'bg-white/85 backdrop-blur-md'

@@ -662,10 +662,9 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
       {/* Mobile backdrop */}
       <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-20 md:hidden" onClick={onClose} />
 
-      <aside className="fixed right-0 top-0 h-full z-30 flex flex-col
-                        md:relative md:shadow-none md:z-auto"
+      <aside className="fixed right-0 top-0 h-screen z-30 flex flex-col w-full md:w-[400px]
+                        md:sticky md:top-0 md:h-screen md:shadow-none md:z-auto"
              style={{
-               width: '400px',
                background: 'white',
                borderLeft: '1px solid #E5E7EB',
                boxShadow: '0 0 40px rgba(26,43,107,0.12)',

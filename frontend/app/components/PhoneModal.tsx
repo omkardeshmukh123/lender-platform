@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Phone, AlertCircle } from 'lucide-react'
 import { useAuth } from './AuthContext'
 
@@ -9,6 +9,11 @@ export function PhoneModal() {
   const [phone, setPhone] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,6 +36,9 @@ export function PhoneModal() {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="phone-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
       style={{ background: 'rgba(13,51,51,0.6)', backdropFilter: 'blur(2px)' }}
     >
@@ -42,7 +50,7 @@ export function PhoneModal() {
           >
             <Phone className="w-6 h-6" style={{ color: '#1A7070' }} />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-1">One last step</h2>
+          <h2 id="phone-modal-title" className="text-xl font-bold text-gray-900 mb-1">One last step</h2>
           <p className="text-sm text-gray-500">Enter your mobile number to continue</p>
         </div>
 

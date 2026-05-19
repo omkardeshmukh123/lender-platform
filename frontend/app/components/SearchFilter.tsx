@@ -766,7 +766,7 @@ export function SearchFilter({
             'flex-shrink-0 overflow-y-auto',
             'fixed top-0 left-0 h-full z-40 transition-transform duration-300 ease-in-out',
             sidebarOpen ? 'translate-x-0' : '-translate-x-full',
-            'md:sticky md:top-0 md:h-screen md:z-auto md:translate-x-0',
+            'md:sticky md:top-0 md:h-[100dvh] md:z-auto md:translate-x-0',
           ].join(' ')}
           style={{
             width: '280px',
@@ -871,6 +871,8 @@ export function SearchFilter({
                   <button
                     key={key}
                     type="button"
+                    role="switch"
+                    aria-checked={filters[key]}
                     onClick={() => onFilterChange(key, !filters[key])}
                     className={[
                       'flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all',

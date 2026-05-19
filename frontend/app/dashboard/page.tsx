@@ -489,6 +489,13 @@ function DashboardContent() {
     fetchLenders(filters, page)
   }, [filters, page, fetchLenders])
 
+  useEffect(() => {
+    if (savedOpen) {
+      document.body.style.overflow = 'hidden'
+      return () => { document.body.style.overflow = '' }
+    }
+  }, [savedOpen])
+
   // ── Filter change handler ───────────────────────────────────
   const handleFilterChange = useCallback(
     <K extends keyof MultiFilters>(key: K, value: MultiFilters[K]) => {
@@ -553,8 +560,7 @@ function DashboardContent() {
           onClose={() => setSidebarOpen(false)}
         />
 
-        <main className="flex-1 min-w-0 py-8 px-4 sm:px-6 lg:px-8
-                         bg-gradient-to-b from-gray-50 to-white">
+        <main className={`flex-1 min-w-0 py-8 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white${compareLenders.length >= 2 ? ' pb-28' : ''}`}>
 
           {/* Desktop Ask AI button — auth required */}
           {user && (
@@ -639,7 +645,7 @@ function DashboardContent() {
           {/* Skeleton loaders */}
           {loading ? (
             <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
-              {Array.from({ length: 6 }).map((_, i) => (
+              {Array.from({ length: 12 }).map((_, i) => (
                 <div key={i} className="bg-white rounded-2xl p-5 animate-pulse"
                      style={{ border: '1px solid #E6F4F4', boxShadow: '0 2px 6px rgba(26,112,112,0.05)' }}>
                   <div className="h-5 rounded-lg w-3/4 mb-3 skeleton" />
@@ -801,7 +807,9 @@ function DashboardContent() {
 
         {/* Saved lenders drawer — auth required */}
         {user && savedOpen && (
-          <aside className="fixed inset-y-0 right-0 z-40 w-80 bg-white flex flex-col"
+          <>
+            <div className="fixed inset-0 bg-black/30 z-[38]" onClick={() => setSavedOpen(false)} />
+            <aside className="fixed inset-y-0 right-0 z-40 w-80 bg-white flex flex-col"
                  style={{ borderLeft: '1px solid #D8EBEB', boxShadow: '0 12px 32px rgba(26,112,112,0.14)' }}>
             <div className="flex items-center justify-between px-5 py-4 border-b"
                  style={{ background: '#F7FAFA', borderColor: '#E6F4F4' }}>
@@ -891,7 +899,8 @@ function DashboardContent() {
                 </div>
               ))}
             </div>
-          </aside>
+            </aside>
+          </>
         )}
       </div>
 

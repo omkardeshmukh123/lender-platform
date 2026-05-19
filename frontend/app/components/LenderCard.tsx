@@ -285,9 +285,9 @@ export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onS
       {/* Product tags */}
       {visibleProducts.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-1.5">
-          {visibleProducts.map((product, idx) => (
+          {visibleProducts.map((product) => (
             <button
-              key={idx}
+              key={product}
               type="button"
               onClick={() => onTagClick?.(product)}
               title={onTagClick ? `Filter by ${product}` : product}

@@ -18,7 +18,7 @@ export function Hero() {
       <div className="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none opacity-10"
            style={{ background: 'radial-gradient(circle, #C9A227 0%, transparent 70%)', transform: 'translate(25%, -25%)' }} />
 
-      <div className="relative max-w-7xl mx-auto px-6 sm:px-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8">
         <div className="flex flex-col md:flex-row items-center gap-8">
 
           {/* Logo + branding */}
