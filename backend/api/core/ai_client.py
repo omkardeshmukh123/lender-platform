@@ -9,7 +9,6 @@ from __future__ import annotations
 import os
 import logging
 import threading
-from typing import Union
 
 logger = logging.getLogger(__name__)
 

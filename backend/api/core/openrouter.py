@@ -53,7 +53,7 @@ Optional fields:
     "operating_intensity": [string],
     "business_sector": [string],
     "sort_by": string,
-    "sort_dir": "asc" | "desc"
+    "sort_dir": "asc" or "desc"
   },
   "compare_names": [string],
   "detail_names": [string]
