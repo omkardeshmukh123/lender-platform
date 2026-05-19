@@ -448,12 +448,32 @@ function DashboardContent() {
     router.replace(filtersToParams(filters, page), { scroll: false })
   }, [filters, page, router])
 
-  // ── Main fetch ──────────────────────────────────────────────
+  // ── Main fetch (stale-while-revalidate) ─────────────────────
   const fetchLenders = useCallback(async (f: MultiFilters, pg: number) => {
     const thisRequestId = ++requestIdRef.current
+    const cacheKey = `m360_${filtersToParams(f, pg)}`
+    let loadedFromCache = false
 
-    if (isFirstLoad.current) setLoading(true)
-    else                     setFilterLoading(true)
+    if (isFirstLoad.current) {
+      // Show cached data immediately — skip skeleton on revisit
+      try {
+        const raw = sessionStorage.getItem(cacheKey)
+        if (raw) {
+          const cached = JSON.parse(raw) as LenderSearchResponse
+          setLenders(cached.results)
+          setStubs(cached.stubs ?? [])
+          setTotalCount(cached.total)
+          setLoading(false)
+          loadedFromCache = true
+        } else {
+          setLoading(true)
+        }
+      } catch {
+        setLoading(true)
+      }
+    } else {
+      setFilterLoading(true)
+    }
 
     try {
       const data = await fetchFromAPI(f, pg)
@@ -464,6 +484,7 @@ function DashboardContent() {
       setLenders(data.results)
       setStubs(data.stubs ?? [])
       setTotalCount(data.total)
+      try { sessionStorage.setItem(cacheKey, JSON.stringify(data)) } catch {}
     } catch (err: unknown) {
       if (thisRequestId !== requestIdRef.current) return
       const msg = err instanceof Error ? err.message : 'Unknown error'
@@ -474,8 +495,11 @@ function DashboardContent() {
           ? 'Server is waking up — this takes ~30s on first load. Click Retry in a moment.'
           : 'Unable to reach the server. Please check your connection and try again.'
       )
-      setLenders([])
-      setTotalCount(0)
+      // Keep stale cache visible if we already populated it — don't blank the screen
+      if (!loadedFromCache) {
+        setLenders([])
+        setTotalCount(0)
+      }
     } finally {
       if (thisRequestId === requestIdRef.current) {
         setLoading(false)

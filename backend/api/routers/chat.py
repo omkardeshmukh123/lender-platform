@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.auth import get_current_user
 from core.config import cfg
-from core.gemini import get_gemini_client
+from core.ai_client import get_ai_client
 from core.constants import VALID_LOAN_TYPES, VALID_COMPANY_TYPES, VALID_AUM_CATEGORIES
 from dependencies import get_db
 from limiter import limiter
@@ -609,7 +609,7 @@ async def chat(
     classified_message = _inject_lender_context(body.message, body.last_lender_names)
 
     try:
-        client = get_gemini_client()
+        client = get_ai_client()
         parsed = await asyncio.wait_for(
             asyncio.get_running_loop().run_in_executor(
                 None, client.parse_intent, classified_message, gemini_history
@@ -896,7 +896,7 @@ async def chat_stream(
     classified_msg    = _inject_lender_context(body.message, body.last_lender_names)
 
     try:
-        client = get_gemini_client()
+        client = get_ai_client()
         parsed = await asyncio.wait_for(
             asyncio.get_running_loop().run_in_executor(
                 None, client.parse_intent, classified_msg, gemini_history

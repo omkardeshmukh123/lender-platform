@@ -292,13 +292,7 @@ const SECTIONS: Section[] = [
         why: 'Transparency about provenance. Government registry data (MCA21, RBI) is highly reliable; web-scraped data may need independent verification.',
         example: 'MCA21 + RBI website, Annual Report',
       },
-      {
-        name: 'last_scraped_at',
-        label: 'Last Updated',
-        what: 'The date when this lender\'s data was last refreshed on the platform.',
-        why: 'Financial data ages quickly. A record updated 3 months ago is more reliable than one from 2 years ago, especially for AUM and interest rates.',
-        example: '15 Apr 2025',
-      },
+
     ],
   },
 ]

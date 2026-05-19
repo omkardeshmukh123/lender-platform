@@ -60,7 +60,9 @@ class Config:
     gemini_retry_delay_secs:   float = _float("GEMINI_RETRY_DELAY_S",    10.0)
     scraper_timeout_secs:      int   = _int("SCRAPER_TIMEOUT_S",         30)
 
-    # Chat
+    # Chat — OpenRouter (priority) or Gemini fallback
+    openrouter_api_key:       str   = _str("OPENROUTER_API_KEY", "")
+    openrouter_model:         str   = _str("OPENROUTER_MODEL", "deepseek/deepseek-chat")
     gemini_api_key:           str   = _str("GEMINI_API_KEY", "")
     gemini_model:             str   = _str("GEMINI_MODEL", "gemini-2.5-flash")
     chat_history_limit:       int   = _int("CHAT_HISTORY_LIMIT", 20)
