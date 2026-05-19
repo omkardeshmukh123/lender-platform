@@ -347,13 +347,16 @@ async def search_lenders(
 
     try:
         async with db.acquire() as conn:
-            # Single query: count + results via CTE, policy stats via pre-aggregated JOINs
+            # CTE-based query: separate cnt avoids COUNT(*) OVER() materialization
             rows = await conn.fetch(
                 f"""
                 WITH matched AS (
                     SELECT l.id
                     FROM lenders l
                     WHERE {where}
+                ),
+                cnt AS (
+                    SELECT COUNT(*)::int AS total FROM matched
                 ),
                 pc AS (
                     SELECT lender_id, COUNT(*)::int AS policy_count
@@ -377,7 +380,7 @@ async def search_lenders(
                     l.primary_loan_segments, l.operating_states, l.website,
                     l.quality_score, l.employee_count, l.established_year,
                     l.is_listed, l.phone, l.email, l.last_year_revenue,
-                    COUNT(*) OVER () AS _total_count,
+                    (SELECT total FROM cnt) AS _total_count,
                     COALESCE(pc.policy_count, 0) AS policy_count,
                     mir.min_interest_rate
                 FROM lenders l

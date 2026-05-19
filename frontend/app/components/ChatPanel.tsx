@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, startTransition } from 'react'
 import {
   X, Send, RotateCcw, Sparkles,
   Globe, Phone, Mail, MapPin, Building2,
@@ -423,6 +423,13 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const inputRef           = useRef<HTMLTextAreaElement>(null)
 
+  // Prefetch history as soon as user token is available — before panel opens
+  useEffect(() => {
+    if (!user?.access_token || historyLoaded) return
+    loadHistory()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.access_token])
+
   useEffect(() => {
     if (!open || !user?.access_token) return
     if (aiAvailable === null) {
@@ -587,16 +594,25 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
             const data = JSON.parse(line.slice(6))
 
             if (data.type === 'meta') {
+              // Add message immediately without lenders so token streaming starts fast
               const newMsg: ChatMessage = {
                 role:              'assistant',
                 content:           '',
                 intent:            data.intent,
-                lenders:           data.lenders           ?? [],
-                unmatched_names:   data.unmatched_names   ?? [],
-                suggested_actions: data.suggested_actions ?? [],
+                lenders:           [],
+                unmatched_names:   [],
+                suggested_actions: [],
                 _streamId:         assistantStreamId,
               }
               setMessages(prev => [...prev, newMsg])
+              // Defer lender card reconciliation so it doesn't block token rendering
+              startTransition(() => {
+                setMessages(prev => prev.map(m =>
+                  m._streamId === assistantStreamId
+                    ? { ...m, lenders: data.lenders ?? [], unmatched_names: data.unmatched_names ?? [], suggested_actions: data.suggested_actions ?? [] }
+                    : m
+                ))
+              })
               if (data.lenders?.length) {
                 setLastLenderNames(data.lenders.slice(0, 3).map((l: LenderResult) => l.company_name))
               }

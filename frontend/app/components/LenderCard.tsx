@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import Link from 'next/link'
 import {
   MapPin, Calendar, TrendingUp, Users,
@@ -155,7 +155,7 @@ function qualityDot(score: number | null | undefined) {
   return { pct, color, bg }
 }
 
-export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onSave, isComparing = false, onCompare }: LenderCardProps) {
+export const LenderCard = memo(function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onSave, isComparing = false, onCompare }: LenderCardProps) {
   const [intentOpen, setIntentOpen] = useState(false)
   const hasContactInfo = lender.website || lender.phone || lender.email
   const badgeStyle     = companyTypeBadgeStyle(lender.companyType)
@@ -174,7 +174,7 @@ export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onS
   return (
     <div
       className="lender-card animate-fade-in-up"
-      style={{ animationDelay: `${Math.min(index, 5) * 60}ms` }}
+      style={{ animationDelay: '0ms' }}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4 gap-2">
@@ -406,4 +406,4 @@ export function LenderCard({ lender, index = 0, onTagClick, isSaved = false, onS
       )}
     </div>
   )
-}
+})

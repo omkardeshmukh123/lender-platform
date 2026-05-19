@@ -21,6 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.auth import get_current_user
+from core.cache import get_cache, make_key, CacheTTL
 from core.config import cfg
 from core.ai_client import get_ai_client
 from core.constants import VALID_LOAN_TYPES, VALID_COMPANY_TYPES, VALID_AUM_CATEGORIES
@@ -52,9 +53,40 @@ _BROADENING_DROP_ORDER = ["state", "aum_category", "aum_min", "aum_max", "operat
 
 _SIMILARITY_TRIGGERS = frozenset({"similar to", "like ", "more like", "similar lenders", "lenders like", "lenders similar"})
 
+_GREETING_TOKENS = frozenset({
+    "hi", "hello", "hey", "hii", "helo", "yo", "sup",
+    "thanks", "thank you", "ty", "thx", "thankyou",
+    "namaste", "namaskar", "jai hind",
+    "what can you do", "what can you help", "help me", "how can you help",
+})
+
 def _is_similarity_query(message: str) -> bool:
     msg = message.lower()
     return any(t in msg for t in _SIMILARITY_TRIGGERS)
+
+
+def _quick_classify(message: str) -> Optional[dict]:
+    """Rule-based pre-classifier for deterministic patterns — skips AI call entirely.
+    Returns parsed intent dict or None if AI classification is needed.
+    """
+    msg = message.strip().lower()
+    empty = {"intent": "", "filters": {}, "compare_names": [], "detail_names": []}
+
+    # Greetings / small talk
+    if msg in _GREETING_TOKENS or any(msg.startswith(g) for g in ("hi ", "hello ", "hey ")):
+        return {**empty, "intent": "greeting"}
+
+    # Single loan type (e.g. "gold loan", "home loan", "vehicle loan")
+    for lt in VALID_LOAN_TYPES:
+        if msg == lt.lower() or msg == lt.lower() + "s" or msg == lt.lower() + " lenders":
+            return {**empty, "intent": "filter", "filters": {"loan_type": [lt]}}
+
+    # Single company type (e.g. "nbfc", "small finance bank")
+    for ct in VALID_COMPANY_TYPES:
+        if msg == ct.lower() or msg == ct.lower() + "s" or msg == ct.lower() + " lenders":
+            return {**empty, "intent": "filter", "filters": {"company_type": [ct]}}
+
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -343,6 +375,9 @@ async def _search_lenders(db: asyncpg.Pool, filters: dict) -> tuple[list[LenderR
 
     where = " AND ".join(conditions)
     async with db.acquire() as conn:
+        db_total = await conn.fetchval(
+            f"SELECT COUNT(*) FROM lenders WHERE {where}", *params
+        )
         rows = await conn.fetch(
             f"""
             SELECT id, company_name, company_type, rbi_category,
@@ -350,8 +385,7 @@ async def _search_lenders(db: asyncpg.Pool, filters: dict) -> tuple[list[LenderR
                    pan_india, primary_loan_segments, operating_states,
                    website, quality_score, employee_count,
                    established_year, is_listed, phone, email,
-                   operating_intensity, business_sector,
-                   COUNT(*) OVER() AS _db_total
+                   operating_intensity, business_sector
             FROM lenders
             WHERE {where}
             ORDER BY {sort_by} {sort_dir} NULLS LAST
@@ -359,98 +393,89 @@ async def _search_lenders(db: asyncpg.Pool, filters: dict) -> tuple[list[LenderR
             """,
             *params,
         )
-    db_total = int(rows[0]["_db_total"]) if rows else 0
-    return [_row_to_lender(r) for r in rows], db_total
+    return [_row_to_lender(r) for r in rows], int(db_total or 0)
 
 
 async def _fetch_lenders_by_name(db: asyncpg.Pool, names: list[str]) -> list[LenderResult]:
-    """Fetch lenders by name with two-tier matching: full-phrase ILIKE, then word-level fallback."""
+    """Fetch lenders by name — single query covering all three match tiers via CTE:
+    Tier 1: full-phrase ILIKE · Tier 2: word-level ILIKE · Tier 3: trigram similarity.
+    Results ordered by tier then quality_score so best matches come first.
+    """
     if not names:
         return []
 
-    # Tier 1: full phrase ILIKE
-    patterns = [f"%{_esc(n)}%" for n in names[:3]]
-    async with db.acquire() as conn:
-        rows = await conn.fetch(
-            """
-            SELECT DISTINCT ON (company_name) id, company_name, company_type, rbi_category,
-                   aum_crores, aum_category, hq_state, hq_location,
-                   pan_india, primary_loan_segments, operating_states,
-                   website, quality_score, employee_count,
-                   established_year, is_listed, phone, email,
-                   operating_intensity, business_sector
-            FROM lenders
-            WHERE approval_status = 'approved'
-              AND company_name ILIKE ANY($1::text[])
-            ORDER BY company_name, quality_score DESC NULLS LAST
-            LIMIT 9
-            """,
-            patterns,
-        )
+    capped = names[:3]
 
-    if rows:
-        return _dedup_lenders([_row_to_lender(r) for r in rows])
+    # Compute patterns in Python so they can be passed as params
+    phrase_patterns = [f"%{_esc(n)}%" for n in capped]
 
-    # Tier 2: word-level fallback — only distinctive words (exclude generic finance terms)
     word_patterns: list[str] = []
-    for name in names[:3]:
+    for name in capped:
         words = [w for w in name.lower().split() if len(w) > 2 and w not in _NAME_STOP]
         word_patterns.extend([f"%{_esc(w)}%" for w in words[:3]])
-    # If all words were generic (e.g. "XYZ Finance" → only "xyz"), still try them
     if not word_patterns:
-        for name in names[:3]:
+        for name in capped:
             words = [w for w in name.lower().split() if len(w) > 2]
             word_patterns.extend([f"%{_esc(w)}%" for w in words[:2]])
 
-    if not word_patterns:
-        return []
+    # Build trigram OR conditions for up to 3 names
+    trgm_conditions = " OR ".join(
+        f"similarity(company_name, ${i + 3}) > 0.25"
+        for i in range(len(capped))
+    )
+    # similarity() ORDER BY needs to pick one representative score
+    trgm_order = " + ".join(
+        f"similarity(company_name, ${i + 3})"
+        for i in range(len(capped))
+    )
 
-    async with db.acquire() as conn:
-        rows = await conn.fetch(
-            """
-            SELECT DISTINCT ON (company_name) id, company_name, company_type, rbi_category,
-                   aum_crores, aum_category, hq_state, hq_location,
-                   pan_india, primary_loan_segments, operating_states,
-                   website, quality_score, employee_count,
-                   established_year, is_listed, phone, email,
-                   operating_intensity, business_sector
+    _cols = """id, company_name, company_type, rbi_category,
+               aum_crores, aum_category, hq_state, hq_location,
+               pan_india, primary_loan_segments, operating_states,
+               website, quality_score, employee_count,
+               established_year, is_listed, phone, email,
+               operating_intensity, business_sector"""
+
+    query = f"""
+        WITH
+        tier1 AS (
+            SELECT {_cols}, 1 AS _tier
             FROM lenders
             WHERE approval_status = 'approved'
               AND company_name ILIKE ANY($1::text[])
-            ORDER BY company_name, quality_score DESC NULLS LAST
-            LIMIT 9
-            """,
-            word_patterns,
+        ),
+        tier2 AS (
+            SELECT {_cols}, 2 AS _tier
+            FROM lenders
+            WHERE approval_status = 'approved'
+              AND company_name ILIKE ANY($2::text[])
+              AND id NOT IN (SELECT id FROM tier1)
+        ),
+        tier3 AS (
+            SELECT {_cols}, 3 AS _tier
+            FROM lenders
+            WHERE approval_status = 'approved'
+              AND ({trgm_conditions})
+              AND id NOT IN (SELECT id FROM tier1)
+              AND id NOT IN (SELECT id FROM tier2)
+            ORDER BY {trgm_order} DESC
+            LIMIT 3
         )
-    if rows:
-        return [_row_to_lender(r) for r in rows]
+        SELECT * FROM tier1
+        UNION ALL
+        SELECT * FROM tier2
+        UNION ALL
+        SELECT * FROM tier3
+        ORDER BY _tier, quality_score DESC NULLS LAST
+        LIMIT 9
+    """
 
-    # Tier 3: trigram similarity fallback for abbreviations / partial names (e.g. "SBI")
-    results: list[LenderResult] = []
-    seen_ids: set[int] = set()
+    params: list = [phrase_patterns, word_patterns or phrase_patterns, *capped]
+
     async with db.acquire() as conn:
-        for name in names[:3]:
-            sim_rows = await conn.fetch(
-                """
-                SELECT id, company_name, company_type, rbi_category,
-                       aum_crores, aum_category, hq_state, hq_location,
-                       pan_india, primary_loan_segments, operating_states,
-                       website, quality_score, employee_count,
-                       established_year, is_listed, phone, email,
-                       operating_intensity, business_sector
-                FROM lenders
-                WHERE approval_status = 'approved'
-                  AND similarity(company_name, $1) > 0.25
-                ORDER BY similarity(company_name, $1) DESC
-                LIMIT 1
-                """,
-                name,
-            )
-            for r in sim_rows:
-                if r["id"] not in seen_ids:
-                    seen_ids.add(r["id"])
-                    results.append(_row_to_lender(r))
-    return results
+        rows = await conn.fetch(query, *params)
+
+    return _dedup_lenders([_row_to_lender(r) for r in rows])
 
 
 async def _search_lenders_for_qa(db: asyncpg.Pool, message: str) -> list[LenderResult]:
@@ -492,25 +517,46 @@ async def _search_with_broadening(
     db: asyncpg.Pool, filters: dict
 ) -> tuple[list[LenderResult], dict, str, int]:
     """Search lenders with automatic filter broadening on zero results.
-    Returns (lenders, applied_filters, broadening_note, db_total)."""
+    Returns (lenders, applied_filters, broadening_note, db_total).
+    On zero results, all broadening levels run in parallel via asyncio.gather()
+    instead of sequentially — time = slowest query, not sum of all queries.
+    """
     lenders, total = await _search_lenders(db, filters)
     lenders = _dedup_lenders(lenders)
     if lenders:
         return lenders, filters, "", total
 
+    # Build all broadening levels upfront
+    levels: list[tuple[list[str], dict]] = []
     broad_filters = dict(filters)
     dropped: list[str] = []
     for key in _BROADENING_DROP_ORDER:
         if key in broad_filters:
             del broad_filters[key]
             dropped.append(key)
-            lenders, total = await _search_lenders(db, broad_filters)
-            if lenders:
-                note = (
-                    f"No exact match with all filters — dropped {', '.join(dropped)} "
-                    f"to show nearby results."
-                )
-                return lenders, broad_filters, note, total
+            levels.append((list(dropped), dict(broad_filters)))
+
+    if not levels:
+        return [], filters, "", 0
+
+    # Run all levels in parallel
+    results = await asyncio.gather(
+        *[_search_lenders(db, f) for _, f in levels],
+        return_exceptions=True,
+    )
+
+    # Pick the least-broadened level that has results
+    for (dropped_keys, level_filters), result in zip(levels, results):
+        if isinstance(result, Exception):
+            continue
+        lenders, total = result
+        lenders = _dedup_lenders(lenders)
+        if lenders:
+            note = (
+                f"No exact match with all filters — dropped {', '.join(dropped_keys)} "
+                f"to show nearby results."
+            )
+            return lenders, level_filters, note, total
 
     return [], filters, "", 0
 
@@ -602,6 +648,7 @@ async def chat(
     body: ChatRequest,
     db: asyncpg.Pool = Depends(get_db),
     user: dict = Depends(get_current_user),
+    cache=Depends(get_cache),
 ):
     user_id = user.get("sub", "")
     if not user_id:
@@ -628,22 +675,36 @@ async def chat(
     # Inject lender context for pronoun/ordinal references ("the first one", "it", etc.)
     classified_message = _inject_lender_context(body.message, body.last_lender_names)
 
-    try:
-        client = get_ai_client()
-        parsed = await asyncio.wait_for(
-            asyncio.get_running_loop().run_in_executor(
-                None, client.parse_intent, classified_message, gemini_history
-            ),
-            timeout=cfg.chat_intent_timeout_secs,
-        )
-    except ValueError:
-        raise HTTPException(status_code=503, detail="AI_NOT_CONFIGURED")
-    except asyncio.TimeoutError:
-        logger.error("chat: intent parse timed out after %ds", cfg.chat_intent_timeout_secs)
-        raise HTTPException(status_code=503, detail="AI_TIMEOUT")
-    except Exception as exc:
-        logger.error("chat: intent parse error: %s", exc)
-        raise HTTPException(status_code=503, detail="AI_UNAVAILABLE")
+    # Quick rule-based classifier — skips AI entirely for obvious patterns
+    parsed = _quick_classify(body.message) if not body.last_lender_names else None
+
+    # Intent cache — skip when last_lender_names is set (pronoun resolution is context-dependent)
+    _intent_cache_key = None
+    if parsed is None and not body.last_lender_names:
+        _intent_cache_key = make_key("chat:intent", {"msg": body.message.strip().lower()})
+        parsed = await cache.get(_intent_cache_key)
+        if parsed:
+            logger.debug("chat: intent cache HIT")
+
+    if parsed is None:
+        try:
+            client = get_ai_client()
+            parsed = await asyncio.wait_for(
+                asyncio.get_running_loop().run_in_executor(
+                    None, client.parse_intent, classified_message, gemini_history
+                ),
+                timeout=cfg.chat_intent_timeout_secs,
+            )
+        except ValueError:
+            raise HTTPException(status_code=503, detail="AI_NOT_CONFIGURED")
+        except asyncio.TimeoutError:
+            logger.error("chat: intent parse timed out after %ds", cfg.chat_intent_timeout_secs)
+            raise HTTPException(status_code=503, detail="AI_TIMEOUT")
+        except Exception as exc:
+            logger.error("chat: intent parse error: %s", exc)
+            raise HTTPException(status_code=503, detail="AI_UNAVAILABLE")
+        if _intent_cache_key:
+            await cache.set(_intent_cache_key, parsed, ttl=CacheTTL.DETAIL)
 
     intent        = parsed.get("intent", "qa")
     filters       = parsed.get("filters") or {}
@@ -691,6 +752,7 @@ async def chat(
 
     # ------------------------------------------------------------------
     # DB lookup — always driven by intent
+    # Cache key covers intent + filters/names so identical queries skip DB.
     # ------------------------------------------------------------------
     lenders: list[LenderResult] = []
     applied_filters: Optional[dict] = None
@@ -698,73 +760,103 @@ async def chat(
     unmatched_names: list[str] = []
     db_total: int = 0
 
-    try:
-        # Similarity override: "find more lenders like X" / "similar to X"
-        ref_name_for_sim = (detail_names or compare_names or [None])[0]
-        if _is_similarity_query(body.message) and ref_name_for_sim:
-            ref_lenders = await _fetch_lenders_by_name(db, [ref_name_for_sim])
-            if ref_lenders:
-                ref = ref_lenders[0]
-                sim_filters: dict = {"sort_by": "aum_crores", "sort_dir": "desc"}
-                if ref.company_type:
-                    sim_filters["company_type"] = [ref.company_type]
-                if ref.business_sector:
-                    sim_filters["business_sector"] = [ref.business_sector]
-                lenders, applied_filters, broadening_note, db_total = await _search_with_broadening(db, sim_filters)
-                lenders = [l for l in lenders if l.id != ref.id]
-                db_total = max(0, db_total - 1)
-                intent = "filter"
-                sim_note = (
-                    f"Showing lenders similar to {ref.company_name} "
-                    f"({ref.company_type}{', ' + ref.business_sector if ref.business_sector else ''})."
-                )
-                broadening_note = (sim_note + " " + broadening_note).strip()
-            else:
-                lenders = await _search_lenders_for_qa(db, body.message)
-                intent = "qa"
+    _lender_cache_key = None
+    _cached_lender_payload = None
+    _is_similarity = _is_similarity_query(body.message)
 
-        elif intent == "filter":
-            had_explicit_filters = bool(filters)
-            search_filters = filters if filters else {"sort_by": "aum_crores", "sort_dir": "desc"}
-            lenders, applied_filters, broadening_note, db_total = await _search_with_broadening(db, search_filters)
-            if not had_explicit_filters:
-                applied_filters = None
+    if intent in ("filter", "compare", "lender_detail") and not _is_similarity:
+        _lender_cache_params: dict = {"intent": intent}
+        if intent == "filter":
+            _lender_cache_params["filters"] = filters
+        elif intent == "compare":
+            _lender_cache_params["names"] = sorted(compare_names)
+        elif intent == "lender_detail":
+            _lender_cache_params["names"] = detail_names[:1]
+        _lender_cache_key = make_key("chat:lenders", _lender_cache_params)
+        _cached_lender_payload = await cache.get(_lender_cache_key)
 
-        elif intent == "compare" and compare_names:
-            lenders = _dedup_lenders(await _fetch_lenders_by_name(db, compare_names))
-            unmatched_names = _compute_unmatched_names(compare_names, lenders)
-            # Auto-find a second lender when only 1 found and message implies "another"
-            if len(lenders) == 1 and "another" in body.message.lower():
-                async with db.acquire() as conn:
-                    alt = await conn.fetchrow(
-                        """
-                        SELECT id, company_name, company_type, rbi_category,
-                               aum_crores, aum_category, hq_state, hq_location,
-                               pan_india, primary_loan_segments, operating_states,
-                               website, quality_score, employee_count,
-                               established_year, is_listed, phone, email,
-                               operating_intensity, business_sector
-                        FROM lenders
-                        WHERE approval_status = 'approved'
-                          AND company_type = $1 AND id != $2
-                        ORDER BY quality_score DESC NULLS LAST, aum_crores DESC NULLS LAST
-                        LIMIT 1
-                        """,
-                        lenders[0].company_type, lenders[0].id,
+    if _cached_lender_payload is not None:
+        logger.debug("chat: lender cache HIT")
+        lenders = [LenderResult(**d) for d in _cached_lender_payload["lenders"]]
+        applied_filters = _cached_lender_payload.get("applied_filters")
+        broadening_note = _cached_lender_payload.get("broadening_note", "")
+        unmatched_names = _cached_lender_payload.get("unmatched_names", [])
+        db_total        = _cached_lender_payload.get("db_total", len(lenders))
+    else:
+        try:
+            ref_name_for_sim = (detail_names or compare_names or [None])[0]
+            if _is_similarity and ref_name_for_sim:
+                ref_lenders = await _fetch_lenders_by_name(db, [ref_name_for_sim])
+                if ref_lenders:
+                    ref = ref_lenders[0]
+                    sim_filters: dict = {"sort_by": "aum_crores", "sort_dir": "desc"}
+                    if ref.company_type:
+                        sim_filters["company_type"] = [ref.company_type]
+                    if ref.business_sector:
+                        sim_filters["business_sector"] = [ref.business_sector]
+                    lenders, applied_filters, broadening_note, db_total = await _search_with_broadening(db, sim_filters)
+                    lenders = [l for l in lenders if l.id != ref.id]
+                    db_total = max(0, db_total - 1)
+                    intent = "filter"
+                    sim_note = (
+                        f"Showing lenders similar to {ref.company_name} "
+                        f"({ref.company_type}{', ' + ref.business_sector if ref.business_sector else ''})."
                     )
-                if alt:
-                    lenders.append(_row_to_lender(alt))
-                    unmatched_names = []
+                    broadening_note = (sim_note + " " + broadening_note).strip()
+                else:
+                    lenders = await _search_lenders_for_qa(db, body.message)
+                    intent = "qa"
 
-        elif intent == "lender_detail" and detail_names:
-            lenders = _dedup_lenders(await _fetch_lenders_by_name(db, detail_names[:1]))
+            elif intent == "filter":
+                had_explicit_filters = bool(filters)
+                search_filters = filters if filters else {"sort_by": "aum_crores", "sort_dir": "desc"}
+                lenders, applied_filters, broadening_note, db_total = await _search_with_broadening(db, search_filters)
+                if not had_explicit_filters:
+                    applied_filters = None
 
-        elif intent == "qa":
-            lenders = await _search_lenders_for_qa(db, body.message)
+            elif intent == "compare" and compare_names:
+                lenders = _dedup_lenders(await _fetch_lenders_by_name(db, compare_names))
+                unmatched_names = _compute_unmatched_names(compare_names, lenders)
+                if len(lenders) == 1 and "another" in body.message.lower():
+                    async with db.acquire() as conn:
+                        alt = await conn.fetchrow(
+                            """
+                            SELECT id, company_name, company_type, rbi_category,
+                                   aum_crores, aum_category, hq_state, hq_location,
+                                   pan_india, primary_loan_segments, operating_states,
+                                   website, quality_score, employee_count,
+                                   established_year, is_listed, phone, email,
+                                   operating_intensity, business_sector
+                            FROM lenders
+                            WHERE approval_status = 'approved'
+                              AND company_type = $1 AND id != $2
+                            ORDER BY quality_score DESC NULLS LAST, aum_crores DESC NULLS LAST
+                            LIMIT 1
+                            """,
+                            lenders[0].company_type, lenders[0].id,
+                        )
+                    if alt:
+                        lenders.append(_row_to_lender(alt))
+                        unmatched_names = []
 
-    except Exception as exc:
-        logger.error("chat: DB query failed: %s", exc)
-        raise HTTPException(status_code=503, detail="Search temporarily unavailable")
+            elif intent == "lender_detail" and detail_names:
+                lenders = _dedup_lenders(await _fetch_lenders_by_name(db, detail_names[:1]))
+
+            elif intent == "qa":
+                lenders = await _search_lenders_for_qa(db, body.message)
+
+        except Exception as exc:
+            logger.error("chat: DB query failed: %s", exc)
+            raise HTTPException(status_code=503, detail="Search temporarily unavailable")
+
+        if _lender_cache_key and lenders:
+            await cache.set(_lender_cache_key, {
+                "lenders": [l.model_dump() for l in lenders],
+                "applied_filters": applied_filters,
+                "broadening_note": broadening_note,
+                "unmatched_names": unmatched_names,
+                "db_total": db_total,
+            }, ttl=CacheTTL.MATCH)
 
     # Append count note when filter returns a capped result set
     if intent == "filter" and db_total > len(lenders) > 0:
@@ -892,6 +984,7 @@ async def chat_stream(
     body: ChatRequest,
     db: asyncpg.Pool = Depends(get_db),
     user: dict = Depends(get_current_user),
+    cache=Depends(get_cache),
 ):
     """SSE streaming version of /v1/chat. Yields meta → token* → done events."""
     import json as _json
@@ -915,22 +1008,36 @@ async def chat_stream(
     gemini_history    = _format_history_for_gemini(body.history, cfg.chat_context_turns)
     classified_msg    = _inject_lender_context(body.message, body.last_lender_names)
 
-    try:
-        client = get_ai_client()
-        parsed = await asyncio.wait_for(
-            asyncio.get_running_loop().run_in_executor(
-                None, client.parse_intent, classified_msg, gemini_history
-            ),
-            timeout=cfg.chat_intent_timeout_secs,
-        )
-    except ValueError:
-        raise HTTPException(status_code=503, detail="AI_NOT_CONFIGURED")
-    except asyncio.TimeoutError:
-        logger.error("chat_stream: intent parse timed out after %ds", cfg.chat_intent_timeout_secs)
-        raise HTTPException(status_code=503, detail="AI_TIMEOUT")
-    except Exception as exc:
-        logger.error("chat_stream: intent parse error: %s", exc)
-        raise HTTPException(status_code=503, detail="AI_UNAVAILABLE")
+    # Quick rule-based classifier — skips AI entirely for obvious patterns
+    parsed = _quick_classify(body.message) if not body.last_lender_names else None
+
+    # Intent cache — skip for context-dependent pronoun resolution
+    _intent_cache_key = None
+    if parsed is None and not body.last_lender_names:
+        _intent_cache_key = make_key("chat:intent", {"msg": body.message.strip().lower()})
+        parsed = await cache.get(_intent_cache_key)
+        if parsed:
+            logger.debug("chat_stream: intent cache HIT")
+
+    if parsed is None:
+        try:
+            client = get_ai_client()
+            parsed = await asyncio.wait_for(
+                asyncio.get_running_loop().run_in_executor(
+                    None, client.parse_intent, classified_msg, gemini_history
+                ),
+                timeout=cfg.chat_intent_timeout_secs,
+            )
+        except ValueError:
+            raise HTTPException(status_code=503, detail="AI_NOT_CONFIGURED")
+        except asyncio.TimeoutError:
+            logger.error("chat_stream: intent parse timed out after %ds", cfg.chat_intent_timeout_secs)
+            raise HTTPException(status_code=503, detail="AI_TIMEOUT")
+        except Exception as exc:
+            logger.error("chat_stream: intent parse error: %s", exc)
+            raise HTTPException(status_code=503, detail="AI_UNAVAILABLE")
+        if _intent_cache_key:
+            await cache.set(_intent_cache_key, parsed, ttl=CacheTTL.DETAIL)
 
     intent        = parsed.get("intent", "qa")
     filters       = parsed.get("filters") or {}
@@ -945,11 +1052,33 @@ async def chat_stream(
     broadening_note = ""
     unmatched_names: list[str] = []
     db_total: int = 0
+    _is_similarity = _is_similarity_query(body.message)
 
-    if intent not in ("greeting", "out_of_scope", "concept"):
+    # Lender results cache
+    _lender_cache_key = None
+    _cached_lender_payload = None
+    if intent in ("filter", "compare", "lender_detail") and not _is_similarity:
+        _lender_cache_params: dict = {"intent": intent}
+        if intent == "filter":
+            _lender_cache_params["filters"] = filters
+        elif intent == "compare":
+            _lender_cache_params["names"] = sorted(compare_names)
+        elif intent == "lender_detail":
+            _lender_cache_params["names"] = detail_names[:1]
+        _lender_cache_key = make_key("chat:lenders", _lender_cache_params)
+        _cached_lender_payload = await cache.get(_lender_cache_key)
+
+    if _cached_lender_payload is not None:
+        logger.debug("chat_stream: lender cache HIT")
+        lenders = [LenderResult(**d) for d in _cached_lender_payload["lenders"]]
+        applied_filters = _cached_lender_payload.get("applied_filters")
+        broadening_note = _cached_lender_payload.get("broadening_note", "")
+        unmatched_names = _cached_lender_payload.get("unmatched_names", [])
+        db_total        = _cached_lender_payload.get("db_total", len(lenders))
+    elif intent not in ("greeting", "out_of_scope", "concept"):
         try:
             ref_name_for_sim = (detail_names or compare_names or [None])[0]
-            if _is_similarity_query(body.message) and ref_name_for_sim:
+            if _is_similarity and ref_name_for_sim:
                 ref_lenders = await _fetch_lenders_by_name(db, [ref_name_for_sim])
                 if ref_lenders:
                     ref = ref_lenders[0]
@@ -1007,6 +1136,15 @@ async def chat_stream(
         except Exception as exc:
             logger.error("chat_stream: DB query failed: %s", exc)
             raise HTTPException(status_code=503, detail="Search temporarily unavailable")
+
+        if _lender_cache_key and lenders:
+            await cache.set(_lender_cache_key, {
+                "lenders": [l.model_dump() for l in lenders],
+                "applied_filters": applied_filters,
+                "broadening_note": broadening_note,
+                "unmatched_names": unmatched_names,
+                "db_total": db_total,
+            }, ttl=CacheTTL.MATCH)
 
     if intent == "filter" and db_total > len(lenders) > 0:
         count_note = f"Total matching: {db_total}, showing top {len(lenders)}."

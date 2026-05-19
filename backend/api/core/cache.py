@@ -122,9 +122,9 @@ async def create_redis_cache() -> RedisCache:
             redis_url,
             encoding="utf-8",
             decode_responses=True,
-            socket_connect_timeout=3,
-            socket_timeout=2,
-            retry_on_timeout=False,
+            socket_connect_timeout=5,
+            socket_timeout=5,
+            retry_on_timeout=True,
         )
         await client.ping()
         logger.info("Redis cache connected: %s", redis_url.split("@")[-1])
