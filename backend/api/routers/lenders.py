@@ -314,54 +314,83 @@ async def search_lenders(
     sort_sql = f"ORDER BY l.{sort_by} {sort_dir.upper()} NULLS LAST"
     offset   = (page - 1) * limit
 
-    _SELECT_COLS = """
-        l.id, l.company_name, l.company_type, l.rbi_category,
-        l.aum_crores, l.aum_category, l.hq_state, l.hq_location,
-        l.operating_intensity, l.business_sector, l.pan_india,
-        l.primary_loan_segments, l.operating_states, l.website,
-        l.quality_score, l.employee_count, l.established_year,
-        l.is_listed, l.phone, l.email, l.last_year_revenue,
-        (
-            SELECT COUNT(*)::int FROM policies p
-            WHERE p.lender_id = l.id
-              AND p.is_active = true
-              AND p.approval_status = 'approved'
-        ) AS policy_count,
-        (
-            SELECT MIN(pe.interest_rate_min)::float FROM policies_enriched pe
-            WHERE pe.lender_id = l.id
-              AND pe.is_active = true
-              AND pe.approval_status = 'approved'
-              AND pe.interest_rate_min IS NOT NULL
-        ) AS min_interest_rate
-    """
-
     stubs: List[RegistryStub] = []
 
     try:
         async with db.acquire() as conn:
-            total = await conn.fetchval(
-                f"SELECT COUNT(*) FROM lenders l WHERE {where}", *params
-            )
+            # Single query: count + results via CTE, policy stats via pre-aggregated JOINs
             rows = await conn.fetch(
                 f"""
-                SELECT {_SELECT_COLS}
+                WITH matched AS (
+                    SELECT l.id
+                    FROM lenders l
+                    WHERE {where}
+                ),
+                pc AS (
+                    SELECT lender_id, COUNT(*)::int AS policy_count
+                    FROM policies
+                    WHERE is_active = true AND approval_status = 'approved'
+                      AND lender_id IN (SELECT id FROM matched)
+                    GROUP BY lender_id
+                ),
+                mir AS (
+                    SELECT lender_id, MIN(interest_rate_min)::float AS min_interest_rate
+                    FROM policies_enriched
+                    WHERE is_active = true AND approval_status = 'approved'
+                      AND interest_rate_min IS NOT NULL
+                      AND lender_id IN (SELECT id FROM matched)
+                    GROUP BY lender_id
+                )
+                SELECT
+                    l.id, l.company_name, l.company_type, l.rbi_category,
+                    l.aum_crores, l.aum_category, l.hq_state, l.hq_location,
+                    l.operating_intensity, l.business_sector, l.pan_india,
+                    l.primary_loan_segments, l.operating_states, l.website,
+                    l.quality_score, l.employee_count, l.established_year,
+                    l.is_listed, l.phone, l.email, l.last_year_revenue,
+                    COUNT(*) OVER () AS _total_count,
+                    COALESCE(pc.policy_count, 0) AS policy_count,
+                    mir.min_interest_rate
                 FROM lenders l
-                WHERE {where}
+                JOIN matched m ON m.id = l.id
+                LEFT JOIN pc  ON pc.lender_id  = l.id
+                LEFT JOIN mir ON mir.lender_id = l.id
                 {sort_sql}
                 LIMIT ${idx} OFFSET ${idx + 1}
                 """,
                 *params, limit, offset,
             )
+            total = rows[0]["_total_count"] if rows else 0
 
             # Phase 2: trigram fallback when ILIKE returned < 3 results
             fuzzy_rows: list = []
             if q_clean and len(q_clean) >= 3 and (total or 0) < 3:
                 existing_ids = [r["id"] for r in rows]
                 fuzzy_rows = await conn.fetch(
-                    f"""
-                    SELECT {_SELECT_COLS}
+                    """
+                    SELECT
+                        l.id, l.company_name, l.company_type, l.rbi_category,
+                        l.aum_crores, l.aum_category, l.hq_state, l.hq_location,
+                        l.operating_intensity, l.business_sector, l.pan_india,
+                        l.primary_loan_segments, l.operating_states, l.website,
+                        l.quality_score, l.employee_count, l.established_year,
+                        l.is_listed, l.phone, l.email, l.last_year_revenue,
+                        COALESCE(pc.policy_count, 0) AS policy_count,
+                        mir.min_interest_rate
                     FROM lenders l
+                    LEFT JOIN (
+                        SELECT lender_id, COUNT(*)::int AS policy_count
+                        FROM policies
+                        WHERE is_active = true AND approval_status = 'approved'
+                        GROUP BY lender_id
+                    ) pc ON pc.lender_id = l.id
+                    LEFT JOIN (
+                        SELECT lender_id, MIN(interest_rate_min)::float AS min_interest_rate
+                        FROM policies_enriched
+                        WHERE is_active = true AND approval_status = 'approved'
+                          AND interest_rate_min IS NOT NULL
+                        GROUP BY lender_id
+                    ) mir ON mir.lender_id = l.id
                     WHERE l.approval_status = 'approved'
                       AND similarity(l.company_name, $1) > 0.25
                       AND l.id <> ALL($2::bigint[])

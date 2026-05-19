@@ -155,14 +155,14 @@ async function fetchFromAPI(f: MultiFilters, pg: number): Promise<LenderSearchRe
   params.set('limit', String(PAGE_SIZE))
 
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), 15_000)
+  const timer = setTimeout(() => controller.abort(), 30_000)
   try {
     const res = await fetch(`${API_URL}/v1/lenders/search?${params}`, { signal: controller.signal })
     if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`)
     return res.json() as Promise<LenderSearchResponse>
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError')
-      throw new Error('Request timed out — the server is taking too long. Please try again.')
+      throw new Error('Server is waking up — please wait a moment and try again.')
     throw err
   } finally {
     clearTimeout(timer)
@@ -468,7 +468,12 @@ function DashboardContent() {
       if (thisRequestId !== requestIdRef.current) return
       const msg = err instanceof Error ? err.message : 'Unknown error'
       console.error('[Dashboard] API error:', msg)
-      setApiError('Unable to reach the server. Please check your connection and try again.')
+      const isWakeUp = msg.includes('waking up')
+      setApiError(
+        isWakeUp
+          ? 'Server is waking up — this takes ~30s on first load. Click Retry in a moment.'
+          : 'Unable to reach the server. Please check your connection and try again.'
+      )
       setLenders([])
       setTotalCount(0)
     } finally {
