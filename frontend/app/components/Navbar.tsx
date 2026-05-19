@@ -79,6 +79,10 @@ export function Navbar({ authenticated = false, user, onSignOut, savedCount = 0,
               className="hover:text-[#1A7070] transition-colors">
               Browse
             </Link>
+            <Link href="/guide"
+              className="hover:text-[#1A7070] transition-colors">
+              Field Guide
+            </Link>
           </div>
 
           {/* ── Right actions ── */}
