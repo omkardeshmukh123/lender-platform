@@ -144,13 +144,20 @@ sort_dir: asc, desc
 RULES:
 - "filter"   → When user says which/who/list/show/find + any loan/lender criteria, ALWAYS use filter.
                Populate filters with what was mentioned; omit fields not mentioned.
-- "compare"  → put lender names in compare_names (max 3).
+               ALSO use "filter" when the user's message is ONLY a loan type name (e.g. "Gold loan",
+               "Vehicle loan", "Home loan") — treat it as "find lenders for that product".
+               ALSO use "filter" for superlative/ranking queries ("largest", "biggest", "top X by AUM")
+               → set sort_by:"aum_crores", sort_dir:"desc" and any relevant company_type filter.
+- "compare"  → put lender names in compare_names (max 3). Use for "vs", "versus", "compare",
+               "difference between X and Y", "X compared to Y".
 - "lender_detail" → put the single lender name in detail_names.
 - "concept"  → ANY question about what a financial term means, how a regulation works, how a product
                works (EMI, NPA, CIBIL, KYC, PSL, SARFAESI, co-lending, MCLR, repo rate, etc.).
                Leave all filter/name fields empty.
 - "qa"       → Only use when no filter dimension and no specific lender is mentioned.
 - "greeting" / "out_of_scope" → leave all fields empty.
+- NEVER classify a lending-related query as "out_of_scope". If it mentions any loan, lender, NBFC,
+  bank, credit, or finance topic, use "filter", "qa", or "concept" instead.
 
 PRONOUN RESOLUTION: If the message contains vague references ("that one", "the first one",
 "it", "those", "them", "the second"), look at recent conversation history to resolve which
@@ -177,6 +184,16 @@ LENDER ABBREVIATION EXPANSION: Always expand to full registered names in compare
 - Muthoot → Muthoot Finance
 - Manappuram → Manappuram Finance
 - Shriram → Shriram Finance
+- IDFC / IDFC First → IDFC First Bank
+- AU / AU SFB / AU Bank → AU Small Finance Bank
+- Bandhan → Bandhan Bank
+- IIFL → IIFL Finance
+- RBL → RBL Bank
+- Jana → Jana Small Finance Bank
+- Ujjivan → Ujjivan Small Finance Bank
+- Equitas → Equitas Small Finance Bank
+- Suryoday → Suryoday Small Finance Bank
+- Mahindra Finance / MMFSL → Mahindra & Mahindra Financial Services
 
 COMPANY TYPE SYNONYMS — map to exact VALID company_type values:
 - SFB / small finance / small finance bank → Small Finance Bank
@@ -208,6 +225,10 @@ LOAN TYPE SYNONYMS — map to nearest VALID loan_type value:
 - rural finance / village loan / grameen loan → Rural Loan
 - micro credit / micro enterprise loan / nano credit → Micro Loan
 - credit card / charge card / prepaid card → Credit Card
+- salary loan / payroll loan / payday loan / salary advance / instant salary → Personal Loan
+- instant loan / cash loan / emergency loan / quick loan / short term personal → Personal Loan
+- flexi loan / flex loan / revolving credit line / dropline OD / flexi credit → Working Capital
+- HCV loan / LCV loan / commercial vehicle loan / transport vehicle / fleet vehicle → Vehicle Loan
 
 CITY → STATE MAPPING — when user mentions a city, always convert to the correct state in filters.state:
 - Mumbai / Navi Mumbai / Thane / Nagpur / Pune / Nashik → Maharashtra
@@ -231,6 +252,9 @@ CITY → STATE MAPPING — when user mentions a city, always convert to the corr
 - Srinagar / Jammu → Jammu & Kashmir
 - Chandigarh → Chandigarh
 - Pondicherry / Puducherry → Puducherry
+- Mysore / Mysuru / Mangalore / Udupi / Hubli / Belagavi / Belgaum / Dharwad → Karnataka
+- Amritsar / Ludhiana / Jalandhar / Patiala → Punjab
+- Shimla → Himachal Pradesh
 
 EXAMPLES:
 "What NBFCs are in Gujarat?"                        → filter, {company_type:["NBFC"], state:"Gujarat"}
@@ -241,6 +265,8 @@ EXAMPLES:
 "Cooperative banks in Pune"                         → filter, {company_type:["Cooperative Bank"], state:"Maharashtra"}
 "Who offers agriculture loans?"                     → filter, {loan_type:["Agriculture Loan"]}
 "Pre owned car loan lenders"                        → filter, {loan_type:["Vehicle Loan"]}
+"Pre owned car loan"                                → filter, {loan_type:["Vehicle Loan"]}
+"Used car loan"                                     → filter, {loan_type:["Vehicle Loan"]}
 "Jewel loan NBFCs"                                  → filter, {loan_type:["Gold Loan"]}
 "Mudra loan lenders"                                → filter, {loan_type:["MSME Loan"]}
 "Show me large AUM lenders in Hyderabad"            → filter, {aum_category:["Large"], state:"Telangana"}
@@ -250,6 +276,9 @@ EXAMPLES:
 "Top 10 banks by AUM"                               → filter, {sort_by:"aum_crores", sort_dir:"desc"}
 "Compare Bajaj and Muthoot"                         → compare, compare_names:["Bajaj Finance","Muthoot Finance"]
 "Compare SBI and HDFC"                              → compare, compare_names:["State Bank of India","HDFC Bank"]
+"SBI vs HDFC Bank"                                  → compare, compare_names:["State Bank of India","HDFC Bank"]
+"Difference between SBI and HDFC Bank"              → compare, compare_names:["State Bank of India","HDFC Bank"]
+"SBI compared to HDFC"                              → compare, compare_names:["State Bank of India","HDFC Bank"]
 "Tell me about SBI"                                 → lender_detail, detail_names:["State Bank of India"]
 "Tell me about HDFC Bank"                           → lender_detail, detail_names:["HDFC Bank"]
 "What is an NBFC?"                                  → concept
@@ -260,7 +289,13 @@ EXAMPLES:
 "What is SARFAESI?" / "What is DRT?"                → concept
 "What is KYC in banking?"                           → concept
 "What is co-lending?" / "What is MCLR?"             → concept
-"Which lenders have highest AUM?"                   → qa
+"Which lenders have highest AUM?"                   → filter, {sort_by:"aum_crores", sort_dir:"desc"}
+"Top NBFCs by AUM"                                  → filter, {company_type:["NBFC"], sort_by:"aum_crores", sort_dir:"desc"}
+"Biggest banks in India"                            → filter, {sort_by:"aum_crores", sort_dir:"desc"}
+"Which NBFC is largest?"                            → filter, {company_type:["NBFC"], sort_by:"aum_crores", sort_dir:"desc"}
+"Vehicle loan"                                      → filter, {loan_type:["Vehicle Loan"]}
+"Gold loan"                                         → filter, {loan_type:["Gold Loan"]}
+"Home loan"                                         → filter, {loan_type:["Home Loan"]}
 "Hello" / "Thanks" / "What can you do?"             → greeting
 "Who won the cricket match?" / "Weather today"      → out_of_scope
 """

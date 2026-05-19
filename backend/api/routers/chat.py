@@ -48,7 +48,7 @@ _QA_STOP = {
 }
 
 # Filters dropped when broadening a zero-result query (most restrictive first)
-_BROADENING_DROP_ORDER = ["state", "aum_category", "aum_min", "aum_max", "operating_intensity", "business_sector", "loan_type", "company_type"]
+_BROADENING_DROP_ORDER = ["state", "aum_category", "aum_min", "aum_max", "operating_intensity", "pan_india", "business_sector", "loan_type", "company_type"]
 
 _SIMILARITY_TRIGGERS = frozenset({"similar to", "like ", "more like", "similar lenders", "lenders like", "lenders similar"})
 
@@ -383,13 +383,13 @@ async def _fetch_lenders_by_name(db: asyncpg.Pool, names: list[str]) -> list[Len
             WHERE approval_status = 'approved'
               AND company_name ILIKE ANY($1::text[])
             ORDER BY company_name, quality_score DESC NULLS LAST
-            LIMIT 3
+            LIMIT 9
             """,
             patterns,
         )
 
     if rows:
-        return [_row_to_lender(r) for r in rows]
+        return _dedup_lenders([_row_to_lender(r) for r in rows])
 
     # Tier 2: word-level fallback — only distinctive words (exclude generic finance terms)
     word_patterns: list[str] = []
@@ -418,7 +418,7 @@ async def _fetch_lenders_by_name(db: asyncpg.Pool, names: list[str]) -> list[Len
             WHERE approval_status = 'approved'
               AND company_name ILIKE ANY($1::text[])
             ORDER BY company_name, quality_score DESC NULLS LAST
-            LIMIT 3
+            LIMIT 9
             """,
             word_patterns,
         )
@@ -494,6 +494,7 @@ async def _search_with_broadening(
     """Search lenders with automatic filter broadening on zero results.
     Returns (lenders, applied_filters, broadening_note, db_total)."""
     lenders, total = await _search_lenders(db, filters)
+    lenders = _dedup_lenders(lenders)
     if lenders:
         return lenders, filters, "", total
 
@@ -590,7 +591,7 @@ def _format_history_for_gemini(history: list[HistoryMessage], max_turns: int) ->
 async def chat_ping(request: Request, user: dict = Depends(get_current_user)):
     """Returns whether the AI service is configured and reachable."""
     import os
-    configured = bool(os.environ.get("GEMINI_API_KEY", ""))
+    configured = bool(os.environ.get("OPENROUTER_API_KEY", "") or os.environ.get("GEMINI_API_KEY", ""))
     return {"ai_available": configured}
 
 

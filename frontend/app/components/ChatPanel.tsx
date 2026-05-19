@@ -749,7 +749,7 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
         {aiAvailable === false && (
           <div className="mx-3 mb-2 px-3 py-2.5 rounded-xl text-xs text-amber-700"
                style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
-            ⚠ AI is not configured on this server. Contact the admin to set up the Gemini API key.
+            ⚠ AI is not configured on this server. Contact the admin to set up an OpenRouter or Gemini API key.
           </div>
         )}
 
