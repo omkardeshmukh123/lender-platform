@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# .githooks/pre-commit — blocks commits containing secrets.
+#
+# One-time setup (run once per clone):
+#   git config core.hooksPath .githooks
+#
+# To bypass in a genuine emergency (never for secrets):
+#   git commit --no-verify
+
+set -euo pipefail
+
+RED='\033[0;31m'; YELLOW='\033[0;33m'; NC='\033[0m'
+BLOCKED=0
+
+# Real-secret patterns — each is an extended-regex that matches an actual value,
+# not a placeholder like "your-key-here" or an empty assignment.
+PATTERNS=(
+  'AIza[0-9A-Za-z_-]{35}'                      # Google / Gemini API key
+  'GEMINI_API_KEY=[A-Za-z0-9_-]{10,}'           # Gemini key direct assignment
+  'SUPABASE_SERVICE_ROLE_KEY=eyJ[A-Za-z0-9_-]'  # Supabase service-role JWT
+  'SUPABASE_JWT_SECRET=[A-Za-z0-9+/=_-]{32,}'   # Supabase JWT signing secret
+  'DATABASE_URL=postgresql://[^:]+:[^@]+@'       # Postgres URL with credentials
+  'sk-[A-Za-z0-9]{40,}'                          # OpenAI-style secret key
+  'SERPER_API_KEY=[A-Za-z0-9]{20,}'              # Serper search API key
+  'RENDER_DEPLOY_HOOK_URL=https://'              # Render deploy webhook URL
+)
+
+# Files that legitimately contain key-like strings and should not be scanned.
+# - .env.example: placeholder values only
+# - frontend/.env.production: only NEXT_PUBLIC_* anon keys (intentionally public)
+ALLOWLIST=(
+  '.env.example'
+  'frontend/.env.production'
+  '.githooks/pre-commit'       # contains the pattern definitions themselves
+  '.github/workflows/deploy.yml'  # uses placeholder credentials in CI import check
+)
+
+is_allowed() {
+  local file="$1"
+  for allowed in "${ALLOWLIST[@]}"; do
+    [[ "$file" == *"$allowed"* ]] && return 0
+  done
+  return 1
+}
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
+[[ -z "$STAGED" ]] && exit 0
+
+while IFS= read -r file; do
+  [[ -z "$file" ]] && continue
+  is_allowed "$file" && continue
+
+  # Read staged content (not the working-tree version)
+  CONTENT=$(git show ":$file" 2>/dev/null) || continue
+
+  for pattern in "${PATTERNS[@]}"; do
+    if echo "$CONTENT" | grep -qE "$pattern" 2>/dev/null; then
+      echo -e "${RED}[SECRET DETECTED]${NC} $file  (pattern: $pattern)"
+      BLOCKED=1
+    fi
+  done
+done <<< "$STAGED"
+
+if [[ $BLOCKED -ne 0 ]]; then
+  echo ""
+  echo -e "${RED}Commit blocked — potential secret(s) found above.${NC}"
+  echo -e "Remove the secret(s) from the file(s), then commit again."
+  echo -e "${YELLOW}Never use --no-verify to bypass a real secret.${NC}"
+  exit 1
+fi
+
+exit 0

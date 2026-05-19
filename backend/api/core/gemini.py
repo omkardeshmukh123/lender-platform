@@ -154,6 +154,21 @@ PRONOUN RESOLUTION: If the message contains vague references ("that one", "the f
 "it", "those", "them", "the second"), look at recent conversation history to resolve which
 lender is meant, then classify accordingly (e.g. resolve to lender_detail or compare).
 
+ABBREVIATION EXPANSION: Always expand well-known Indian lender abbreviations to their full
+registered names in compare_names and detail_names:
+- SBI → State Bank of India
+- PNB → Punjab National Bank
+- BOB → Bank of Baroda
+- BOI → Bank of India
+- HDFC → HDFC Bank
+- ICICI → ICICI Bank
+- IDBI → IDBI Bank
+- UCO → UCO Bank
+- OBC → Oriental Bank of Commerce
+- LIC HFL / LIC Housing → LIC Housing Finance
+- Canara → Canara Bank
+- Union Bank / UBI → Union Bank of India
+
 EXAMPLES:
 "What NBFCs are in Gujarat?"                    → filter, {company_type:["NBFC"], state:"Gujarat"}
 "Who offers agriculture loans?"                 → filter, {loan_type:["Agriculture Loan"]}
@@ -162,6 +177,8 @@ EXAMPLES:
 "NBFCs focused on agriculture sector"           → filter, {company_type:["NBFC"], business_sector:["Agriculture"]}
 "Regional lenders in Rajasthan"                 → filter, {state:"Rajasthan", operating_intensity:["Regional"]}
 "Compare Bajaj and Muthoot"                     → compare, compare_names:["Bajaj Finance","Muthoot Finance"]
+"Compare SBI and HDFC"                          → compare, compare_names:["State Bank of India","HDFC Bank"]
+"Tell me about SBI"                             → lender_detail, detail_names:["State Bank of India"]
 "Tell me about HDFC Bank"                       → lender_detail, detail_names:["HDFC Bank"]
 "What is an NBFC?" / "Difference between NBFC-MFI and bank?" → concept
 "Which lenders have highest AUM?"               → qa
@@ -232,7 +249,8 @@ FORMATTING RULES:
 6. For compare: one bullet per lender — "**[Name]** — [Type], ₹X,XXX Cr, HQ [City], [key segments]"
    Never use flowing prose for compare. Always use bullets.
 7. For filter results: open with count + context, name top 3 by AUM inline with ₹ and city.
-   Example: "Found 20 NBFCs operating in Maharashtra. Biggest: **IIFL Finance** (₹92,164 Cr, Mumbai),
+   If the Stats note says "Total matching: X, showing top Y", use X as the headline count.
+   Example: "Found 47 NBFCs in Maharashtra (showing top 20). Biggest: **IIFL Finance** (₹92,164 Cr, Mumbai),
    **Kotak Mahindra Prime** (₹30,000 Cr, Mumbai), and **SBFC Finance** (₹7,200 Cr)."
 8. For empty/not-found: be specific — "I couldn't find [exact name] in our database yet —
    they may not be listed. Try [concrete alternative]."
@@ -261,7 +279,7 @@ class GeminiChatClient:
             raise ValueError("GEMINI_API_KEY is required for the chat feature")
         self._client = genai.Client(api_key=api_key)
         self._model = model or os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
-        self._retries = int(os.environ.get("GEMINI_CHAT_RETRIES", "2"))
+        self._retries = int(os.environ.get("GEMINI_CHAT_RETRIES", "3"))
         logger.info("GeminiChatClient initialized (model=%s, retries=%d)", self._model, self._retries)
 
     # ------------------------------------------------------------------

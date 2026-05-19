@@ -50,6 +50,12 @@ _QA_STOP = {
 # Filters dropped when broadening a zero-result query (most restrictive first)
 _BROADENING_DROP_ORDER = ["state", "aum_category", "aum_min", "aum_max", "operating_intensity", "business_sector", "loan_type", "company_type"]
 
+_SIMILARITY_TRIGGERS = frozenset({"similar to", "like ", "more like", "similar lenders", "lenders like", "lenders similar"})
+
+def _is_similarity_query(message: str) -> bool:
+    msg = message.lower()
+    return any(t in msg for t in _SIMILARITY_TRIGGERS)
+
 
 # ---------------------------------------------------------------------------
 # Request / Response models
@@ -240,7 +246,7 @@ def _compute_unmatched_names(requested: list[str], found: list[LenderResult]) ->
     return unmatched
 
 
-async def _search_lenders(db: asyncpg.Pool, filters: dict) -> list[LenderResult]:
+async def _search_lenders(db: asyncpg.Pool, filters: dict) -> tuple[list[LenderResult], int]:
     conditions = ["approval_status = 'approved'"]
     params: list = []
     idx = 1
@@ -325,7 +331,8 @@ async def _search_lenders(db: asyncpg.Pool, filters: dict) -> list[LenderResult]
                    pan_india, primary_loan_segments, operating_states,
                    website, quality_score, employee_count,
                    established_year, is_listed, phone, email,
-                   operating_intensity, business_sector
+                   operating_intensity, business_sector,
+                   COUNT(*) OVER() AS _db_total
             FROM lenders
             WHERE {where}
             ORDER BY {sort_by} {sort_dir} NULLS LAST
@@ -333,7 +340,8 @@ async def _search_lenders(db: asyncpg.Pool, filters: dict) -> list[LenderResult]
             """,
             *params,
         )
-    return [_row_to_lender(r) for r in rows]
+    db_total = int(rows[0]["_db_total"]) if rows else 0
+    return [_row_to_lender(r) for r in rows], db_total
 
 
 async def _fetch_lenders_by_name(db: asyncpg.Pool, names: list[str]) -> list[LenderResult]:
@@ -395,7 +403,35 @@ async def _fetch_lenders_by_name(db: asyncpg.Pool, names: list[str]) -> list[Len
             """,
             word_patterns,
         )
-    return [_row_to_lender(r) for r in rows]
+    if rows:
+        return [_row_to_lender(r) for r in rows]
+
+    # Tier 3: trigram similarity fallback for abbreviations / partial names (e.g. "SBI")
+    results: list[LenderResult] = []
+    seen_ids: set[int] = set()
+    async with db.acquire() as conn:
+        for name in names[:3]:
+            sim_rows = await conn.fetch(
+                """
+                SELECT id, company_name, company_type, rbi_category,
+                       aum_crores, aum_category, hq_state, hq_location,
+                       pan_india, primary_loan_segments, operating_states,
+                       website, quality_score, employee_count,
+                       established_year, is_listed, phone, email,
+                       operating_intensity, business_sector
+                FROM lenders
+                WHERE approval_status = 'approved'
+                  AND similarity(company_name, $1) > 0.25
+                ORDER BY similarity(company_name, $1) DESC
+                LIMIT 1
+                """,
+                name,
+            )
+            for r in sim_rows:
+                if r["id"] not in seen_ids:
+                    seen_ids.add(r["id"])
+                    results.append(_row_to_lender(r))
+    return results
 
 
 async def _search_lenders_for_qa(db: asyncpg.Pool, message: str) -> list[LenderResult]:
@@ -435,12 +471,12 @@ async def _search_lenders_for_qa(db: asyncpg.Pool, message: str) -> list[LenderR
 
 async def _search_with_broadening(
     db: asyncpg.Pool, filters: dict
-) -> tuple[list[LenderResult], dict, str]:
+) -> tuple[list[LenderResult], dict, str, int]:
     """Search lenders with automatic filter broadening on zero results.
-    Returns (lenders, applied_filters, broadening_note)."""
-    lenders = await _search_lenders(db, filters)
+    Returns (lenders, applied_filters, broadening_note, db_total)."""
+    lenders, total = await _search_lenders(db, filters)
     if lenders:
-        return lenders, filters, ""
+        return lenders, filters, "", total
 
     broad_filters = dict(filters)
     dropped: list[str] = []
@@ -448,15 +484,15 @@ async def _search_with_broadening(
         if key in broad_filters:
             del broad_filters[key]
             dropped.append(key)
-            lenders = await _search_lenders(db, broad_filters)
+            lenders, total = await _search_lenders(db, broad_filters)
             if lenders:
                 note = (
                     f"No exact match with all filters — dropped {', '.join(dropped)} "
                     f"to show nearby results."
                 )
-                return lenders, broad_filters, note
+                return lenders, broad_filters, note, total
 
-    return [], filters, ""
+    return [], filters, "", 0
 
 
 async def _ensure_session(db: asyncpg.Pool, session_id: str, user_id: str) -> None:
@@ -479,8 +515,13 @@ async def _save_turn(
     intent: str,
     filters_used: Optional[dict],
     refusal: bool = False,
+    lender_names: Optional[list[str]] = None,
 ) -> Optional[int]:
     import json as _json
+    meta = dict(filters_used or {})
+    if lender_names:
+        meta["_lender_names"] = lender_names[:3]
+    filters_meta = meta if meta else None
     async with db.acquire() as conn:
         async with conn.transaction():
             await conn.execute(
@@ -495,7 +536,7 @@ async def _save_turn(
                     RETURNING id
                     """,
                     session_id, assistant_msg, intent,
-                    _json.dumps(filters_used) if filters_used else None,
+                    _json.dumps(filters_meta) if filters_meta else None,
                 )
             else:
                 row = await conn.fetchrow(
@@ -505,7 +546,7 @@ async def _save_turn(
                     RETURNING id
                     """,
                     session_id, assistant_msg, intent,
-                    _json.dumps(filters_used) if filters_used else None,
+                    _json.dumps(filters_meta) if filters_meta else None,
                 )
             return int(row["id"]) if row else None
 
@@ -635,18 +676,65 @@ async def chat(
     applied_filters: Optional[dict] = None
     broadening_note: str = ""
     unmatched_names: list[str] = []
+    db_total: int = 0
 
     try:
-        if intent == "filter":
+        # Similarity override: "find more lenders like X" / "similar to X"
+        ref_name_for_sim = (detail_names or compare_names or [None])[0]
+        if _is_similarity_query(body.message) and ref_name_for_sim:
+            ref_lenders = await _fetch_lenders_by_name(db, [ref_name_for_sim])
+            if ref_lenders:
+                ref = ref_lenders[0]
+                sim_filters: dict = {"sort_by": "aum_crores", "sort_dir": "desc"}
+                if ref.company_type:
+                    sim_filters["company_type"] = [ref.company_type]
+                if ref.business_sector:
+                    sim_filters["business_sector"] = [ref.business_sector]
+                lenders, applied_filters, broadening_note, db_total = await _search_with_broadening(db, sim_filters)
+                lenders = [l for l in lenders if l.id != ref.id]
+                db_total = max(0, db_total - 1)
+                intent = "filter"
+                sim_note = (
+                    f"Showing lenders similar to {ref.company_name} "
+                    f"({ref.company_type}{', ' + ref.business_sector if ref.business_sector else ''})."
+                )
+                broadening_note = (sim_note + " " + broadening_note).strip()
+            else:
+                lenders = await _search_lenders_for_qa(db, body.message)
+                intent = "qa"
+
+        elif intent == "filter":
             had_explicit_filters = bool(filters)
             search_filters = filters if filters else {"sort_by": "aum_crores", "sort_dir": "desc"}
-            lenders, applied_filters, broadening_note = await _search_with_broadening(db, search_filters)
+            lenders, applied_filters, broadening_note, db_total = await _search_with_broadening(db, search_filters)
             if not had_explicit_filters:
-                applied_filters = None  # don't expose default sort as a user-applied filter
+                applied_filters = None
 
         elif intent == "compare" and compare_names:
             lenders = await _fetch_lenders_by_name(db, compare_names)
             unmatched_names = _compute_unmatched_names(compare_names, lenders)
+            # Auto-find a second lender when only 1 found and message implies "another"
+            if len(lenders) == 1 and "another" in body.message.lower():
+                async with db.acquire() as conn:
+                    alt = await conn.fetchrow(
+                        """
+                        SELECT id, company_name, company_type, rbi_category,
+                               aum_crores, aum_category, hq_state, hq_location,
+                               pan_india, primary_loan_segments, operating_states,
+                               website, quality_score, employee_count,
+                               established_year, is_listed, phone, email,
+                               operating_intensity, business_sector
+                        FROM lenders
+                        WHERE approval_status = 'approved'
+                          AND company_type = $1 AND id != $2
+                        ORDER BY quality_score DESC NULLS LAST, aum_crores DESC NULLS LAST
+                        LIMIT 1
+                        """,
+                        lenders[0].company_type, lenders[0].id,
+                    )
+                if alt:
+                    lenders.append(_row_to_lender(alt))
+                    unmatched_names = []
 
         elif intent == "lender_detail" and detail_names:
             lenders = await _fetch_lenders_by_name(db, detail_names[:1])
@@ -657,6 +745,11 @@ async def chat(
     except Exception as exc:
         logger.error("chat: DB query failed: %s", exc)
         raise HTTPException(status_code=503, detail="Search temporarily unavailable")
+
+    # Append count note when filter returns a capped result set
+    if intent == "filter" and db_total > len(lenders) > 0:
+        count_note = f"Total matching: {db_total}, showing top {len(lenders)}."
+        broadening_note = (count_note + " " + broadening_note).strip() if broadening_note else count_note
 
     # ------------------------------------------------------------------
     # Pass 2 — generate answer strictly from DB records
@@ -683,7 +776,11 @@ async def chat(
     message_id = None
     if session_ok:
         try:
-            message_id = await _save_turn(db, body.session_id, body.message, answer, intent, applied_filters)
+            lender_names = [l.company_name for l in lenders[:3]] if lenders else None
+            message_id = await _save_turn(
+                db, body.session_id, body.message, answer, intent, applied_filters,
+                lender_names=lender_names,
+            )
         except Exception as exc:
             logger.warning("chat: failed to save turn: %s", exc)
 
@@ -827,18 +924,62 @@ async def chat_stream(
     applied_filters: Optional[dict] = None
     broadening_note = ""
     unmatched_names: list[str] = []
+    db_total: int = 0
 
     if intent not in ("greeting", "out_of_scope", "concept"):
         try:
-            if intent == "filter":
+            ref_name_for_sim = (detail_names or compare_names or [None])[0]
+            if _is_similarity_query(body.message) and ref_name_for_sim:
+                ref_lenders = await _fetch_lenders_by_name(db, [ref_name_for_sim])
+                if ref_lenders:
+                    ref = ref_lenders[0]
+                    sim_filters: dict = {"sort_by": "aum_crores", "sort_dir": "desc"}
+                    if ref.company_type:
+                        sim_filters["company_type"] = [ref.company_type]
+                    if ref.business_sector:
+                        sim_filters["business_sector"] = [ref.business_sector]
+                    lenders, applied_filters, broadening_note, db_total = await _search_with_broadening(db, sim_filters)
+                    lenders = [l for l in lenders if l.id != ref.id]
+                    db_total = max(0, db_total - 1)
+                    intent = "filter"
+                    sim_note = (
+                        f"Showing lenders similar to {ref.company_name} "
+                        f"({ref.company_type}{', ' + ref.business_sector if ref.business_sector else ''})."
+                    )
+                    broadening_note = (sim_note + " " + broadening_note).strip()
+                else:
+                    lenders = await _search_lenders_for_qa(db, body.message)
+                    intent = "qa"
+            elif intent == "filter":
                 had_explicit_filters = bool(filters)
                 search_filters = filters if filters else {"sort_by": "aum_crores", "sort_dir": "desc"}
-                lenders, applied_filters, broadening_note = await _search_with_broadening(db, search_filters)
+                lenders, applied_filters, broadening_note, db_total = await _search_with_broadening(db, search_filters)
                 if not had_explicit_filters:
                     applied_filters = None
             elif intent == "compare" and compare_names:
                 lenders = await _fetch_lenders_by_name(db, compare_names)
                 unmatched_names = _compute_unmatched_names(compare_names, lenders)
+                if len(lenders) == 1 and "another" in body.message.lower():
+                    async with db.acquire() as conn:
+                        alt = await conn.fetchrow(
+                            """
+                            SELECT id, company_name, company_type, rbi_category,
+                                   aum_crores, aum_category, hq_state, hq_location,
+                                   pan_india, primary_loan_segments, operating_states,
+                                   website, quality_score, employee_count,
+                                   established_year, is_listed, phone, email,
+                                   operating_intensity, business_sector
+                            FROM lenders
+                            WHERE approval_status = 'approved'
+                              AND company_type = $1 AND id != $2
+                            ORDER BY quality_score DESC NULLS LAST, aum_crores DESC NULLS LAST
+                            LIMIT 1
+                            """,
+                            lenders[0].company_type, lenders[0].id,
+                        )
+                    if alt:
+                        lenders.append(_row_to_lender(alt))
+                        unmatched_names = []
             elif intent == "lender_detail" and detail_names:
                 lenders = await _fetch_lenders_by_name(db, detail_names[:1])
             elif intent == "qa":
@@ -846,6 +987,10 @@ async def chat_stream(
         except Exception as exc:
             logger.error("chat_stream: DB query failed: %s", exc)
             raise HTTPException(status_code=503, detail="Search temporarily unavailable")
+
+    if intent == "filter" and db_total > len(lenders) > 0:
+        count_note = f"Total matching: {db_total}, showing top {len(lenders)}."
+        broadening_note = (count_note + " " + broadening_note).strip() if broadening_note else count_note
 
     lender_dicts      = [l.model_dump() for l in lenders]
     suggested_actions = _generate_suggestions(intent, lenders, applied_filters or {})
@@ -919,10 +1064,12 @@ async def chat_stream(
         message_id = None
         if session_ok and full_parts and not had_error:
             try:
+                lender_names = [l["company_name"] for l in lender_dicts[:3]] if lender_dicts else None
                 message_id = await _save_turn(
                     db, body.session_id, body.message,
                     "".join(full_parts), intent, applied_filters,
                     refusal=intent == "out_of_scope",
+                    lender_names=lender_names,
                 )
             except Exception as exc:
                 logger.warning("chat_stream: save failed: %s", exc)

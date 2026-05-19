@@ -13,16 +13,15 @@ jobs:
         env:
           BACKEND_URL: ${{ secrets.BACKEND_URL }}
         run: |
-          if [ -z "$BACKEND_URL" ]; then
-            echo "BACKEND_URL secret not set — skipping ping"
-            exit 0
-          fi
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "$BACKEND_URL/health" || echo "000")
+          # Use secret if set, otherwise fall back to known production URL
+          URL="${BACKEND_URL:-https://lender-platform.onrender.com}"
+          echo "Pinging $URL/health ..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$URL/health" || echo "000")
           echo "Backend responded: $STATUS"
           if [ "$STATUS" = "000" ]; then
             echo "Warning: backend unreachable (timeout or connection error)"
           elif [ "$STATUS" != "200" ]; then
             echo "Warning: backend returned $STATUS"
           else
-            echo "OK"
+            echo "OK — backend is awake"
           fi

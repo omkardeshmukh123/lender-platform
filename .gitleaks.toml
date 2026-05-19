@@ -1,0 +1,20 @@
+title = "MITRAM360 Gitleaks Config"
+
+# Extend the official gitleaks default ruleset
+[extend]
+useDefault = true
+
+# ── Global allowlist ─────────────────────────────────────────────────────────
+# Files that legitimately contain key-like strings.
+
+[[allowlists]]
+description = "Public Supabase anon key (NEXT_PUBLIC_* — intentionally embedded in client bundle)"
+paths = [
+  '''frontend/\.env\.production''',
+]
+
+[[allowlists]]
+description = "Placeholder values in example env file"
+paths = [
+  '''\.env\.example''',
+]

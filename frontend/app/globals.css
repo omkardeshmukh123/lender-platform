@@ -266,6 +266,12 @@ body {
 .animate-fade-in-up       { animation: fadeInUp 0.4s ease both; }
 .animate-fade-in          { animation: fadeIn 0.3s ease both; }
 .animate-slide-in-right   { animation: slideInRight 0.35s ease both; }
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.animate-cursor-blink { animation: cursorBlink 0.8s step-end infinite; }
 .animate-pulse-glow-gold  { animation: pulseGlow 2s ease-in-out infinite; }
 .animate-rotate-slow      { animation: rotateSlow 20s linear infinite; }
 

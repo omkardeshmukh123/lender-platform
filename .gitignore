@@ -34,6 +34,8 @@ __pycache__/
 # ==============================
 logs/
 *.log
+backend/*.log
+backend/*_err.log
 
 # ==============================
 # OS Files

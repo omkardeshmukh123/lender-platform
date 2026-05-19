@@ -114,7 +114,7 @@ function Inline({ text }: { text: string }) {
   )
 }
 
-function Markdown({ text }: { text: string }) {
+function Markdown({ text, streaming }: { text: string; streaming?: boolean }) {
   const lines = text.split('\n')
   const out: React.ReactNode[] = []
   let i = 0
@@ -136,7 +136,14 @@ function Markdown({ text }: { text: string }) {
       out.push(<p key={out.length} className="leading-relaxed"><Inline text={line} /></p>); i++
     }
   }
-  return <>{out}</>
+  return (
+    <>
+      {out}
+      {streaming && (
+        <span className="inline-block w-0.5 h-[1em] bg-[#1A7070] animate-cursor-blink ml-0.5 align-middle rounded-sm" />
+      )}
+    </>
+  )
 }
 
 function LenderDetailCard({ lender }: { lender: LenderResult }) {
@@ -295,10 +302,12 @@ function BotBubble({
   msg,
   onSuggestion,
   onFeedback,
+  streaming,
 }: {
   msg:          ChatMessage
   onSuggestion: (s: string) => void
   onFeedback?:  (rating: 'up' | 'down', messageId?: number) => void
+  streaming?:   boolean
 }) {
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null)
   const hasUnmatched = msg.intent === 'compare' && msg.unmatched_names && msg.unmatched_names.length > 0
@@ -318,7 +327,7 @@ function BotBubble({
       <div className="max-w-[88%]">
         <div className="rounded-2xl rounded-tl-none px-3.5 py-2.5 text-sm text-gray-800 leading-relaxed"
              style={{ background: '#F7FAFA', border: '1px solid #E6F4F4' }}>
-          <Markdown text={msg.content} />
+          <Markdown text={msg.content} streaming={streaming} />
         </div>
         {hasUnmatched && (
           <p className="mt-1.5 text-xs text-amber-600 px-1">
@@ -330,6 +339,9 @@ function BotBubble({
         )}
         {msg.intent === 'compare' && msg.lenders && msg.lenders.length >= 2 && (
           <CompareTable lenders={msg.lenders} />
+        )}
+        {msg.intent === 'compare' && msg.lenders && msg.lenders.length === 1 && (
+          <LenderDetailCard lender={msg.lenders[0]} />
         )}
         {msg.intent === 'filter' && msg.lenders && msg.lenders.length > 0 && (
           <FilterMiniCards lenders={msg.lenders} />
@@ -406,6 +418,7 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
   const [aiAvailable,        setAiAvailable]        = useState<boolean | null>(null)
   const [lastAppliedFilters, setLastAppliedFilters] = useState<ApiFilters | null>(null)
   const [lastLenderNames,    setLastLenderNames]    = useState<string[]>([])
+  const [streamingId,        setStreamingId]        = useState<string>('')
   // Ref to the scrollable messages container (NOT the sentinel div)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const inputRef           = useRef<HTMLTextAreaElement>(null)
@@ -425,12 +438,12 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
   }, [open])
 
   /** Scroll only within the chat panel — never touches the page scroll position */
-  const scrollToBottom = useCallback((force = false) => {
+  const scrollToBottom = useCallback((force = false, behavior: ScrollBehavior = 'smooth') => {
     const el = scrollContainerRef.current
     if (!el) return
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
     if (force || nearBottom) {
-      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+      el.scrollTo({ top: el.scrollHeight, behavior })
     }
   }, [])
 
@@ -455,12 +468,16 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
         })))
         // Restore last applied filters so multi-turn refinement survives a page reload
         const lastFilterMsg = [...data.messages].reverse().find(
-          (m: { role: string; filters_used?: ApiFilters | null }) =>
+          (m: { role: string; filters_used?: Record<string, unknown> | null }) =>
             m.role === 'assistant' && m.filters_used
         )
         if (lastFilterMsg?.filters_used) {
-          setLastAppliedFilters(lastFilterMsg.filters_used)
-          onFiltersApplied(apiFiltersToMultiFilters(lastFilterMsg.filters_used))
+          const { _lender_names, ...cleanFilters } = lastFilterMsg.filters_used as Record<string, unknown>
+          if (Object.keys(cleanFilters).length) {
+            setLastAppliedFilters(cleanFilters as ApiFilters)
+            onFiltersApplied(apiFiltersToMultiFilters(cleanFilters as ApiFilters))
+          }
+          if (Array.isArray(_lender_names)) setLastLenderNames(_lender_names as string[])
         }
       }
       setHistoryLoaded(true)
@@ -488,39 +505,51 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
     setTimeout(() => scrollToBottom(true), 50)
 
     const historyPayload = messages.slice(-12).map(m => ({ role: m.role, content: m.content }))
+    const reqBody = JSON.stringify({
+      message:           msg,
+      session_id:        sessionId,
+      history:           historyPayload,
+      last_filters:      lastAppliedFilters,
+      last_lender_names: lastLenderNames.length ? lastLenderNames : undefined,
+    })
+    const doFetch = () => fetch(`${apiUrl}/v1/chat/stream`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user!.access_token}` },
+      body:    reqBody,
+    })
 
     try {
-      const res = await fetch(`${apiUrl}/v1/chat/stream`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.access_token}` },
-        body:    JSON.stringify({
-          message:           msg,
-          session_id:        sessionId,
-          history:           historyPayload,
-          last_filters:      lastAppliedFilters,
-          last_lender_names: lastLenderNames.length ? lastLenderNames : undefined,
-        }),
-      })
+      let res = await doFetch()
 
       if (!res.ok) {
         const body = await res.text()
-        let errMsg = 'Sorry, something went wrong. Please try again.'
-        if (res.status === 503) {
-          if (body.includes('AI_NOT_CONFIGURED')) {
-            errMsg = 'The AI service is not configured on this server. Please contact support.'
-            setAiAvailable(false)
-          } else if (body.includes('AI_TIMEOUT')) {
-            errMsg = 'The AI took too long to respond. Please try again.'
-          } else if (body.includes('AI_UNAVAILABLE')) {
-            errMsg = 'The AI service is temporarily unavailable. Please try again in a moment.'
-          }
-        } else if (res.status === 401) {
-          errMsg = 'Your session has expired. Please refresh the page and sign in again.'
-        } else if (res.status === 429) {
-          errMsg = "You're sending messages too fast. Please wait a moment."
+        // Auto-retry once on transient AI errors
+        const isTransient = res.status === 503 && (body.includes('AI_UNAVAILABLE') || body.includes('AI_TIMEOUT'))
+        if (isTransient) {
+          await new Promise(r => setTimeout(r, 1500))
+          res = await doFetch()
         }
-        setMessages(prev => [...prev, { role: 'assistant', content: errMsg, intent: 'qa' }])
-        return
+
+        if (!res.ok) {
+          const errBody = isTransient ? await res.text().catch(() => body) : body
+          let errMsg = 'Sorry, something went wrong. Please try again.'
+          if (res.status === 503) {
+            if (errBody.includes('AI_NOT_CONFIGURED') || body.includes('AI_NOT_CONFIGURED')) {
+              errMsg = 'The AI service is not configured on this server. Please contact support.'
+              setAiAvailable(false)
+            } else if (errBody.includes('AI_TIMEOUT') || body.includes('AI_TIMEOUT')) {
+              errMsg = 'The AI took too long to respond. Please try again.'
+            } else {
+              errMsg = 'The AI service is temporarily unavailable. Please try again in a moment.'
+            }
+          } else if (res.status === 401) {
+            errMsg = 'Your session has expired. Please refresh the page and sign in again.'
+          } else if (res.status === 429) {
+            errMsg = "You're sending messages too fast. Please wait a moment."
+          }
+          setMessages(prev => [...prev, { role: 'assistant', content: errMsg, intent: 'qa' }])
+          return
+        }
       }
 
       // Consume SSE stream
@@ -528,6 +557,20 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
       const decoder = new TextDecoder()
       let buffer          = ''
       const assistantStreamId = generateUUID()
+
+      // rAF batching — accumulate tokens and flush at 60fps max
+      let streamedContent = ''
+      let rafScheduled    = false
+      const flushTokens = () => {
+        const text = streamedContent
+        setMessages(prev => prev.map(m =>
+          m._streamId === assistantStreamId ? { ...m, content: text } : m
+        ))
+        scrollToBottom(false, 'auto')
+        rafScheduled = false
+      }
+
+      setStreamingId(assistantStreamId)
 
       while (true) {
         const { done, value } = await reader.read()
@@ -563,12 +606,11 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
               }
 
             } else if (data.type === 'token') {
-              setMessages(prev => prev.map(m =>
-                m._streamId === assistantStreamId
-                  ? { ...m, content: m.content + data.text }
-                  : m
-              ))
-              scrollToBottom()
+              streamedContent += data.text
+              if (!rafScheduled) {
+                rafScheduled = true
+                requestAnimationFrame(flushTokens)
+              }
 
             } else if (data.type === 'done' && data.message_id) {
               setMessages(prev => prev.map(m =>
@@ -595,7 +637,8 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
       }])
     } finally {
       setLoading(false)
-      setTimeout(() => scrollToBottom(), 80)
+      setStreamingId('')
+      setTimeout(() => scrollToBottom(false, 'smooth'), 80)
     }
   }, [input, loading, user?.access_token, messages, sessionId, apiUrl, onFiltersApplied, lastAppliedFilters, lastLenderNames, scrollToBottom])
 
@@ -695,7 +738,8 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
           {messages.map((msg, i) =>
             msg.role === 'user'
               ? <UserBubble key={i} content={msg.content} />
-              : <BotBubble  key={i} msg={msg} onSuggestion={s => sendMessage(s)} onFeedback={sendFeedback} />
+              : <BotBubble  key={i} msg={msg} onSuggestion={s => sendMessage(s)} onFeedback={sendFeedback}
+                            streaming={!!streamingId && msg._streamId === streamingId} />
           )}
           {loading && <TypingIndicator />}
           {/* Sentinel — never used for scrollIntoView anymore */}
