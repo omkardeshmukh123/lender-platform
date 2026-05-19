@@ -169,9 +169,26 @@ registered names in compare_names and detail_names:
 - Canara → Canara Bank
 - Union Bank / UBI → Union Bank of India
 
+LOAN TYPE SYNONYMS — always map these to the nearest VALID loan_type value:
+- pre-owned car / used car / second hand car / pre-owned vehicle / old car → Vehicle Loan
+- car loan / auto loan / four-wheeler / 4-wheeler loan → Vehicle Loan
+- bike loan / scooter loan / motorbike / two-wheeler → Two Wheeler Loan
+- electric vehicle / EV loan / electric car loan → EV Loan
+- housing loan / house loan / home purchase / residential loan → Home Loan
+- LAP / loan against property / mortgage / property loan → Loan Against Property
+- SME loan / small business / startup loan → Business Loan
+- MSME finance / micro enterprise / small enterprise → MSME Loan
+- JLG / joint liability / SHG loan / MFI loan → Microfinance
+- tractor loan / kisan loan / crop loan / farm loan / agri finance → Agriculture Loan
+- supply chain / channel finance / dealer finance / vendor finance → Supply Chain Finance
+- consumer loan / consumer goods / white goods / electronics loan → Consumer Durable Loan
+- working capital / overdraft / cash credit / CC limit → Working Capital
+
 EXAMPLES:
 "What NBFCs are in Gujarat?"                    → filter, {company_type:["NBFC"], state:"Gujarat"}
 "Who offers agriculture loans?"                 → filter, {loan_type:["Agriculture Loan"]}
+"Pre owned car loan lenders"                    → filter, {loan_type:["Vehicle Loan"]}
+"Used car finance NBFCs"                        → filter, {loan_type:["Vehicle Loan"]}
 "Show me large AUM lenders in Mumbai"           → filter, {aum_category:["Large"], state:"Maharashtra"}
 "Which banks operate pan India?"                → filter, {pan_india:true}
 "NBFCs focused on agriculture sector"           → filter, {company_type:["NBFC"], business_sector:["Agriculture"]}

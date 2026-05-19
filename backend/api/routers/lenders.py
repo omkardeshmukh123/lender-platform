@@ -5,6 +5,7 @@ GET /lenders/{id}    — Single lender detail
 
 import json
 import logging
+import re
 from typing import List, Optional
 
 import asyncpg
@@ -45,6 +46,34 @@ def _parse_jsonb(val) -> list:
         return json.loads(val)
     except Exception:
         return []
+
+
+# Strip "Limited / Ltd / Pvt Ltd" suffixes for duplicate detection only
+_STRIP_SUFFIX = re.compile(
+    r'\s*(private\s+limited|private\s+ltd\.?|limited|ltd\.?|pvt\.?)$',
+    re.IGNORECASE,
+)
+
+def _norm_name(name: str) -> str:
+    return _STRIP_SUFFIX.sub('', name.strip()).strip().lower()
+
+
+def _dedup_rows(rows: list) -> list:
+    """Remove near-duplicate rows (e.g. 'HDFC Bank' vs 'HDFC Bank Limited').
+    Keeps the record with the higher quality_score, falling back to aum_crores."""
+    seen: dict[str, dict] = {}
+    for row in rows:
+        d = dict(row)
+        key = _norm_name(d.get("company_name") or "")
+        if key not in seen:
+            seen[key] = d
+        else:
+            prev = seen[key]
+            prev_score = (prev.get("quality_score") or 0, prev.get("aum_crores") or 0)
+            curr_score = (d.get("quality_score") or 0, d.get("aum_crores") or 0)
+            if curr_score > prev_score:
+                seen[key] = d
+    return list(seen.values())
 
 
 def _row_to_summary(row) -> LenderSummary:
@@ -436,7 +465,7 @@ async def search_lenders(
         total=total,
         page=page,
         limit=limit,
-        results=[_row_to_summary(r) for r in rows] + [_row_to_summary(r) for r in fuzzy_rows],
+        results=[_row_to_summary(r) for r in _dedup_rows(list(rows) + list(fuzzy_rows))],
         stubs=stubs,
     )
 
