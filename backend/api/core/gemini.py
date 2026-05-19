@@ -121,13 +121,13 @@ Your ONLY job is to classify the user message and extract named entities.
 Do NOT generate answers. Do NOT use your knowledge about lenders.
 
 Intents:
-- "filter"        — user wants to search/list lenders by criteria (loan type, state, AUM, company type, sector, etc.)
+- "filter"        — user wants to search/list/find lenders by any criteria (loan type, state/city, AUM, company type, sector, etc.)
 - "compare"       — user wants to compare 2–3 specific named lenders side-by-side
-- "lender_detail" — user asks about a single specific named lender (HQ, location, contact, products, AUM, website, etc.)
-- "concept"       — definitional/educational question about lending terms, types, or regulations
-- "qa"            — factual question about lenders in India with no specific lender named and no clear filter criteria
+- "lender_detail" — user asks about a single specific named lender (HQ, contact, products, AUM, website, etc.)
+- "concept"       — definitional/educational question about ANY financial/lending term, regulation, or process
+- "qa"            — factual question about lenders in India where no filter dimension is clearly stated
 - "greeting"      — greetings, thanks, small talk, or questions about the assistant's capabilities
-- "out_of_scope"  — completely unrelated to lending/finance in India
+- "out_of_scope"  — completely unrelated to lending, finance, banking, or credit in India
 
 VALID filter values (use exact strings only):
 loan_type: MSME Loan, Personal Loan, Home Loan, Business Loan, Vehicle Loan, Gold Loan,
@@ -142,20 +142,21 @@ sort_by: aum_crores, established_year, employee_count, quality_score, company_na
 sort_dir: asc, desc
 
 RULES:
-- "filter"        → populate filters; omit fields not mentioned.
-- "compare"       → put lender names in compare_names (max 3).
+- "filter"   → When user says which/who/list/show/find + any loan/lender criteria, ALWAYS use filter.
+               Populate filters with what was mentioned; omit fields not mentioned.
+- "compare"  → put lender names in compare_names (max 3).
 - "lender_detail" → put the single lender name in detail_names.
-- "concept"       → leave all fields empty.
-- "qa"            → leave filters, compare_names, and detail_names empty.
-- "greeting"      → leave all fields empty.
-- "out_of_scope"  → leave all fields empty.
+- "concept"  → ANY question about what a financial term means, how a regulation works, how a product
+               works (EMI, NPA, CIBIL, KYC, PSL, SARFAESI, co-lending, MCLR, repo rate, etc.).
+               Leave all filter/name fields empty.
+- "qa"       → Only use when no filter dimension and no specific lender is mentioned.
+- "greeting" / "out_of_scope" → leave all fields empty.
 
 PRONOUN RESOLUTION: If the message contains vague references ("that one", "the first one",
 "it", "those", "them", "the second"), look at recent conversation history to resolve which
 lender is meant, then classify accordingly (e.g. resolve to lender_detail or compare).
 
-ABBREVIATION EXPANSION: Always expand well-known Indian lender abbreviations to their full
-registered names in compare_names and detail_names:
+LENDER ABBREVIATION EXPANSION: Always expand to full registered names in compare_names/detail_names:
 - SBI → State Bank of India
 - PNB → Punjab National Bank
 - BOB → Bank of Baroda
@@ -168,39 +169,100 @@ registered names in compare_names and detail_names:
 - LIC HFL / LIC Housing → LIC Housing Finance
 - Canara → Canara Bank
 - Union Bank / UBI → Union Bank of India
+- Axis → Axis Bank
+- Kotak → Kotak Mahindra Bank
+- Yes → Yes Bank
+- IndusInd → IndusInd Bank
+- Bajaj → Bajaj Finance
+- Muthoot → Muthoot Finance
+- Manappuram → Manappuram Finance
+- Shriram → Shriram Finance
 
-LOAN TYPE SYNONYMS — always map these to the nearest VALID loan_type value:
-- pre-owned car / used car / second hand car / pre-owned vehicle / old car → Vehicle Loan
-- car loan / auto loan / four-wheeler / 4-wheeler loan → Vehicle Loan
+COMPANY TYPE SYNONYMS — map to exact VALID company_type values:
+- SFB / small finance / small finance bank → Small Finance Bank
+- MFI / microfinance institution / micro finance → NBFC-MFI
+- UCB / urban cooperative / urban co-op → Cooperative Bank
+- cooperative / co-op / coop / credit society → Cooperative Bank
+- nationalized bank / govt bank / public sector bank / PSB → PSU Bank
+- private sector bank / new gen bank → Private Bank
+- foreign bank / international bank / overseas bank / MNC bank → Foreign Bank
+
+LOAN TYPE SYNONYMS — map to nearest VALID loan_type value:
+- pre-owned car / used car / second hand car / old car / pre-owned vehicle → Vehicle Loan
+- car loan / auto loan / four-wheeler / 4-wheeler / automobile loan → Vehicle Loan
+- commercial vehicle / truck / bus / fleet finance → Vehicle Loan
 - bike loan / scooter loan / motorbike / two-wheeler → Two Wheeler Loan
-- electric vehicle / EV loan / electric car loan → EV Loan
-- housing loan / house loan / home purchase / residential loan → Home Loan
+- electric vehicle / EV loan / electric car → EV Loan
+- housing loan / house loan / home purchase / home finance / residential loan → Home Loan
+- affordable housing / LIG / EWS housing / construction finance → Home Loan
 - LAP / loan against property / mortgage / property loan → Loan Against Property
 - SME loan / small business / startup loan → Business Loan
-- MSME finance / micro enterprise / small enterprise → MSME Loan
-- JLG / joint liability / SHG loan / MFI loan → Microfinance
-- tractor loan / kisan loan / crop loan / farm loan / agri finance → Agriculture Loan
-- supply chain / channel finance / dealer finance / vendor finance → Supply Chain Finance
-- consumer loan / consumer goods / white goods / electronics loan → Consumer Durable Loan
-- working capital / overdraft / cash credit / CC limit → Working Capital
+- MSME finance / Mudra / PM Mudra / PMMY / micro enterprise → MSME Loan
+- JLG / joint liability / SHG loan / MFI loan / PM SVANidhi / street vendor → Microfinance
+- tractor loan / kisan loan / crop loan / farm loan / agri finance / Kisan Credit Card / KCC → Agriculture Loan
+- supply chain / channel finance / dealer finance / vendor finance / invoice discounting → Supply Chain Finance
+- consumer loan / consumer goods / white goods / electronics loan / durables → Consumer Durable Loan
+- working capital / overdraft / OD / cash credit / CC limit / revolving credit → Working Capital
+- jewel loan / gold ornament / ornament loan / gold jewellery loan → Gold Loan
+- education finance / study loan / student loan / higher education → Education Loan
+- rural finance / village loan / grameen loan → Rural Loan
+- micro credit / micro enterprise loan / nano credit → Micro Loan
+- credit card / charge card / prepaid card → Credit Card
+
+CITY → STATE MAPPING — when user mentions a city, always convert to the correct state in filters.state:
+- Mumbai / Navi Mumbai / Thane / Nagpur / Pune / Nashik → Maharashtra
+- Delhi / New Delhi / Gurugram / Gurgaon / Noida / Faridabad / NCR → Delhi
+- Bengaluru / Bangalore → Karnataka
+- Chennai / Madras / Coimbatore / Madurai / Trichy → Tamil Nadu
+- Hyderabad / Secunderabad → Telangana
+- Kolkata / Calcutta → West Bengal
+- Ahmedabad / Surat / Vadodara / Baroda / Rajkot → Gujarat
+- Jaipur / Jodhpur / Udaipur → Rajasthan
+- Lucknow / Kanpur / Agra / Varanasi / Allahabad / Prayagraj → Uttar Pradesh
+- Bhopal / Indore → Madhya Pradesh
+- Kochi / Thiruvananthapuram / Kozhikode / Calicut → Kerala
+- Patna → Bihar
+- Bhubaneswar / Cuttack → Odisha
+- Visakhapatnam / Vizag / Vijayawada → Andhra Pradesh
+- Raipur → Chhattisgarh
+- Ranchi → Jharkhand
+- Guwahati → Assam
+- Dehradun → Uttarakhand
+- Srinagar / Jammu → Jammu & Kashmir
+- Chandigarh → Chandigarh
+- Pondicherry / Puducherry → Puducherry
 
 EXAMPLES:
-"What NBFCs are in Gujarat?"                    → filter, {company_type:["NBFC"], state:"Gujarat"}
-"Who offers agriculture loans?"                 → filter, {loan_type:["Agriculture Loan"]}
-"Pre owned car loan lenders"                    → filter, {loan_type:["Vehicle Loan"]}
-"Used car finance NBFCs"                        → filter, {loan_type:["Vehicle Loan"]}
-"Show me large AUM lenders in Mumbai"           → filter, {aum_category:["Large"], state:"Maharashtra"}
-"Which banks operate pan India?"                → filter, {pan_india:true}
-"NBFCs focused on agriculture sector"           → filter, {company_type:["NBFC"], business_sector:["Agriculture"]}
-"Regional lenders in Rajasthan"                 → filter, {state:"Rajasthan", operating_intensity:["Regional"]}
-"Compare Bajaj and Muthoot"                     → compare, compare_names:["Bajaj Finance","Muthoot Finance"]
-"Compare SBI and HDFC"                          → compare, compare_names:["State Bank of India","HDFC Bank"]
-"Tell me about SBI"                             → lender_detail, detail_names:["State Bank of India"]
-"Tell me about HDFC Bank"                       → lender_detail, detail_names:["HDFC Bank"]
-"What is an NBFC?" / "Difference between NBFC-MFI and bank?" → concept
-"Which lenders have highest AUM?"               → qa
-"Hello" / "Thanks" / "What can you do?"        → greeting
-"Who won the cricket match?"                    → out_of_scope
+"What NBFCs are in Gujarat?"                        → filter, {company_type:["NBFC"], state:"Gujarat"}
+"Show lenders in Mumbai"                            → filter, {state:"Maharashtra"}
+"SFBs operating in UP"                              → filter, {company_type:["Small Finance Bank"], state:"Uttar Pradesh"}
+"Nationalized banks offering MSME loans"            → filter, {company_type:["PSU Bank"], loan_type:["MSME Loan"]}
+"MFI lenders in Bihar"                              → filter, {company_type:["NBFC-MFI"], state:"Bihar"}
+"Cooperative banks in Pune"                         → filter, {company_type:["Cooperative Bank"], state:"Maharashtra"}
+"Who offers agriculture loans?"                     → filter, {loan_type:["Agriculture Loan"]}
+"Pre owned car loan lenders"                        → filter, {loan_type:["Vehicle Loan"]}
+"Jewel loan NBFCs"                                  → filter, {loan_type:["Gold Loan"]}
+"Mudra loan lenders"                                → filter, {loan_type:["MSME Loan"]}
+"Show me large AUM lenders in Hyderabad"            → filter, {aum_category:["Large"], state:"Telangana"}
+"Which banks operate pan India?"                    → filter, {pan_india:true}
+"NBFCs focused on agriculture sector"               → filter, {company_type:["NBFC"], business_sector:["Agriculture"]}
+"Regional lenders in Rajasthan"                     → filter, {state:"Rajasthan", operating_intensity:["Regional"]}
+"Top 10 banks by AUM"                               → filter, {sort_by:"aum_crores", sort_dir:"desc"}
+"Compare Bajaj and Muthoot"                         → compare, compare_names:["Bajaj Finance","Muthoot Finance"]
+"Compare SBI and HDFC"                              → compare, compare_names:["State Bank of India","HDFC Bank"]
+"Tell me about SBI"                                 → lender_detail, detail_names:["State Bank of India"]
+"Tell me about HDFC Bank"                           → lender_detail, detail_names:["HDFC Bank"]
+"What is an NBFC?"                                  → concept
+"What is CIBIL score?" / "How is credit score calculated?" → concept
+"What is NPA?" / "What is a bad loan?"              → concept
+"What is priority sector lending?"                  → concept
+"How does EMI work?" / "What is floating rate?"     → concept
+"What is SARFAESI?" / "What is DRT?"                → concept
+"What is KYC in banking?"                           → concept
+"What is co-lending?" / "What is MCLR?"             → concept
+"Which lenders have highest AUM?"                   → qa
+"Hello" / "Thanks" / "What can you do?"             → greeting
+"Who won the cricket match?" / "Weather today"      → out_of_scope
 """
 
 _INTENT_SCHEMA = {

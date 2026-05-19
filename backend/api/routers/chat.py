@@ -230,6 +230,25 @@ _NAME_STOP = {
     "microfinance", "leasing", "asset", "assets", "management", "fund", "funds",
 }
 
+import re as _re
+_STRIP_SUFFIX_CHAT = _re.compile(
+    r'\s*(private\s+limited|private\s+ltd\.?|limited|ltd\.?|pvt\.?)$',
+    _re.IGNORECASE,
+)
+
+def _dedup_lenders(lenders: list[LenderResult]) -> list[LenderResult]:
+    """Remove near-duplicates (e.g. 'HDFC Bank' vs 'HDFC Bank Limited')."""
+    seen: dict[str, LenderResult] = {}
+    for l in lenders:
+        key = _STRIP_SUFFIX_CHAT.sub('', l.company_name.strip()).strip().lower()
+        if key not in seen:
+            seen[key] = l
+        else:
+            prev = seen[key]
+            if (l.quality_score or 0, l.aum_crores or 0) > (prev.quality_score or 0, prev.aum_crores or 0):
+                seen[key] = l
+    return list(seen.values())
+
 
 def _compute_unmatched_names(requested: list[str], found: list[LenderResult]) -> list[str]:
     """Return requested names with no distinctive-word match in found results."""
@@ -711,7 +730,7 @@ async def chat(
                 applied_filters = None
 
         elif intent == "compare" and compare_names:
-            lenders = await _fetch_lenders_by_name(db, compare_names)
+            lenders = _dedup_lenders(await _fetch_lenders_by_name(db, compare_names))
             unmatched_names = _compute_unmatched_names(compare_names, lenders)
             # Auto-find a second lender when only 1 found and message implies "another"
             if len(lenders) == 1 and "another" in body.message.lower():
@@ -737,7 +756,7 @@ async def chat(
                     unmatched_names = []
 
         elif intent == "lender_detail" and detail_names:
-            lenders = await _fetch_lenders_by_name(db, detail_names[:1])
+            lenders = _dedup_lenders(await _fetch_lenders_by_name(db, detail_names[:1]))
 
         elif intent == "qa":
             lenders = await _search_lenders_for_qa(db, body.message)
@@ -957,7 +976,7 @@ async def chat_stream(
                 if not had_explicit_filters:
                     applied_filters = None
             elif intent == "compare" and compare_names:
-                lenders = await _fetch_lenders_by_name(db, compare_names)
+                lenders = _dedup_lenders(await _fetch_lenders_by_name(db, compare_names))
                 unmatched_names = _compute_unmatched_names(compare_names, lenders)
                 if len(lenders) == 1 and "another" in body.message.lower():
                     async with db.acquire() as conn:
@@ -981,7 +1000,7 @@ async def chat_stream(
                         lenders.append(_row_to_lender(alt))
                         unmatched_names = []
             elif intent == "lender_detail" and detail_names:
-                lenders = await _fetch_lenders_by_name(db, detail_names[:1])
+                lenders = _dedup_lenders(await _fetch_lenders_by_name(db, detail_names[:1]))
             elif intent == "qa":
                 lenders = await _search_lenders_for_qa(db, body.message)
         except Exception as exc:
