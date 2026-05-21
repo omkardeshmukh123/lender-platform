@@ -122,3 +122,32 @@ def test_on_topic_query_variance(client):
         assert "Bajaj Finance" in answer, (
             f"Run {i+1}: lender name missing from answer: {answer[:120]!r}"
         )
+
+
+# ---------------------------------------------------------------------------
+# _search_lenders_semantic — embedding fallback
+# ---------------------------------------------------------------------------
+
+import asyncio
+from unittest.mock import AsyncMock, patch as _patch
+
+
+def test_semantic_search_falls_back_to_keyword_on_embedding_error():
+    """When embedding API fails, semantic search falls back to _search_lenders_for_qa."""
+    import api.routers.chat as _chat_mod
+    from api.routers.chat import _search_lenders_semantic
+    # Use the same EmbeddingUnavailableError class that chat.py imported
+    # (it may live under 'core.embeddings' or 'api.core.embeddings' depending on sys.path)
+    _EmbeddingUnavailableError = _chat_mod.EmbeddingUnavailableError
+
+    mock_db = MagicMock()
+
+    async def run():
+        with _patch("api.routers.chat.embed_query", side_effect=_EmbeddingUnavailableError("down")):
+            with _patch("api.routers.chat._search_lenders_for_qa", new_callable=AsyncMock) as mock_qa:
+                mock_qa.return_value = []
+                result = await _search_lenders_semantic(mock_db, "gold loan lenders")
+                mock_qa.assert_called_once_with(mock_db, "gold loan lenders")
+                return result
+
+    assert asyncio.run(run()) == []

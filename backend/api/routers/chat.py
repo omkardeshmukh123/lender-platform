@@ -25,6 +25,7 @@ from core.cache import get_cache, make_key, CacheTTL
 from core.config import cfg
 from core.ai_client import get_ai_client
 from core.constants import VALID_LOAN_TYPES, VALID_COMPANY_TYPES, VALID_AUM_CATEGORIES
+from core.embeddings import embed_query, EmbeddingUnavailableError
 from dependencies import get_db
 from limiter import limiter
 
@@ -513,6 +514,39 @@ async def _search_lenders_for_qa(db: asyncpg.Pool, message: str) -> list[LenderR
     return [_row_to_lender(r) for r in rows]
 
 
+async def _search_lenders_semantic(
+    db: asyncpg.Pool,
+    query: str,
+    limit: int = 20,
+) -> list[LenderResult]:
+    """Find lenders by vector similarity to query. Falls back to keyword search on error."""
+    try:
+        vector = await asyncio.get_running_loop().run_in_executor(None, embed_query, query)
+    except EmbeddingUnavailableError:
+        logger.warning("semantic search: embedding unavailable, falling back to keyword search")
+        return await _search_lenders_for_qa(db, query)
+
+    vec_literal = "[" + ",".join(f"{v:.8f}" for v in vector) + "]"
+    async with db.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT id, company_name, company_type, rbi_category,
+                   aum_crores, aum_category, hq_state, hq_location,
+                   pan_india, primary_loan_segments, operating_states,
+                   website, quality_score, employee_count,
+                   established_year, is_listed, phone, email,
+                   operating_intensity, business_sector
+            FROM lenders
+            WHERE approval_status = 'approved'
+              AND embedding IS NOT NULL
+            ORDER BY embedding <=> $1::vector
+            LIMIT $2
+            """,
+            vec_literal, limit,
+        )
+    return [_row_to_lender(r) for r in rows]
+
+
 async def _search_with_broadening(
     db: asyncpg.Pool, filters: dict
 ) -> tuple[list[LenderResult], dict, str, int]:
@@ -686,17 +720,19 @@ async def chat(
         if parsed:
             logger.debug("chat: intent cache HIT")
 
+    try:
+        client = get_ai_client()
+    except ValueError:
+        raise HTTPException(status_code=503, detail="AI_NOT_CONFIGURED")
+
     if parsed is None:
         try:
-            client = get_ai_client()
             parsed = await asyncio.wait_for(
                 asyncio.get_running_loop().run_in_executor(
                     None, client.parse_intent, classified_message, gemini_history
                 ),
                 timeout=cfg.chat_intent_timeout_secs,
             )
-        except ValueError:
-            raise HTTPException(status_code=503, detail="AI_NOT_CONFIGURED")
         except asyncio.TimeoutError:
             logger.error("chat: intent parse timed out after %ds", cfg.chat_intent_timeout_secs)
             raise HTTPException(status_code=503, detail="AI_TIMEOUT")
@@ -1019,17 +1055,19 @@ async def chat_stream(
         if parsed:
             logger.debug("chat_stream: intent cache HIT")
 
+    try:
+        client = get_ai_client()
+    except ValueError:
+        raise HTTPException(status_code=503, detail="AI_NOT_CONFIGURED")
+
     if parsed is None:
         try:
-            client = get_ai_client()
             parsed = await asyncio.wait_for(
                 asyncio.get_running_loop().run_in_executor(
                     None, client.parse_intent, classified_msg, gemini_history
                 ),
                 timeout=cfg.chat_intent_timeout_secs,
             )
-        except ValueError:
-            raise HTTPException(status_code=503, detail="AI_NOT_CONFIGURED")
         except asyncio.TimeoutError:
             logger.error("chat_stream: intent parse timed out after %ds", cfg.chat_intent_timeout_secs)
             raise HTTPException(status_code=503, detail="AI_TIMEOUT")
