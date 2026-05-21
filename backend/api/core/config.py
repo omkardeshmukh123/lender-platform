@@ -72,6 +72,10 @@ class Config:
     chat_answer_timeout_secs: int   = _int("CHAT_ANSWER_TIMEOUT_S", 90)   # Pass 2 — answer generation
     gemini_chat_retries:      int   = _int("GEMINI_CHAT_RETRIES", 3)      # attempts per Gemini call
 
+    # Semantic search — embeddings
+    embedding_model:          str   = _str("GEMINI_EMBEDDING_MODEL", "text-embedding-004")
+    embedding_top_k:          int   = _int("EMBEDDING_TOP_K", 20)
+
     # Environment
     env: str = _str("ENV", "production")
 
