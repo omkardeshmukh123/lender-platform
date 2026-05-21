@@ -210,6 +210,11 @@ def _merge_filters(base: Optional[dict], override: dict) -> dict:
     return merged
 
 
+def _normalize_filters(filters: dict) -> dict:
+    """Sort list values so the cache key is stable regardless of order."""
+    return {k: sorted(v) if isinstance(v, list) else v for k, v in filters.items()}
+
+
 _PRONOUN_TRIGGERS = {"it", "that", "those", "them", "one", "ones", "first", "second", "third", "1st", "2nd", "3rd"}
 
 
@@ -376,9 +381,6 @@ async def _search_lenders(db: asyncpg.Pool, filters: dict) -> tuple[list[LenderR
 
     where = " AND ".join(conditions)
     async with db.acquire() as conn:
-        db_total = await conn.fetchval(
-            f"SELECT COUNT(*) FROM lenders WHERE {where}", *params
-        )
         rows = await conn.fetch(
             f"""
             SELECT id, company_name, company_type, rbi_category,
@@ -394,7 +396,7 @@ async def _search_lenders(db: asyncpg.Pool, filters: dict) -> tuple[list[LenderR
             """,
             *params,
         )
-    return [_row_to_lender(r) for r in rows], int(db_total or 0)
+    return [_row_to_lender(r) for r in rows], len(rows)
 
 
 async def _fetch_lenders_by_name(db: asyncpg.Pool, names: list[str]) -> list[LenderResult]:
@@ -795,7 +797,13 @@ async def chat(
 
     if intent in ("filter", "qa", "compare", "lender_detail"):
         _lender_cache_params: dict = {"intent": intent}
-        if intent in ("filter", "qa"):
+        if intent == "filter":
+            # Key on the *extracted filter dict* so "NBFCs in Maharashtra" and
+            # "Show NBFCs from Maharashtra" share a cache entry when filters match.
+            _lender_cache_params["filters"] = _normalize_filters(
+                _merge_filters(body.last_filters, filters)
+            )
+        elif intent == "qa":
             _lender_cache_params["query"] = body.message.strip().lower()
         elif intent == "compare":
             _lender_cache_params["names"] = sorted(compare_names)
@@ -1052,7 +1060,11 @@ async def chat_stream(
 
     if intent in ("filter", "qa", "compare", "lender_detail"):
         _lender_cache_params: dict = {"intent": intent}
-        if intent in ("filter", "qa"):
+        if intent == "filter":
+            _lender_cache_params["filters"] = _normalize_filters(
+                _merge_filters(body.last_filters, filters)
+            )
+        elif intent == "qa":
             _lender_cache_params["query"] = body.message.strip().lower()
         elif intent == "compare":
             _lender_cache_params["names"] = sorted(compare_names)
