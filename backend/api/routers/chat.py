@@ -747,10 +747,6 @@ async def chat(
     compare_names = parsed.get("compare_names") or []
     detail_names  = parsed.get("detail_names") or []
 
-    # Multi-turn filter refinement: merge last applied filters with new ones
-    if intent == "filter" and body.last_filters:
-        filters = _merge_filters(body.last_filters, filters)
-
     # ------------------------------------------------------------------
     # Short-circuit for intents that need no DB lookup
     # ------------------------------------------------------------------
@@ -788,22 +784,19 @@ async def chat(
 
     # ------------------------------------------------------------------
     # DB lookup — always driven by intent
-    # Cache key covers intent + filters/names so identical queries skip DB.
+    # Cache key covers intent + query/names so identical queries skip DB.
     # ------------------------------------------------------------------
     lenders: list[LenderResult] = []
     applied_filters: Optional[dict] = None
-    broadening_note: str = ""
     unmatched_names: list[str] = []
-    db_total: int = 0
 
     _lender_cache_key = None
     _cached_lender_payload = None
-    _is_similarity = _is_similarity_query(body.message)
 
-    if intent in ("filter", "compare", "lender_detail") and not _is_similarity:
+    if intent in ("filter", "qa", "compare", "lender_detail"):
         _lender_cache_params: dict = {"intent": intent}
-        if intent == "filter":
-            _lender_cache_params["filters"] = filters
+        if intent in ("filter", "qa"):
+            _lender_cache_params["query"] = body.message.strip().lower()
         elif intent == "compare":
             _lender_cache_params["names"] = sorted(compare_names)
         elif intent == "lender_detail":
@@ -815,40 +808,13 @@ async def chat(
         logger.debug("chat: lender cache HIT")
         lenders = [LenderResult(**d) for d in _cached_lender_payload["lenders"]]
         applied_filters = _cached_lender_payload.get("applied_filters")
-        broadening_note = _cached_lender_payload.get("broadening_note", "")
         unmatched_names = _cached_lender_payload.get("unmatched_names", [])
-        db_total        = _cached_lender_payload.get("db_total", len(lenders))
     else:
         try:
-            ref_name_for_sim = (detail_names or compare_names or [None])[0]
-            if _is_similarity and ref_name_for_sim:
-                ref_lenders = await _fetch_lenders_by_name(db, [ref_name_for_sim])
-                if ref_lenders:
-                    ref = ref_lenders[0]
-                    sim_filters: dict = {"sort_by": "aum_crores", "sort_dir": "desc"}
-                    if ref.company_type:
-                        sim_filters["company_type"] = [ref.company_type]
-                    if ref.business_sector:
-                        sim_filters["business_sector"] = [ref.business_sector]
-                    lenders, applied_filters, broadening_note, db_total = await _search_with_broadening(db, sim_filters)
-                    lenders = [l for l in lenders if l.id != ref.id]
-                    db_total = max(0, db_total - 1)
-                    intent = "filter"
-                    sim_note = (
-                        f"Showing lenders similar to {ref.company_name} "
-                        f"({ref.company_type}{', ' + ref.business_sector if ref.business_sector else ''})."
-                    )
-                    broadening_note = (sim_note + " " + broadening_note).strip()
-                else:
-                    lenders = await _search_lenders_for_qa(db, body.message)
-                    intent = "qa"
-
-            elif intent == "filter":
-                had_explicit_filters = bool(filters)
-                search_filters = filters if filters else {"sort_by": "aum_crores", "sort_dir": "desc"}
-                lenders, applied_filters, broadening_note, db_total = await _search_with_broadening(db, search_filters)
-                if not had_explicit_filters:
-                    applied_filters = None
+            if intent in ("filter", "qa"):
+                lenders = _dedup_lenders(
+                    await _search_lenders_semantic(db, body.message, cfg.embedding_top_k)
+                )
 
             elif intent == "compare" and compare_names:
                 lenders = _dedup_lenders(await _fetch_lenders_by_name(db, compare_names))
@@ -878,26 +844,16 @@ async def chat(
             elif intent == "lender_detail" and detail_names:
                 lenders = _dedup_lenders(await _fetch_lenders_by_name(db, detail_names[:1]))
 
-            elif intent == "qa":
-                lenders = await _search_lenders_for_qa(db, body.message)
-
         except Exception as exc:
             logger.error("chat: DB query failed: %s", exc)
             raise HTTPException(status_code=503, detail="Search temporarily unavailable")
 
         if _lender_cache_key and lenders:
             await cache.set(_lender_cache_key, {
-                "lenders": [l.model_dump() for l in lenders],
+                "lenders":         [l.model_dump() for l in lenders],
                 "applied_filters": applied_filters,
-                "broadening_note": broadening_note,
                 "unmatched_names": unmatched_names,
-                "db_total": db_total,
             }, ttl=CacheTTL.MATCH)
-
-    # Append count note when filter returns a capped result set
-    if intent == "filter" and db_total > len(lenders) > 0:
-        count_note = f"Total matching: {db_total}, showing top {len(lenders)}."
-        broadening_note = (count_note + " " + broadening_note).strip() if broadening_note else count_note
 
     # ------------------------------------------------------------------
     # Pass 2 — generate answer strictly from DB records
@@ -909,7 +865,7 @@ async def chat(
                 None,
                 lambda: client.generate_grounded_answer(
                     body.message, intent, lender_dicts, gemini_history,
-                    note=broadening_note,
+                    note="",
                 ),
             ),
             timeout=cfg.chat_answer_timeout_secs,
@@ -1082,23 +1038,17 @@ async def chat_stream(
     compare_names = parsed.get("compare_names") or []
     detail_names  = parsed.get("detail_names") or []
 
-    if intent == "filter" and body.last_filters:
-        filters = _merge_filters(body.last_filters, filters)
-
     lenders: list[LenderResult] = []
     applied_filters: Optional[dict] = None
-    broadening_note = ""
     unmatched_names: list[str] = []
-    db_total: int = 0
-    _is_similarity = _is_similarity_query(body.message)
 
-    # Lender results cache
     _lender_cache_key = None
     _cached_lender_payload = None
-    if intent in ("filter", "compare", "lender_detail") and not _is_similarity:
+
+    if intent in ("filter", "qa", "compare", "lender_detail"):
         _lender_cache_params: dict = {"intent": intent}
-        if intent == "filter":
-            _lender_cache_params["filters"] = filters
+        if intent in ("filter", "qa"):
+            _lender_cache_params["query"] = body.message.strip().lower()
         elif intent == "compare":
             _lender_cache_params["names"] = sorted(compare_names)
         elif intent == "lender_detail":
@@ -1110,39 +1060,14 @@ async def chat_stream(
         logger.debug("chat_stream: lender cache HIT")
         lenders = [LenderResult(**d) for d in _cached_lender_payload["lenders"]]
         applied_filters = _cached_lender_payload.get("applied_filters")
-        broadening_note = _cached_lender_payload.get("broadening_note", "")
         unmatched_names = _cached_lender_payload.get("unmatched_names", [])
-        db_total        = _cached_lender_payload.get("db_total", len(lenders))
     elif intent not in ("greeting", "out_of_scope", "concept"):
         try:
-            ref_name_for_sim = (detail_names or compare_names or [None])[0]
-            if _is_similarity and ref_name_for_sim:
-                ref_lenders = await _fetch_lenders_by_name(db, [ref_name_for_sim])
-                if ref_lenders:
-                    ref = ref_lenders[0]
-                    sim_filters: dict = {"sort_by": "aum_crores", "sort_dir": "desc"}
-                    if ref.company_type:
-                        sim_filters["company_type"] = [ref.company_type]
-                    if ref.business_sector:
-                        sim_filters["business_sector"] = [ref.business_sector]
-                    lenders, applied_filters, broadening_note, db_total = await _search_with_broadening(db, sim_filters)
-                    lenders = [l for l in lenders if l.id != ref.id]
-                    db_total = max(0, db_total - 1)
-                    intent = "filter"
-                    sim_note = (
-                        f"Showing lenders similar to {ref.company_name} "
-                        f"({ref.company_type}{', ' + ref.business_sector if ref.business_sector else ''})."
-                    )
-                    broadening_note = (sim_note + " " + broadening_note).strip()
-                else:
-                    lenders = await _search_lenders_for_qa(db, body.message)
-                    intent = "qa"
-            elif intent == "filter":
-                had_explicit_filters = bool(filters)
-                search_filters = filters if filters else {"sort_by": "aum_crores", "sort_dir": "desc"}
-                lenders, applied_filters, broadening_note, db_total = await _search_with_broadening(db, search_filters)
-                if not had_explicit_filters:
-                    applied_filters = None
+            if intent in ("filter", "qa"):
+                lenders = _dedup_lenders(
+                    await _search_lenders_semantic(db, body.message, cfg.embedding_top_k)
+                )
+
             elif intent == "compare" and compare_names:
                 lenders = _dedup_lenders(await _fetch_lenders_by_name(db, compare_names))
                 unmatched_names = _compute_unmatched_names(compare_names, lenders)
@@ -1167,26 +1092,20 @@ async def chat_stream(
                     if alt:
                         lenders.append(_row_to_lender(alt))
                         unmatched_names = []
+
             elif intent == "lender_detail" and detail_names:
                 lenders = _dedup_lenders(await _fetch_lenders_by_name(db, detail_names[:1]))
-            elif intent == "qa":
-                lenders = await _search_lenders_for_qa(db, body.message)
+
         except Exception as exc:
             logger.error("chat_stream: DB query failed: %s", exc)
             raise HTTPException(status_code=503, detail="Search temporarily unavailable")
 
         if _lender_cache_key and lenders:
             await cache.set(_lender_cache_key, {
-                "lenders": [l.model_dump() for l in lenders],
+                "lenders":         [l.model_dump() for l in lenders],
                 "applied_filters": applied_filters,
-                "broadening_note": broadening_note,
                 "unmatched_names": unmatched_names,
-                "db_total": db_total,
             }, ttl=CacheTTL.MATCH)
-
-    if intent == "filter" and db_total > len(lenders) > 0:
-        count_note = f"Total matching: {db_total}, showing top {len(lenders)}."
-        broadening_note = (count_note + " " + broadening_note).strip() if broadening_note else count_note
 
     lender_dicts      = [l.model_dump() for l in lenders]
     suggested_actions = _generate_suggestions(intent, lenders, applied_filters or {})
@@ -1212,7 +1131,7 @@ async def chat_stream(
             try:
                 for token in client.generate_grounded_answer_stream(
                     body.message, intent, lender_dicts, gemini_history,
-                    note=broadening_note,
+                    note="",
                 ):
                     loop.call_soon_threadsafe(queue.put_nowait, ("t", token))
             except Exception as exc:
