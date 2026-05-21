@@ -9,6 +9,7 @@ import threading
 from typing import Optional
 
 from google import genai
+from google.genai import types as _genai_types
 
 
 class EmbeddingUnavailableError(Exception):
@@ -100,10 +101,14 @@ def _get_client() -> genai.Client:
 
 def embed_text(text: str) -> list[float]:
     """Embed a text string. Returns a 768-dim float vector."""
-    model = os.environ.get("GEMINI_EMBEDDING_MODEL", "text-embedding-004")
+    model = os.environ.get("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001")
     try:
         client = _get_client()
-        result = client.models.embed_content(model=model, contents=text)
+        result = client.models.embed_content(
+            model=model,
+            contents=text,
+            config=_genai_types.EmbedContentConfig(output_dimensionality=768),
+        )
         return list(result.embeddings[0].values)
     except EmbeddingUnavailableError:
         raise
