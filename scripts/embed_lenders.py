@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "backend" / "api"))
 import asyncpg
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).parent.parent / "backend" / ".env")
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 from core.embeddings import build_lender_text, embed_lender, EmbeddingUnavailableError
 
@@ -65,7 +65,7 @@ async def main(force_all: bool, dry_run: bool) -> None:
         print("ERROR: GEMINI_API_KEY not set", file=sys.stderr)
         sys.exit(1)
 
-    pool = await asyncpg.create_pool(database_url, min_size=1, max_size=2)
+    pool = await asyncpg.create_pool(database_url, min_size=1, max_size=2, statement_cache_size=0)
 
     try:
         where = "approval_status = 'approved'"
