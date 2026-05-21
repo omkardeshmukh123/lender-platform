@@ -22,6 +22,7 @@ but the admin check happens in Python before any DB call.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import List, Optional
@@ -725,6 +726,48 @@ async def approve_lender(
         "ADMIN_APPROVE lender=%d actor=%s policies_activated=%s request_id=%s",
         lender_id, actor_email, result.get("policies_activated"), request_id,
     )
+
+    # Best-effort: generate embedding for the newly approved lender.
+    # Failure is logged but does not block the approval response.
+    try:
+        async with db.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT id, company_name, company_type, rbi_category,
+                       aum_crores, aum_category, hq_state, hq_location,
+                       pan_india, primary_loan_segments, operating_states,
+                       is_listed, established_year, employee_count,
+                       operating_intensity, business_sector
+                FROM lenders WHERE id = $1
+                """,
+                lender_id,
+            )
+        if row:
+            from core.embeddings import embed_lender, EmbeddingUnavailableError
+            import json as _json
+
+            lender_dict = dict(row)
+            for arr_col in ("primary_loan_segments", "operating_states"):
+                val = lender_dict.get(arr_col)
+                if isinstance(val, str):
+                    try:
+                        lender_dict[arr_col] = _json.loads(val)
+                    except Exception:
+                        lender_dict[arr_col] = []
+
+            vector = await asyncio.get_running_loop().run_in_executor(
+                None, embed_lender, lender_dict
+            )
+            vec_literal = "[" + ",".join(f"{v:.8f}" for v in vector) + "]"
+            async with db.acquire() as conn:
+                await conn.execute(
+                    "UPDATE lenders SET embedding = $1::vector WHERE id = $2",
+                    vec_literal, lender_id,
+                )
+            logger.info("ADMIN_APPROVE lender=%d embedding updated", lender_id)
+    except Exception as exc:
+        logger.warning("ADMIN_APPROVE lender=%d embedding failed (non-fatal): %s", lender_id, exc)
+
     return {"lender_id": lender_id, "action": "approved", **result}
 
 
