@@ -811,7 +811,12 @@ async def chat(
         unmatched_names = _cached_lender_payload.get("unmatched_names", [])
     else:
         try:
-            if intent in ("filter", "qa"):
+            if intent == "filter":
+                merged = _merge_filters(body.last_filters, filters)
+                lenders, applied_filters, _, _ = await _search_with_broadening(db, merged)
+                lenders = _dedup_lenders(lenders)
+
+            elif intent == "qa":
                 lenders = _dedup_lenders(
                     await _search_lenders_semantic(db, body.message, cfg.embedding_top_k)
                 )
@@ -1063,7 +1068,12 @@ async def chat_stream(
         unmatched_names = _cached_lender_payload.get("unmatched_names", [])
     elif intent not in ("greeting", "out_of_scope", "concept"):
         try:
-            if intent in ("filter", "qa"):
+            if intent == "filter":
+                merged = _merge_filters(body.last_filters, filters)
+                lenders, applied_filters, _, _ = await _search_with_broadening(db, merged)
+                lenders = _dedup_lenders(lenders)
+
+            elif intent == "qa":
                 lenders = _dedup_lenders(
                     await _search_lenders_semantic(db, body.message, cfg.embedding_top_k)
                 )
