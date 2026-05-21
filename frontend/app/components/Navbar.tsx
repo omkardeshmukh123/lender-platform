@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect, useRef } from 'react'
-import { User, LogOut, Bookmark } from 'lucide-react'
+import { User, LogOut, Bookmark, Menu, X } from 'lucide-react'
 
 interface NavbarProps {
   authenticated?: boolean
@@ -14,8 +14,9 @@ interface NavbarProps {
 }
 
 export function Navbar({ authenticated = false, user, onSignOut, savedCount = 0, onSavedClick }: NavbarProps) {
-  const [isScrolled,     setIsScrolled]     = useState(false)
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [isScrolled,       setIsScrolled]       = useState(false)
+  const [isDropdownOpen,   setIsDropdownOpen]   = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -36,7 +37,7 @@ export function Navbar({ authenticated = false, user, onSignOut, savedCount = 0,
 
   return (
     <nav
-      className={`sticky top-0 z-40 transition-all duration-300 ${
+      className={`sticky top-0 z-40 transition-all duration-300 relative ${
         isScrolled
           ? 'bg-white/96 backdrop-blur-xl shadow-sm'
           : 'bg-white/85 backdrop-blur-md'
@@ -87,6 +88,17 @@ export function Navbar({ authenticated = false, user, onSignOut, savedCount = 0,
 
           {/* ── Right actions ── */}
           <div className="flex items-center gap-2">
+            {/* Hamburger — mobile only */}
+            <button
+              onClick={() => setIsMobileMenuOpen(p => !p)}
+              className="md:hidden p-2 rounded-lg transition-colors"
+              style={{ color: '#3D6363' }}
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen
+                ? <X className="w-5 h-5" />
+                : <Menu className="w-5 h-5" />}
+            </button>
             {authenticated && user ? (
               <>
                 {onSavedClick && (
@@ -179,6 +191,58 @@ export function Navbar({ authenticated = false, user, onSignOut, savedCount = 0,
 
         </div>
       </div>
+      {/* Mobile slide-down overlay */}
+      {isMobileMenuOpen && (
+        <div className="absolute top-full left-0 right-0 md:hidden animate-fade-in"
+             style={{
+               background: 'rgba(255,255,255,0.98)',
+               backdropFilter: 'blur(20px)',
+               borderBottom: '1px solid rgba(26,112,112,0.12)',
+               boxShadow: '0 8px 24px rgba(26,112,112,0.12)',
+             }}>
+          <div className="max-w-7xl mx-auto px-6 py-4 space-y-1">
+            <Link href="/dashboard"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block py-3 text-sm font-medium transition-colors hover:text-[#1A7070]"
+              style={{ color: '#3D6363', borderBottom: '1px solid #EFF7F7' }}>
+              Browse
+            </Link>
+            <Link href="/guide"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block py-3 text-sm font-medium transition-colors hover:text-[#1A7070]"
+              style={{ color: '#3D6363', borderBottom: '1px solid #EFF7F7' }}>
+              Field Guide
+            </Link>
+            {authenticated && user ? (
+              <div className="pt-2 pb-1">
+                <p className="text-xs mb-3" style={{ color: '#7A9E9E' }}>{user.email}</p>
+                <button
+                  onClick={() => { setIsMobileMenuOpen(false); onSignOut?.() }}
+                  className="flex items-center gap-2 text-sm font-medium text-red-500 py-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="pt-2 pb-1 space-y-2">
+                <Link href="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="block py-3 text-sm font-medium transition-colors hover:text-[#1A7070]"
+                  style={{ color: '#3D6363' }}>
+                  Login
+                </Link>
+                <Link href="/signup"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="block text-center py-3 text-sm font-semibold text-white rounded-xl"
+                  style={{ background: 'linear-gradient(135deg,#0F4848,#1A7070)' }}>
+                  Get Started
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   )
 }

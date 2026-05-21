@@ -56,6 +56,7 @@ interface ChatMessage {
   unmatched_names?:   string[]
   suggested_actions?: string[]
   message_id?:        number
+  applied_filters?:   ApiFilters
   _streamId?:         string
 }
 
@@ -68,9 +69,12 @@ interface ChatPanelProps {
 }
 
 const SUGGESTIONS = [
-  'Show NBFCs in Maharashtra for MSME loans',
-  'Compare Bajaj Finance vs Muthoot Finance',
-  'Which PSU banks have gold loans?',
+  'Gold loan NBFCs in Maharashtra',
+  'Compare SBI and HDFC Bank',
+  'What is an NBFC?',
+  'Large AUM home loan lenders',
+  'MFI lenders in Bihar',
+  'PSU banks for agriculture loans',
 ]
 
 function generateUUID(): string {
@@ -99,6 +103,22 @@ function apiFiltersToMultiFilters(f: ApiFilters): MultiFilters {
     hasPolicies:          false,
     hasRevenue:           false,
   }
+}
+
+function companyTypeBadge(type: string): string {
+  const t = type.toLowerCase()
+  if (t.includes('psu')) return 'bg-green-50 text-green-700'
+  if (t.includes('private')) return 'bg-indigo-50 text-indigo-700'
+  if (t.includes('mfi') || t.includes('microfinance')) return 'bg-orange-50 text-orange-700'
+  if (t.includes('small finance')) return 'bg-teal-50 text-teal-700'
+  if (t.includes('cooperative') || t.includes('coop')) return 'bg-amber-50 text-amber-700'
+  if (t.includes('foreign')) return 'bg-purple-50 text-purple-700'
+  return 'bg-blue-50 text-blue-700'
+}
+
+function fmtAumChat(val: number | null): string {
+  if (val == null) return 'AUM not listed'
+  return `₹${val.toLocaleString('en-IN')} Cr`
 }
 
 function Inline({ text }: { text: string }) {
@@ -152,10 +172,18 @@ function LenderDetailCard({ lender }: { lender: LenderResult }) {
       <div className="px-3 py-2.5 flex items-start justify-between gap-2"
            style={{ background: 'linear-gradient(135deg,#EEF2FF,#F0F4FF)' }}>
         <div>
+          <div className="flex flex-wrap items-center gap-1 mb-1">
+            <span className={`px-1.5 py-0.5 rounded-md font-semibold text-[10px] ${companyTypeBadge(lender.company_type)}`}>
+              {lender.company_type}
+            </span>
+            {lender.pan_india && (
+              <span className="px-1.5 py-0.5 rounded-md font-semibold text-[10px] bg-green-50 text-green-700">Pan India</span>
+            )}
+          </div>
           <p className="font-bold text-[#001454] text-sm leading-tight">{lender.company_name}</p>
-          <p className="text-gray-500 mt-0.5">
-            {lender.company_type}{lender.rbi_category ? ` · ${lender.rbi_category}` : ''}
-          </p>
+          {lender.rbi_category && (
+            <p className="text-gray-500 mt-0.5">{lender.rbi_category}</p>
+          )}
         </div>
         <a href={`/lender/${lender.id}`}
            className="flex-shrink-0 flex items-center gap-1 text-[#1A7070] hover:underline text-[11px] font-semibold">
@@ -169,12 +197,10 @@ function LenderDetailCard({ lender }: { lender: LenderResult }) {
             <span>{lender.hq_location ?? lender.hq_state}</span>
           </div>
         )}
-        {lender.aum_crores != null && (
-          <div className="px-3 py-1.5 flex gap-2 text-gray-600">
-            <Building2 className="w-3 h-3 text-gray-300 mt-0.5 flex-shrink-0" />
-            <span>₹{lender.aum_crores.toLocaleString('en-IN')} Cr {lender.aum_category ? `(${lender.aum_category})` : ''}</span>
-          </div>
-        )}
+        <div className="px-3 py-1.5 flex gap-2 text-gray-600">
+          <Building2 className="w-3 h-3 text-gray-300 mt-0.5 flex-shrink-0" />
+          <span>{fmtAumChat(lender.aum_crores)}{lender.aum_crores != null && lender.aum_category ? ` (${lender.aum_category})` : ''}</span>
+        </div>
         {lender.primary_loan_segments.length > 0 && (
           <div className="px-3 py-1.5 text-gray-500 leading-relaxed">
             {lender.primary_loan_segments.slice(0, 5).join(' · ')}
@@ -275,26 +301,63 @@ function CompareTable({ lenders }: { lenders: LenderResult[] }) {
 function FilterMiniCards({ lenders }: { lenders: LenderResult[] }) {
   return (
     <div className="mt-2 space-y-1.5">
-      {lenders.slice(0, 3).map(l => (
+      {lenders.slice(0, 4).map(l => (
         <a key={l.id} href={`/lender/${l.id}`}
-           className="flex items-center gap-3 rounded-xl border border-gray-100 px-3 py-2 bg-white
-                      hover:border-[#1A7070]/30 hover:bg-[#EEF2FF]/30 transition-all duration-200 text-xs">
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-[#1A2B6B] truncate">{l.company_name}</p>
-            <p className="text-gray-400 mt-0.5 flex gap-2">
-              <span>{l.company_type}</span>
-              {l.aum_crores != null && <span>₹{l.aum_crores.toLocaleString('en-IN')} Cr</span>}
-            </p>
+           className="flex flex-col gap-1.5 rounded-xl border border-gray-100 px-3 py-2.5 bg-white
+                      hover:border-[#1A7070]/30 hover:bg-[#EEF2FF]/30 transition-all duration-200
+                      min-h-[72px]">
+          <div className="flex items-start justify-between gap-2">
+            <p className="font-bold text-[#1A2B6B] text-xs leading-tight flex-1 min-w-0">{l.company_name}</p>
+            <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0 mt-0.5" />
           </div>
-          <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className={`px-1.5 py-0.5 rounded-md font-semibold text-[10px] ${companyTypeBadge(l.company_type)}`}>
+              {l.company_type}
+            </span>
+            {l.pan_india && (
+              <span className="px-1.5 py-0.5 rounded-md font-semibold text-[10px] bg-green-50 text-green-700">Pan India</span>
+            )}
+            <span className="text-[10px] text-gray-400">{fmtAumChat(l.aum_crores)}</span>
+          </div>
+          {l.primary_loan_segments.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {l.primary_loan_segments.slice(0, 3).map(seg => (
+                <span key={seg} className="px-1.5 py-0.5 rounded-md text-[10px] bg-gray-50 text-gray-500">{seg}</span>
+              ))}
+              {l.primary_loan_segments.length > 3 && (
+                <span className="text-[10px] text-gray-400">+{l.primary_loan_segments.length - 3}</span>
+              )}
+            </div>
+          )}
         </a>
       ))}
-      {lenders.length > 3 && (
+      {lenders.length > 4 && (
         <p className="text-[11px] text-[#1A7070] font-semibold px-1">
-          +{lenders.length - 3} more shown in the grid above
+          +{lenders.length - 4} more shown in the grid above
         </p>
       )}
     </div>
+  )
+}
+
+function SearchContextTag({ msg }: { msg: ChatMessage }) {
+  let tag: string | null = null
+  if (msg.intent === 'qa' || msg.intent === 'concept') {
+    tag = 'Semantic search'
+  } else if (msg.intent === 'compare' || msg.intent === 'lender_detail') {
+    const names = msg.lenders?.map(l => l.company_name).slice(0, 2)
+    if (names?.length) tag = `Lookup: ${names.join(', ')}`
+  } else if (msg.intent === 'filter' && msg.applied_filters) {
+    const f = msg.applied_filters
+    const parts: string[] = []
+    if (f.company_type?.length) parts.push(...f.company_type.slice(0, 2))
+    if (f.state) parts.push(f.state)
+    if (f.loan_type?.length) parts.push(...f.loan_type.slice(0, 2))
+    if (parts.length) tag = `Searched: ${parts.join(' · ')}`
+  }
+  if (!tag) return null
+  return (
+    <p className="mt-1.5 text-[10px] text-gray-400 px-1 font-medium tracking-wide">{tag}</p>
   )
 }
 
@@ -356,6 +419,7 @@ function BotBubble({
             ))}
           </div>
         )}
+        {!streaming && <SearchContextTag msg={msg} />}
         <div className="mt-1.5 flex items-center gap-0.5 px-1">
           <button
             onClick={() => handleFeedback('up')}
@@ -419,6 +483,7 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
   const [lastAppliedFilters, setLastAppliedFilters] = useState<ApiFilters | null>(null)
   const [lastLenderNames,    setLastLenderNames]    = useState<string[]>([])
   const [streamingId,        setStreamingId]        = useState<string>('')
+  const [showTyping,         setShowTyping]         = useState(false)
   // Ref to the scrollable messages container (NOT the sentinel div)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const inputRef           = useRef<HTMLTextAreaElement>(null)
@@ -509,6 +574,7 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
     setMessages(prev => [...prev, { role: 'user', content: msg }])
     setInput('')
     setLoading(true)
+    setShowTyping(true)
     setTimeout(() => scrollToBottom(true), 50)
 
     const historyPayload = messages.slice(-12).map(m => ({ role: m.role, content: m.content }))
@@ -554,6 +620,7 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
           } else if (res.status === 429) {
             errMsg = "You're sending messages too fast. Please wait a moment."
           }
+          setShowTyping(false)
           setMessages(prev => [...prev, { role: 'assistant', content: errMsg, intent: 'qa' }])
           return
         }
@@ -604,12 +671,19 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
                 suggested_actions: [],
                 _streamId:         assistantStreamId,
               }
+              setShowTyping(false)
               setMessages(prev => [...prev, newMsg])
               // Defer lender card reconciliation so it doesn't block token rendering
               startTransition(() => {
                 setMessages(prev => prev.map(m =>
                   m._streamId === assistantStreamId
-                    ? { ...m, lenders: data.lenders ?? [], unmatched_names: data.unmatched_names ?? [], suggested_actions: data.suggested_actions ?? [] }
+                    ? {
+                        ...m,
+                        lenders:          data.lenders ?? [],
+                        unmatched_names:  data.unmatched_names ?? [],
+                        suggested_actions: data.suggested_actions ?? [],
+                        applied_filters:  data.applied_filters ?? undefined,
+                      }
                     : m
                 ))
               })
@@ -646,12 +720,14 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
         }
       }
     } catch {
+      setShowTyping(false)
       setMessages(prev => [...prev, {
         role:    'assistant',
         content: 'Unable to reach the server. Check your connection and try again.',
         intent:  'qa',
       }])
     } finally {
+      setShowTyping(false)
       setLoading(false)
       setStreamingId('')
       setTimeout(() => scrollToBottom(false, 'smooth'), 80)
@@ -735,11 +811,10 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
               <p className="text-gray-400 text-xs mb-5 leading-relaxed max-w-[260px] mx-auto">
                 Filter results, compare lenders, or get details — all in plain English.
               </p>
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
                 {SUGGESTIONS.map(s => (
                   <button key={s} onClick={() => sendMessage(s)}
-                    className="block w-full text-left text-xs font-medium px-3.5 py-2.5 rounded-xl
-                               transition-colors"
+                    className="text-left text-xs font-medium px-3 py-2.5 rounded-xl transition-colors leading-snug"
                     style={{ background: '#E6F4F4', color: '#1A7070', border: '1px solid #A8DADA' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#CCE9E9' }}
                     onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#E6F4F4' }}
@@ -756,7 +831,7 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
               : <BotBubble  key={i} msg={msg} onSuggestion={s => sendMessage(s)} onFeedback={sendFeedback}
                             streaming={!!streamingId && msg._streamId === streamingId} />
           )}
-          {loading && <TypingIndicator />}
+          {showTyping && <TypingIndicator />}
           {/* Sentinel — never used for scrollIntoView anymore */}
           <div aria-hidden="true" style={{ height: 1 }} />
         </div>

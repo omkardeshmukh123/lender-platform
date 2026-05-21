@@ -499,7 +499,8 @@ export default function AdminPage() {
               </div>
             ) : (
               <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[480px]">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="text-left px-4 py-3 font-medium text-gray-600">Company</th>
@@ -561,6 +562,7 @@ export default function AdminPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
                 {lenderPages > 1 && (
                   <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
                     <span className="text-xs text-gray-500">{((lenderPage - 1) * PAGE_SIZE) + 1}–{Math.min(lenderPage * PAGE_SIZE, lenderTotal)} of {lenderTotal}</span>

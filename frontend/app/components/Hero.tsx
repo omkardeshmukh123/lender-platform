@@ -22,31 +22,31 @@ export function Hero() {
         <div className="flex flex-col md:flex-row items-center gap-8">
 
           {/* Logo + branding */}
-          <div className="flex items-center gap-5 flex-shrink-0">
-            <div className="w-20 h-20 rounded-full p-0.5 flex-shrink-0"
+          <div className="flex items-center gap-4 sm:gap-5 flex-shrink-0">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full p-0.5 flex-shrink-0"
                  style={{ background: 'linear-gradient(135deg,#C9A227,#F5D97A,#A07E1A)', boxShadow: '0 0 30px rgba(201,162,39,0.35)' }}>
               <div className="w-full h-full rounded-full overflow-hidden">
                 <Image src="/logo.png" alt="MITRAM360" width={76} height={76}
                        className="w-full h-full object-cover" priority />
               </div>
             </div>
-            <div className="hidden sm:block">
-              <h1 className="text-2xl font-extrabold text-white leading-tight tracking-tight">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-white leading-tight tracking-tight">
                 Lender Directory
               </h1>
-              <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.55)' }}>
+              <p className="text-xs sm:text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.55)' }}>
                 India&apos;s most complete NBFC &amp; Bank database
               </p>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold border"
+              <div className="flex items-center gap-1.5 sm:gap-2 mt-2 flex-wrap">
+                <span className="px-2 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold border"
                       style={{ background: 'rgba(201,162,39,0.15)', borderColor: 'rgba(201,162,39,0.3)', color: '#F5D97A' }}>
                   1,000+ Lenders
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold border"
+                <span className="px-2 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold border"
                       style={{ background: 'rgba(201,162,39,0.15)', borderColor: 'rgba(201,162,39,0.3)', color: '#F5D97A' }}>
                   28 States
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold border"
+                <span className="px-2 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold border"
                       style={{ background: 'rgba(201,162,39,0.15)', borderColor: 'rgba(201,162,39,0.3)', color: '#F5D97A' }}>
                   RBI Verified
                 </span>
