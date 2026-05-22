@@ -785,8 +785,9 @@ def _fake_row(i: int, loan: str = "Gold Loan") -> dict:
 
 class TestSearchLendersCount:
 
-    @pytest.mark.asyncio
-    async def test_true_count_exceeds_page_size(self):
+    def test_true_count_exceeds_page_size(self):
+        import asyncio
+
         mock_pool = MagicMock()
         mock_conn = AsyncMock()
         mock_pool.acquire.return_value.__aenter__ = AsyncMock(return_value=mock_conn)
@@ -794,13 +795,14 @@ class TestSearchLendersCount:
         mock_conn.fetch = AsyncMock(return_value=[_fake_row(i) for i in range(20)])
         mock_conn.fetchval = AsyncMock(return_value=162)
 
-        lenders, true_count = await _search_lenders(mock_pool, {"loan_type": ["Gold Loan"]})
+        lenders, true_count = asyncio.run(_search_lenders(mock_pool, {"loan_type": ["Gold Loan"]}))
 
         assert len(lenders) == 20
         assert true_count == 162
 
-    @pytest.mark.asyncio
-    async def test_count_matches_when_fewer_than_page(self):
+    def test_count_matches_when_fewer_than_page(self):
+        import asyncio
+
         mock_pool = MagicMock()
         mock_conn = AsyncMock()
         mock_pool.acquire.return_value.__aenter__ = AsyncMock(return_value=mock_conn)
@@ -808,7 +810,7 @@ class TestSearchLendersCount:
         mock_conn.fetch = AsyncMock(return_value=[_fake_row(i, "Home Loan") for i in range(3)])
         mock_conn.fetchval = AsyncMock(return_value=3)
 
-        lenders, true_count = await _search_lenders(mock_pool, {"company_type": ["HFC"]})
+        lenders, true_count = asyncio.run(_search_lenders(mock_pool, {"company_type": ["HFC"]}))
 
         assert len(lenders) == 3
         assert true_count == 3
