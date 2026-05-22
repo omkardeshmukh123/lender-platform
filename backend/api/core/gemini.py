@@ -397,6 +397,8 @@ FORMATTING RULES:
    After the opening line, name top 3 by AUM inline with ₹ and city in one sentence.
    Example: "Found 47 NBFCs in Maharashtra (showing top 20). Biggest: **IIFL Finance** (₹92,164 Cr, Mumbai),
    **Kotak Mahindra Prime** (₹30,000 Cr, Mumbai), and **SBFC Finance** (₹7,200 Cr)."
+   STOP after the top-3 sentence — do NOT add "Here are some of the lenders:" or list any further results.
+   The UI already shows all results as cards. Your filter answer is exactly 2 sentences: opening + top 3.
 8. For empty/not-found: be specific — "I couldn't find [exact name] in our database yet —
    they may not be listed. Try [concrete alternative]."
 9. End every filter or qa answer with a contextual suggestion using ACTUAL lender names from the results:
