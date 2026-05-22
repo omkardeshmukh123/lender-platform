@@ -812,3 +812,102 @@ class TestSearchLendersCount:
 
         assert len(lenders) == 3
         assert true_count == 3
+
+
+# ===========================================================================
+# Section 10: Prompt-engineering regression tests (P4/P8/P10/P5 bugs)
+# ===========================================================================
+
+class TestPromptEngineering:
+    """
+    Tests that verify the prompts contain the critical rules added to fix
+    accuracy bugs P4/P8 (state-filter HQ confusion), P10 (SFBs pan India),
+    and P5 (largest banks).
+    """
+
+    def test_answer_prompt_hq_state_critical_rule(self):
+        """Rule 5 must explicitly warn that By HQ state != operating coverage."""
+        from api.core.gemini import _ANSWER_SYSTEM_PROMPT
+        assert "By HQ state" in _ANSWER_SYSTEM_PROMPT
+        assert "HEADQUARTERED" in _ANSWER_SYSTEM_PROMPT or "headquartered" in _ANSWER_SYSTEM_PROMPT
+
+    def test_answer_prompt_hq_state_example(self):
+        """Rule 5 must show a concrete example with Gujarat / Maharashtra HQ mismatch."""
+        from api.core.gemini import _ANSWER_SYSTEM_PROMPT
+        assert "Gujarat" in _ANSWER_SYSTEM_PROMPT
+
+    def test_intent_prompt_sfb_pan_india_example(self):
+        """Intent prompt must have an example mapping SFBs+pan_india to both filters."""
+        from api.core.gemini import _INTENT_SYSTEM_PROMPT
+        assert "pan_india" in _INTENT_SYSTEM_PROMPT
+        assert "Small Finance Bank" in _INTENT_SYSTEM_PROMPT
+        # The example should show both together
+        sfb_block = [
+            line for line in _INTENT_SYSTEM_PROMPT.splitlines()
+            if "Small Finance Bank" in line and "pan_india" in line
+        ]
+        assert sfb_block, "Expected an example line with both Small Finance Bank and pan_india"
+
+    def test_intent_prompt_banks_synonym(self):
+        """Intent prompt must map generic 'banks' to Private Bank + PSU Bank + Foreign Bank."""
+        from api.core.gemini import _INTENT_SYSTEM_PROMPT
+        assert "Private Bank" in _INTENT_SYSTEM_PROMPT
+        # Generic banks synonym rule
+        banks_lines = [
+            line for line in _INTENT_SYSTEM_PROMPT.splitlines()
+            if "banks / bank" in line.lower() or ("generic" in line.lower() and "bank" in line.lower())
+        ]
+        assert banks_lines, "Expected a synonym line mapping generic 'banks' to bank company types"
+
+    def test_intent_prompt_largest_banks_example(self):
+        """Intent prompt must have an example for 'Largest banks' with bank company_type filters."""
+        from api.core.gemini import _INTENT_SYSTEM_PROMPT
+        largest_lines = [
+            line for line in _INTENT_SYSTEM_PROMPT.splitlines()
+            if ("Largest banks" in line or "Biggest banks" in line) and "PSU Bank" in line
+        ]
+        assert largest_lines, "Expected 'Largest/Biggest banks' example with PSU Bank in company_type"
+
+    def test_intent_prompt_multi_filter_rule(self):
+        """Intent prompt must have a MULTI-FILTER RULE that prevents dropping dimensions."""
+        from api.core.gemini import _INTENT_SYSTEM_PROMPT
+        assert "MULTI-FILTER RULE" in _INTENT_SYSTEM_PROMPT or "NEVER drop a dimension" in _INTENT_SYSTEM_PROMPT
+
+    def test_build_grounded_prompt_stats_includes_total(self):
+        """For filter intent, Stats prefix must include 'Total matching' so the AI gets the right count."""
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).parent.parent.parent / "backend"))
+        from api.core.gemini import GeminiChatClient, _slim_record
+
+        # Build a fake lender list — all HQ in Maharashtra but filter was Gujarat
+        lenders = [
+            {
+                "company_name": f"Lender {i}", "company_type": "NBFC",
+                "rbi_category": None, "aum_crores": 1000.0, "aum_category": "Large",
+                "hq_state": "Maharashtra", "hq_location": "Mumbai", "pan_india": True,
+                "primary_loan_segments": [], "operating_states": ["Gujarat"],
+                "website": None, "quality_score": 0.8, "employee_count": None,
+                "established_year": None, "is_listed": False, "phone": None,
+                "email": None, "operating_intensity": "Pan India", "business_sector": None,
+            }
+            for i in range(20)
+        ]
+
+        # Instantiate without a real API key (just need _build_grounded_prompt)
+        import os
+        os.environ.setdefault("GEMINI_API_KEY", "fake-test-key")
+        client = GeminiChatClient.__new__(GeminiChatClient)
+        client._model = "gemini-2.5-flash"
+
+        prompt = client._build_grounded_prompt(
+            question="How many lenders operate in Gujarat?",
+            intent="filter",
+            lenders=lenders,
+            note="",
+            total_count=20,
+        )
+
+        assert "Total matching: 20" in prompt
+        assert "By HQ state:" in prompt
+        assert "Maharashtra" in prompt  # HQ states will show Maharashtra

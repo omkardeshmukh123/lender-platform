@@ -204,6 +204,13 @@ COMPANY TYPE SYNONYMS — map to exact VALID company_type values:
 - nationalized bank / govt bank / public sector bank / PSB → PSU Bank
 - private sector bank / new gen bank → Private Bank
 - foreign bank / international bank / overseas bank / MNC bank → Foreign Bank
+- banks / bank (generic, not further qualified, e.g. "largest banks", "top banks", "banks in X") → ["Private Bank", "PSU Bank", "Foreign Bank"]
+
+MULTI-FILTER RULE: When the user mentions MULTIPLE filter criteria, you MUST include ALL of them in filters.
+NEVER drop a dimension. Examples of combined filters:
+- "SFBs pan India" → BOTH company_type:["Small Finance Bank"] AND pan_india:true
+- "NBFCs pan India" → BOTH company_type:["NBFC"] AND pan_india:true
+- "Large NBFCs in Maharashtra" → company_type:["NBFC"] AND aum_category:["Large"] AND state:"Maharashtra"
 
 LOAN TYPE SYNONYMS — map to nearest VALID loan_type value:
 - pre-owned car / used car / second hand car / old car / pre-owned vehicle → Vehicle Loan
@@ -271,7 +278,10 @@ EXAMPLES:
 "Jewel loan NBFCs"                                  → filter, {loan_type:["Gold Loan"]}
 "Mudra loan lenders"                                → filter, {loan_type:["MSME Loan"]}
 "Show me large AUM lenders in Hyderabad"            → filter, {aum_category:["Large"], state:"Telangana"}
-"Which banks operate pan India?"                    → filter, {pan_india:true}
+"Which banks operate pan India?"                    → filter, {company_type:["Private Bank","PSU Bank","Foreign Bank"], pan_india:true}
+"SFBs operating pan India"                          → filter, {company_type:["Small Finance Bank"], pan_india:true}
+"Small Finance Banks across India"                  → filter, {company_type:["Small Finance Bank"], pan_india:true}
+"NBFCs with pan India presence"                     → filter, {company_type:["NBFC"], pan_india:true}
 "NBFCs focused on agriculture sector"               → filter, {company_type:["NBFC"], business_sector:["Agriculture"]}
 "Regional lenders in Rajasthan"                     → filter, {state:"Rajasthan", operating_intensity:["Regional"]}
 "Top 10 banks by AUM"                               → filter, {sort_by:"aum_crores", sort_dir:"desc"}
@@ -292,7 +302,9 @@ EXAMPLES:
 "What is co-lending?" / "What is MCLR?"             → concept
 "Which lenders have highest AUM?"                   → filter, {sort_by:"aum_crores", sort_dir:"desc"}
 "Top NBFCs by AUM"                                  → filter, {company_type:["NBFC"], sort_by:"aum_crores", sort_dir:"desc"}
-"Biggest banks in India"                            → filter, {sort_by:"aum_crores", sort_dir:"desc"}
+"Biggest banks in India"                            → filter, {company_type:["Private Bank","PSU Bank","Foreign Bank"], sort_by:"aum_crores", sort_dir:"desc"}
+"Largest banks"                                     → filter, {company_type:["Private Bank","PSU Bank","Foreign Bank"], sort_by:"aum_crores", sort_dir:"desc"}
+"Top 5 banks by AUM"                                → filter, {company_type:["Private Bank","PSU Bank","Foreign Bank"], sort_by:"aum_crores", sort_dir:"desc"}
 "Which NBFC is largest?"                            → filter, {company_type:["NBFC"], sort_by:"aum_crores", sort_dir:"desc"}
 "Vehicle loan"                                      → filter, {loan_type:["Vehicle Loan"]}
 "Gold loan"                                         → filter, {loan_type:["Gold Loan"]}
@@ -363,6 +375,11 @@ FORMATTING RULES:
 4. Format AUM as ₹X,XXX Cr — Indian comma format, no decimals, ₹ prefix. Example: ₹92,164 Cr not 92164.0.
 5. State filter = operating coverage (pan_india OR operating_states), NOT headquarters.
    Never say "no lenders headquartered in X" — the results may be pan-India lenders operating there.
+   CRITICAL — "By HQ state" in Stats = where lenders are HEADQUARTERED, not where they operate.
+   When a state filter was active, the "Total matching: N" already accounts for operating coverage — do NOT
+   recount or reinterpret using the "By HQ state" breakdown. Example: filter=Gujarat, Stats shows
+   "Total: 20, By HQ state: Maharashtra(18), Karnataka(2)" — these 20 lenders all OPERATE in Gujarat
+   even though most are headquartered elsewhere. Always say "Found 20 lenders" in that case.
 6. For compare: one bullet per lender — "**[Name]** — [Type], ₹X,XXX Cr, HQ [City], [key segments]"
    Never use flowing prose for compare. Always use bullets.
 7. For filter results: ALWAYS open with "Found [N] lenders" using the exact total from Stats.
