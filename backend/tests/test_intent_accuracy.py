@@ -226,3 +226,51 @@ class TestRangeQueryIntent:
         assert r["intent"] == "filter"
         assert f.get("established_year_min") == 1990
         assert f.get("established_year_max") == 2005
+
+
+# ===========================================================================
+# Refinement intent — LLM must emit only the NEW constraint
+# ===========================================================================
+
+class TestRefinementIntent:
+    """The backend merges last_filters + new filters. LLM must emit only the new constraint."""
+
+    def test_narrow_by_company_type(self, ai_client):
+        history = [
+            {"role": "user", "parts": ["Gold loan lenders in Maharashtra"]},
+            {"role": "model", "parts": ["Found 20 lenders in Maharashtra offering Gold Loans..."]},
+        ]
+        r = ai_client.parse_intent("Show only NBFCs from those", history)
+        assert r["intent"] == "filter"
+        f = _filters(r)
+        assert "NBFC" in f.get("company_type", [])
+
+    def test_narrow_by_state(self, ai_client):
+        history = [
+            {"role": "user", "parts": ["Show all home loan lenders"]},
+            {"role": "model", "parts": ["Found 45 lenders offering Home Loans..."]},
+        ]
+        r = ai_client.parse_intent("Now show only ones in Delhi", history)
+        assert r["intent"] == "filter"
+        f = _filters(r)
+        assert f.get("state") == "Delhi" or "Delhi" in f.get("states", [])
+
+    def test_narrow_by_aum(self, ai_client):
+        history = [
+            {"role": "user", "parts": ["NBFCs in Maharashtra"]},
+            {"role": "model", "parts": ["Found 30 NBFCs in Maharashtra..."]},
+        ]
+        r = ai_client.parse_intent("Show only large AUM from those results", history)
+        assert r["intent"] == "filter"
+        f = _filters(r)
+        assert "Large" in f.get("aum_category", [])
+
+    def test_narrow_by_loan_type(self, ai_client):
+        history = [
+            {"role": "user", "parts": ["Show all SFBs"]},
+            {"role": "model", "parts": ["Found 12 Small Finance Banks..."]},
+        ]
+        r = ai_client.parse_intent("Filter to only those with gold loan", history)
+        assert r["intent"] == "filter"
+        f = _filters(r)
+        assert "Gold Loan" in f.get("loan_type", [])
