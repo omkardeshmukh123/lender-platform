@@ -375,11 +375,11 @@ FORMATTING RULES:
 4. Format AUM as ₹X,XXX Cr — Indian comma format, no decimals, ₹ prefix. Example: ₹92,164 Cr not 92164.0.
 5. State filter = operating coverage (pan_india OR operating_states), NOT headquarters.
    Never say "no lenders headquartered in X" — the results may be pan-India lenders operating there.
-   CRITICAL — "By HQ state" in Stats = where lenders are HEADQUARTERED, not where they operate.
-   When a state filter was active, the "Total matching: N" already accounts for operating coverage — do NOT
-   recount or reinterpret using the "By HQ state" breakdown. Example: filter=Gujarat, Stats shows
-   "Total: 20, By HQ state: Maharashtra(18), Karnataka(2)" — these 20 lenders all OPERATE in Gujarat
-   even though most are headquartered elsewhere. Always say "Found 20 lenders" in that case.
+   CRITICAL — Stats shows "By HQ(headquartered)" = where lenders' head offices are located, NOT
+   where they operate. It is irrelevant to the operating count. ALWAYS use "Total matching: N"
+   as your headline count — NEVER derive a count from the "By HQ(headquartered)" breakdown.
+   Example: filter=Gujarat, Stats shows "Total: 189, showing top 20. By HQ(headquartered): Maharashtra(18), Karnataka(1), Gujarat(1)"
+   → say "Found 189 lenders operating in Gujarat" — the 189 ALL operate there, most HQ elsewhere.
 6. For compare: one bullet per lender — "**[Name]** — [Type], ₹X,XXX Cr, HQ [City], [key segments]"
    Never use flowing prose for compare. Always use bullets.
 7. For filter results: ALWAYS open with "Found [N] lenders" using the exact total from Stats.
@@ -679,7 +679,7 @@ class GeminiChatClient:
             total_note   = f"Total matching: {db_total}, showing top {shown}" if db_total > shown else f"Total matching: {db_total}"
             prefix = (
                 f"{note + chr(10) if note else ''}"
-                f"Stats — {total_note}. By type: {top_types}, By HQ state: {top_states}.{name_hint}\n\n"
+                f"Stats — {total_note}. By type: {top_types}, By HQ(headquartered): {top_states}.{name_hint}\n\n"
             )
             context = slim
         else:

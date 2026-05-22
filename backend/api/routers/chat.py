@@ -881,13 +881,25 @@ async def chat(
     # Pass 2 — generate answer strictly from DB records
     # ------------------------------------------------------------------
     lender_dicts = [l.model_dump() for l in lenders]
+
+    # For state-filtered queries, inject an explicit context note so the AI
+    # never confuses the HQ(headquartered) breakdown with operating coverage.
+    _answer_note = ""
+    if intent == "filter" and applied_filters and applied_filters.get("state"):
+        _s = applied_filters["state"]
+        _answer_note = (
+            f"FILTER ACTIVE: state={_s!r} — ALL {total_count} matching lenders "
+            f"OPERATE IN {_s} (most are headquartered elsewhere). "
+            f"The HQ(headquartered) breakdown below is irrelevant to the count."
+        )
+
     try:
         answer = await asyncio.wait_for(
             asyncio.get_running_loop().run_in_executor(
                 None,
                 lambda: client.generate_grounded_answer(
                     body.message, intent, lender_dicts, gemini_history,
-                    note="",
+                    note=_answer_note,
                     total_count=total_count,
                 ),
             ),
@@ -1143,6 +1155,16 @@ async def chat_stream(
     lender_dicts      = [l.model_dump() for l in lenders]
     suggested_actions = _generate_suggestions(intent, lenders, applied_filters or {})
 
+    _stream_note = ""
+    if intent == "filter" and applied_filters and applied_filters.get("state"):
+        _s = applied_filters["state"]
+        _stream_total = total_count if "total_count" in dir() else len(lenders)
+        _stream_note = (
+            f"FILTER ACTIVE: state={_s!r} — ALL {_stream_total} matching lenders "
+            f"OPERATE IN {_s} (most are headquartered elsewhere). "
+            f"The HQ(headquartered) breakdown below is irrelevant to the count."
+        )
+
     async def event_gen():
         meta = {
             "type":              "meta",
@@ -1164,7 +1186,7 @@ async def chat_stream(
             try:
                 for token in client.generate_grounded_answer_stream(
                     body.message, intent, lender_dicts, gemini_history,
-                    note="",
+                    note=_stream_note,
                 ):
                     loop.call_soon_threadsafe(queue.put_nowait, ("t", token))
             except Exception as exc:

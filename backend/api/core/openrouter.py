@@ -420,7 +420,7 @@ class OpenRouterChatClient:
             total_note   = f"Total matching: {db_total}, showing top {shown}" if db_total > shown else f"Total matching: {db_total}"
             prefix = (
                 f"{note + chr(10) if note else ''}"
-                f"Stats — {total_note}. By type: {top_types}, By HQ state: {top_states}.{name_hint}\n\n"
+                f"Stats — {total_note}. By type: {top_types}, By HQ(headquartered): {top_states}.{name_hint}\n\n"
             )
             context = slim
         else:

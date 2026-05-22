@@ -826,10 +826,10 @@ class TestPromptEngineering:
     """
 
     def test_answer_prompt_hq_state_critical_rule(self):
-        """Rule 5 must explicitly warn that By HQ state != operating coverage."""
+        """Rule 5 must explicitly warn that By HQ(headquartered) != operating coverage."""
         from api.core.gemini import _ANSWER_SYSTEM_PROMPT
-        assert "By HQ state" in _ANSWER_SYSTEM_PROMPT
-        assert "HEADQUARTERED" in _ANSWER_SYSTEM_PROMPT or "headquartered" in _ANSWER_SYSTEM_PROMPT
+        assert "By HQ(headquartered)" in _ANSWER_SYSTEM_PROMPT
+        assert "headquartered" in _ANSWER_SYSTEM_PROMPT.lower()
 
     def test_answer_prompt_hq_state_example(self):
         """Rule 5 must show a concrete example with Gujarat / Maharashtra HQ mismatch."""
@@ -909,5 +909,5 @@ class TestPromptEngineering:
         )
 
         assert "Total matching: 20" in prompt
-        assert "By HQ state:" in prompt
+        assert "By HQ(headquartered):" in prompt
         assert "Maharashtra" in prompt  # HQ states will show Maharashtra
