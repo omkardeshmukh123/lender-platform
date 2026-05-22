@@ -31,6 +31,7 @@ from api.routers.chat import (
     _inject_lender_context,
     _merge_filters,
     _quick_classify,
+    _search_lenders,
     _search_lenders_semantic,
     _search_with_broadening,
 )
@@ -764,3 +765,50 @@ class TestEdgeCases:
     def test_generate_suggestions_lender_detail_no_lenders(self):
         s = _generate_suggestions("lender_detail", [], {})
         assert isinstance(s, list)
+
+
+# ===========================================================================
+# Section 8: _search_lenders true COUNT(*) (2 tests)
+# ===========================================================================
+
+def _fake_row(i: int, loan: str = "Gold Loan") -> dict:
+    return {
+        "id": i, "company_name": f"Lender {i}", "company_type": "NBFC",
+        "rbi_category": None, "aum_crores": float(1000 - i), "aum_category": "Large",
+        "hq_state": "Maharashtra", "hq_location": "Mumbai", "pan_india": True,
+        "primary_loan_segments": [loan], "operating_states": [],
+        "website": None, "quality_score": 0.8, "employee_count": None,
+        "established_year": None, "is_listed": False, "phone": None,
+        "email": None, "operating_intensity": None, "business_sector": None,
+    }
+
+
+class TestSearchLendersCount:
+
+    @pytest.mark.asyncio
+    async def test_true_count_exceeds_page_size(self):
+        mock_pool = MagicMock()
+        mock_conn = AsyncMock()
+        mock_pool.acquire.return_value.__aenter__ = AsyncMock(return_value=mock_conn)
+        mock_pool.acquire.return_value.__aexit__ = AsyncMock(return_value=False)
+        mock_conn.fetch = AsyncMock(return_value=[_fake_row(i) for i in range(20)])
+        mock_conn.fetchval = AsyncMock(return_value=162)
+
+        lenders, true_count = await _search_lenders(mock_pool, {"loan_type": ["Gold Loan"]})
+
+        assert len(lenders) == 20
+        assert true_count == 162
+
+    @pytest.mark.asyncio
+    async def test_count_matches_when_fewer_than_page(self):
+        mock_pool = MagicMock()
+        mock_conn = AsyncMock()
+        mock_pool.acquire.return_value.__aenter__ = AsyncMock(return_value=mock_conn)
+        mock_pool.acquire.return_value.__aexit__ = AsyncMock(return_value=False)
+        mock_conn.fetch = AsyncMock(return_value=[_fake_row(i, "Home Loan") for i in range(3)])
+        mock_conn.fetchval = AsyncMock(return_value=3)
+
+        lenders, true_count = await _search_lenders(mock_pool, {"company_type": ["HFC"]})
+
+        assert len(lenders) == 3
+        assert true_count == 3

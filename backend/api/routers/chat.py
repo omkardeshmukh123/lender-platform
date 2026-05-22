@@ -134,6 +134,7 @@ class ChatResponse(BaseModel):
     answer:            str
     intent:            str
     lenders:           list[LenderResult] = Field(default_factory=list)
+    total_count:       int = 0
     applied_filters:   Optional[dict] = None
     unmatched_names:   list[str] = Field(default_factory=list)
     suggested_actions: list[str] = Field(default_factory=list)
@@ -396,7 +397,11 @@ async def _search_lenders(db: asyncpg.Pool, filters: dict) -> tuple[list[LenderR
             """,
             *params,
         )
-    return [_row_to_lender(r) for r in rows], len(rows)
+        true_count = await conn.fetchval(
+            f"SELECT COUNT(*) FROM lenders WHERE {where}",
+            *params,
+        )
+    return [_row_to_lender(r) for r in rows], int(true_count)
 
 
 async def _fetch_lenders_by_name(db: asyncpg.Pool, names: list[str]) -> list[LenderResult]:
@@ -812,16 +817,19 @@ async def chat(
         _lender_cache_key = make_key("chat:lenders", _lender_cache_params)
         _cached_lender_payload = await cache.get(_lender_cache_key)
 
+    total_count: int = 0
+
     if _cached_lender_payload is not None:
         logger.debug("chat: lender cache HIT")
         lenders = [LenderResult(**d) for d in _cached_lender_payload["lenders"]]
         applied_filters = _cached_lender_payload.get("applied_filters")
         unmatched_names = _cached_lender_payload.get("unmatched_names", [])
+        total_count = _cached_lender_payload.get("total_count", len(lenders))
     else:
         try:
             if intent == "filter":
                 merged = _merge_filters(body.last_filters, filters)
-                lenders, applied_filters, _, _ = await _search_with_broadening(db, merged)
+                lenders, applied_filters, _, total_count = await _search_with_broadening(db, merged)
                 lenders = _dedup_lenders(lenders)
 
             elif intent == "qa":
@@ -866,6 +874,7 @@ async def chat(
                 "lenders":         [l.model_dump() for l in lenders],
                 "applied_filters": applied_filters,
                 "unmatched_names": unmatched_names,
+                "total_count":     total_count,
             }, ttl=CacheTTL.MATCH)
 
     # ------------------------------------------------------------------
@@ -879,6 +888,7 @@ async def chat(
                 lambda: client.generate_grounded_answer(
                     body.message, intent, lender_dicts, gemini_history,
                     note="",
+                    total_count=total_count,
                 ),
             ),
             timeout=cfg.chat_answer_timeout_secs,
@@ -907,6 +917,7 @@ async def chat(
         answer=answer,
         intent=intent,
         lenders=lenders,
+        total_count=total_count,
         applied_filters=applied_filters,
         unmatched_names=unmatched_names,
         suggested_actions=suggested_actions,

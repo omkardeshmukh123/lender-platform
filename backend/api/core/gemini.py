@@ -158,6 +158,7 @@ RULES:
 - "greeting" / "out_of_scope" → leave all fields empty.
 - NEVER classify a lending-related query as "out_of_scope". If it mentions any loan, lender, NBFC,
   bank, credit, or finance topic, use "filter", "qa", or "concept" instead.
+- aum_min / aum_max are in CRORES — use the number exactly as stated. "5000 crores" → aum_min:5000. NEVER multiply or convert.
 
 PRONOUN RESOLUTION: If the message contains vague references ("that one", "the first one",
 "it", "those", "them", "the second"), look at recent conversation history to resolve which
@@ -296,6 +297,8 @@ EXAMPLES:
 "Vehicle loan"                                      → filter, {loan_type:["Vehicle Loan"]}
 "Gold loan"                                         → filter, {loan_type:["Gold Loan"]}
 "Home loan"                                         → filter, {loan_type:["Home Loan"]}
+"Lenders with AUM above 5000 crores"                → filter, {aum_min:5000}
+"NBFCs with AUM between 1000 and 10000 crores"      → filter, {company_type:["NBFC"], aum_min:1000, aum_max:10000}
 "Hello" / "Thanks" / "What can you do?"             → greeting
 "Who won the cricket match?" / "Weather today"      → out_of_scope
 """
@@ -363,7 +366,9 @@ FORMATTING RULES:
 6. For compare: one bullet per lender — "**[Name]** — [Type], ₹X,XXX Cr, HQ [City], [key segments]"
    Never use flowing prose for compare. Always use bullets.
 7. For filter results: open with count + context, name top 3 by AUM inline with ₹ and city.
-   If the Stats note says "Total matching: X, showing top Y", use X as the headline count.
+   The Stats note contains "Total matching: X" — ALWAYS use X as your headline count. NEVER invent a different number.
+   If Stats says "Total matching: 162, showing top 20" → say "Found 162 lenders" (describe top ones shown).
+   If Stats says "Total matching: 19" → say "Found 19 lenders".
    Example: "Found 47 NBFCs in Maharashtra (showing top 20). Biggest: **IIFL Finance** (₹92,164 Cr, Mumbai),
    **Kotak Mahindra Prime** (₹30,000 Cr, Mumbai), and **SBFC Finance** (₹7,200 Cr)."
 8. For empty/not-found: be specific — "I couldn't find [exact name] in our database yet —
@@ -452,6 +457,7 @@ class GeminiChatClient:
         lenders: list[dict],
         history: list[dict],
         note: str = "",
+        total_count: int = 0,
     ) -> str:
         """Generate a natural-language answer from the provided DB records."""
 
@@ -505,7 +511,7 @@ class GeminiChatClient:
                 )
             return "No results found. Try broadening your search — remove a filter or try a different state."
 
-        prompt = self._build_grounded_prompt(question, intent, lenders, note)
+        prompt = self._build_grounded_prompt(question, intent, lenders, note, total_count)
         history_contents = self._build_contents(history[-(6 * 2):], None)
         contents = history_contents + [
             types.Content(role="user", parts=[types.Part(text=prompt)])
@@ -545,6 +551,7 @@ class GeminiChatClient:
         lenders: list[dict],
         history: list[dict],
         note: str = "",
+        total_count: int = 0,
     ) -> Iterator[str]:
         """Streaming version of generate_grounded_answer. Yields text tokens."""
         if intent == "greeting":
@@ -602,7 +609,7 @@ class GeminiChatClient:
                 yield "No results found. Try broadening your search — remove a filter or try a different state."
             return
 
-        prompt = self._build_grounded_prompt(question, intent, lenders, note)
+        prompt = self._build_grounded_prompt(question, intent, lenders, note, total_count)
         history_contents = self._build_contents(history[-(6 * 2):], None)
         contents = history_contents + [
             types.Content(role="user", parts=[types.Part(text=prompt)])
@@ -633,7 +640,7 @@ class GeminiChatClient:
     # ------------------------------------------------------------------
 
     def _build_grounded_prompt(
-        self, question: str, intent: str, lenders: list[dict], note: str
+        self, question: str, intent: str, lenders: list[dict], note: str, total_count: int = 0,
     ) -> str:
         top_names = [
             l.get("company_name") or l.get("name", "")
@@ -644,14 +651,16 @@ class GeminiChatClient:
 
         if intent == "filter":
             slim         = [_slim_record(l) for l in lenders]
-            total        = len(lenders)
+            shown        = len(lenders)
+            db_total     = total_count if total_count > 0 else shown
             type_counts  = Counter(l.get("company_type") for l in lenders if l.get("company_type"))
             state_counts = Counter(l.get("hq_state")     for l in lenders if l.get("hq_state"))
             top_types    = ", ".join(f"{t}({c})" for t, c in type_counts.most_common(4))
             top_states   = ", ".join(f"{s}({c})" for s, c in state_counts.most_common(4))
+            total_note   = f"Total matching: {db_total}, showing top {shown}" if db_total > shown else f"Total matching: {db_total}"
             prefix = (
                 f"{note + chr(10) if note else ''}"
-                f"Stats — Total: {total}, By type: {top_types}, By HQ state: {top_states}.{name_hint}\n\n"
+                f"Stats — {total_note}. By type: {top_types}, By HQ state: {top_states}.{name_hint}\n\n"
             )
             context = slim
         else:
