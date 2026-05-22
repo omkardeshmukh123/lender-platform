@@ -308,6 +308,9 @@ EXAMPLES:
 "Top 5 banks by AUM"                                → filter, {company_type:["Private Bank","PSU Bank","Foreign Bank"], sort_by:"aum_crores", sort_dir:"desc"}
 "Which NBFC is largest?"                            → filter, {company_type:["NBFC"], sort_by:"aum_crores", sort_dir:"desc"}
 "Vehicle loan"                                      → filter, {loan_type:["Vehicle Loan"]}
+"Pre owned car loan" / "Used car loan" / "Car loan" → filter, {loan_type:["Vehicle Loan"]}
+"Housing loan" / "House loan"                       → filter, {loan_type:["Home Loan"]}
+"Bike loan" / "Two wheeler loan"                    → filter, {loan_type:["Two Wheeler Loan"]}
 "Gold loan"                                         → filter, {loan_type:["Gold Loan"]}
 "Home loan"                                         → filter, {loan_type:["Home Loan"]}
 "Lenders with AUM above 5000 crores"                → filter, {aum_min:5000}

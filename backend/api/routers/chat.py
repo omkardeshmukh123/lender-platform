@@ -61,6 +61,89 @@ _GREETING_TOKENS = frozenset({
     "what can you do", "what can you help", "help me", "how can you help",
 })
 
+# Common loan-type phrasings not in VALID_LOAN_TYPES — map to canonical value.
+# Prevents LLM from misclassifying obvious finance queries as out_of_scope.
+_LOAN_TYPE_SYNONYMS: dict[str, str] = {
+    # Vehicle / car
+    "car loan": "Vehicle Loan",
+    "car loans": "Vehicle Loan",
+    "auto loan": "Vehicle Loan",
+    "automobile loan": "Vehicle Loan",
+    "used car loan": "Vehicle Loan",
+    "pre owned car loan": "Vehicle Loan",
+    "pre-owned car loan": "Vehicle Loan",
+    "preowned car loan": "Vehicle Loan",
+    "second hand car loan": "Vehicle Loan",
+    "old car loan": "Vehicle Loan",
+    "four wheeler loan": "Vehicle Loan",
+    "4 wheeler loan": "Vehicle Loan",
+    "four-wheeler loan": "Vehicle Loan",
+    "commercial vehicle loan": "Vehicle Loan",
+    "truck loan": "Vehicle Loan",
+    # Two-wheeler
+    "bike loan": "Two Wheeler Loan",
+    "scooter loan": "Two Wheeler Loan",
+    "motorbike loan": "Two Wheeler Loan",
+    "two-wheeler loan": "Two Wheeler Loan",
+    # EV
+    "ev loan": "EV Loan",
+    "electric vehicle loan": "EV Loan",
+    "electric car loan": "EV Loan",
+    "ev loans": "EV Loan",
+    # Home
+    "housing loan": "Home Loan",
+    "house loan": "Home Loan",
+    "home purchase loan": "Home Loan",
+    "home finance": "Home Loan",
+    "residential loan": "Home Loan",
+    # Gold
+    "jewel loan": "Gold Loan",
+    "jewellery loan": "Gold Loan",
+    "jewelry loan": "Gold Loan",
+    "ornament loan": "Gold Loan",
+    # Personal
+    "salary loan": "Personal Loan",
+    "cash loan": "Personal Loan",
+    "instant loan": "Personal Loan",
+    "quick loan": "Personal Loan",
+    "emergency loan": "Personal Loan",
+    # Education
+    "study loan": "Education Loan",
+    "student loan": "Education Loan",
+    "education finance": "Education Loan",
+    # Agriculture
+    "tractor loan": "Agriculture Loan",
+    "kisan loan": "Agriculture Loan",
+    "farm loan": "Agriculture Loan",
+    "agri loan": "Agriculture Loan",
+    "agriculture finance": "Agriculture Loan",
+    # LAP
+    "lap": "Loan Against Property",
+    "mortgage loan": "Loan Against Property",
+    "property loan": "Loan Against Property",
+    # Supply chain
+    "supply chain": "Supply Chain Finance",
+    "invoice discounting": "Supply Chain Finance",
+    "dealer finance": "Supply Chain Finance",
+    # Working capital
+    "overdraft": "Working Capital",
+    "cash credit": "Working Capital",
+    "od limit": "Working Capital",
+    # Microfinance
+    "jlg loan": "Microfinance",
+    "shg loan": "Microfinance",
+    "mfi loan": "Microfinance",
+    "micro finance loan": "Microfinance",
+}
+
+# Words that prove a message is finance-related — used as a safety net after LLM
+_FINANCE_SIGNALS = frozenset({
+    "loan", "loans", "lender", "lenders", "nbfc", "bank", "banks", "credit",
+    "finance", "interest", "emi", "rate", "borrow", "lending", "financial",
+    "mortgage", "aum", "nbfcs", "sfb", "mfi", "rbi", "npa", "mudra",
+})
+
+
 def _is_similarity_query(message: str) -> bool:
     msg = message.lower()
     return any(t in msg for t in _SIMILARITY_TRIGGERS)
@@ -76,6 +159,16 @@ def _quick_classify(message: str) -> Optional[dict]:
     # Greetings / small talk
     if msg in _GREETING_TOKENS or any(msg.startswith(g) for g in ("hi ", "hello ", "hey ")):
         return {**empty, "intent": "greeting"}
+
+    # Synonym-matched loan phrases (before exact-match loop so "car loan" beats nothing)
+    lt_syn = _LOAN_TYPE_SYNONYMS.get(msg)
+    if lt_syn:
+        return {**empty, "intent": "filter", "filters": {"loan_type": [lt_syn]}}
+    # Also check "X lenders" suffix for synonyms
+    if msg.endswith(" lenders"):
+        lt_syn = _LOAN_TYPE_SYNONYMS.get(msg[: -len(" lenders")].rstrip())
+        if lt_syn:
+            return {**empty, "intent": "filter", "filters": {"loan_type": [lt_syn]}}
 
     # Single loan type (e.g. "gold loan", "home loan", "vehicle loan")
     for lt in VALID_LOAN_TYPES:
@@ -754,6 +847,13 @@ async def chat(
     compare_names = parsed.get("compare_names") or []
     detail_names  = parsed.get("detail_names") or []
 
+    # Safety net: LLM sometimes mis-fires out_of_scope on valid finance queries.
+    if intent == "out_of_scope":
+        msg_words = set(body.message.lower().split())
+        if msg_words & _FINANCE_SIGNALS:
+            logger.warning("chat: overriding out_of_scope→qa for finance message: %r", body.message[:80])
+            intent = "qa"
+
     # ------------------------------------------------------------------
     # Short-circuit for intents that need no DB lookup
     # ------------------------------------------------------------------
@@ -1073,6 +1173,13 @@ async def chat_stream(
     filters       = parsed.get("filters") or {}
     compare_names = parsed.get("compare_names") or []
     detail_names  = parsed.get("detail_names") or []
+
+    # Safety net: override spurious out_of_scope on finance messages
+    if intent == "out_of_scope":
+        msg_words = set(body.message.lower().split())
+        if msg_words & _FINANCE_SIGNALS:
+            logger.warning("chat_stream: overriding out_of_scope→qa for finance message: %r", body.message[:80])
+            intent = "qa"
 
     lenders: list[LenderResult] = []
     applied_filters: Optional[dict] = None
