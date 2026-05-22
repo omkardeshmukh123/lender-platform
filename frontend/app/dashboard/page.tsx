@@ -674,7 +674,7 @@ function DashboardContent() {
 
           {/* Skeleton loaders */}
           {loading ? (
-            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div className={`grid sm:grid-cols-2 ${chatOpen ? 'xl:grid-cols-2' : 'xl:grid-cols-3'} gap-5`}>
               {Array.from({ length: 12 }).map((_, i) => (
                 <div key={i} className="bg-white rounded-2xl p-5 animate-pulse"
                      style={{ border: '1px solid #E6F4F4', boxShadow: '0 2px 6px rgba(26,112,112,0.05)' }}>
@@ -693,7 +693,7 @@ function DashboardContent() {
           ) : transformedLenders.length > 0 ? (
             <>
               <ErrorBoundary label="lender-grid">
-              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              <div className={`grid sm:grid-cols-2 ${chatOpen ? 'xl:grid-cols-2' : 'xl:grid-cols-3'} gap-5`}>
                 {transformedLenders.map((lender, index) => (
                   <LenderCard
                     key={lender.id}
@@ -768,7 +768,7 @@ function DashboardContent() {
                     </span>
                     <div className="h-px flex-1 bg-gray-200" />
                   </div>
-                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className={`grid sm:grid-cols-2 ${chatOpen ? 'xl:grid-cols-2' : 'xl:grid-cols-3'} gap-4`}>
                     {stubs.map(stub => (
                       <StubCard key={stub.id} stub={stub} userEmail={user?.email ?? null} />
                     ))}
@@ -807,7 +807,7 @@ function DashboardContent() {
                     </span>
                     <div className="h-px flex-1 bg-gray-200" />
                   </div>
-                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className={`grid sm:grid-cols-2 ${chatOpen ? 'xl:grid-cols-2' : 'xl:grid-cols-3'} gap-4`}>
                     {stubs.map(stub => (
                       <StubCard key={stub.id} stub={stub} userEmail={user?.email ?? null} />
                     ))}
