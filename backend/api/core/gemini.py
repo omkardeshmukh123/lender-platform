@@ -303,6 +303,7 @@ EXAMPLES:
 "Which lenders have highest AUM?"                   → filter, {sort_by:"aum_crores", sort_dir:"desc"}
 "Top NBFCs by AUM"                                  → filter, {company_type:["NBFC"], sort_by:"aum_crores", sort_dir:"desc"}
 "Biggest banks in India"                            → filter, {company_type:["Private Bank","PSU Bank","Foreign Bank"], sort_by:"aum_crores", sort_dir:"desc"}
+"Largest banks in India"                            → filter, {company_type:["Private Bank","PSU Bank","Foreign Bank"], sort_by:"aum_crores", sort_dir:"desc"}
 "Largest banks"                                     → filter, {company_type:["Private Bank","PSU Bank","Foreign Bank"], sort_by:"aum_crores", sort_dir:"desc"}
 "Top 5 banks by AUM"                                → filter, {company_type:["Private Bank","PSU Bank","Foreign Bank"], sort_by:"aum_crores", sort_dir:"desc"}
 "Which NBFC is largest?"                            → filter, {company_type:["NBFC"], sort_by:"aum_crores", sort_dir:"desc"}
@@ -378,6 +379,9 @@ FORMATTING RULES:
    CRITICAL — Stats shows "By HQ(headquartered)" = where lenders' head offices are located, NOT
    where they operate. It is irrelevant to the operating count. ALWAYS use "Total matching: N"
    as your headline count — NEVER derive a count from the "By HQ(headquartered)" breakdown.
+   Each slim record has an "operating_states" field — use it to describe WHICH lenders operate in a
+   state, but NEVER count from the slim records (they are only a sample of 20). The Stats total is
+   the authoritative count of ALL matching lenders, including those not shown.
    Example: filter=Gujarat, Stats shows "Total: 189, showing top 20. By HQ(headquartered): Maharashtra(18), Karnataka(1), Gujarat(1)"
    → say "Found 189 lenders operating in Gujarat" — the 189 ALL operate there, most HQ elsewhere.
 6. For compare: one bullet per lender — "**[Name]** — [Type], ₹X,XXX Cr, HQ [City], [key segments]"
@@ -720,6 +724,7 @@ def _slim_record(l: dict) -> dict:
         "hq_state":            l.get("hq_state"),
         "hq_location":         l.get("hq_location"),
         "pan_india":           l.get("pan_india"),
+        "operating_states":    l.get("operating_states"),  # needed so AI can verify state coverage
         "loan_segments":       l.get("primary_loan_segments"),
         "operating_intensity": l.get("operating_intensity"),
         "business_sector":     l.get("business_sector"),
