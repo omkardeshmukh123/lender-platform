@@ -23,7 +23,7 @@ _KEY_DIGEST_LENGTH = int(os.environ.get("CACHE_KEY_LENGTH", "32"))
 
 class CacheTTL(IntEnum):
     MATCH  = 300
-    SEARCH = 120
+    SEARCH = 300
     DETAIL = 600
     STATS  = 300
     HEALTH = 30

@@ -155,14 +155,14 @@ async function fetchFromAPI(f: MultiFilters, pg: number): Promise<LenderSearchRe
   params.set('limit', String(PAGE_SIZE))
 
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), 30_000)
+  const timer = setTimeout(() => controller.abort(), 50_000)
   try {
     const res = await fetch(`${API_URL}/v1/lenders/search?${params}`, { signal: controller.signal })
     if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`)
     return res.json() as Promise<LenderSearchResponse>
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError')
-      throw new Error('Server is waking up — please wait a moment and try again.')
+      throw new Error('Server is waking up — AbortError')
     throw err
   } finally {
     clearTimeout(timer)
@@ -449,7 +449,7 @@ function DashboardContent() {
   }, [filters, page, router])
 
   // ── Main fetch (stale-while-revalidate) ─────────────────────
-  const fetchLenders = useCallback(async (f: MultiFilters, pg: number) => {
+  const fetchLenders = useCallback(async (f: MultiFilters, pg: number, retryCount = 0) => {
     const thisRequestId = ++requestIdRef.current
     const cacheKey = `m360_${filtersToParams(f, pg)}`
     let loadedFromCache = false
@@ -489,16 +489,22 @@ function DashboardContent() {
       if (thisRequestId !== requestIdRef.current) return
       const msg = err instanceof Error ? err.message : 'Unknown error'
       console.error('[Dashboard] API error:', msg)
-      const isWakeUp = msg.includes('waking up')
-      setApiError(
-        isWakeUp
-          ? 'Server is waking up — this takes ~30s on first load. Click Retry in a moment.'
-          : 'Unable to reach the server. Please check your connection and try again.'
-      )
-      // Keep stale cache visible if we already populated it — don't blank the screen
-      if (!loadedFromCache) {
-        setLenders([])
-        setTotalCount(0)
+      const isWakeUp = msg.includes('waking up') || msg.includes('AbortError') || msg.includes('Failed to fetch')
+      // Auto-retry once on cold-start / transient failures before showing the error
+      if (isWakeUp && retryCount < 1) {
+        setApiError('Server is warming up… retrying in 8 seconds.')
+        const idAtError = thisRequestId
+        setTimeout(() => {
+          if (requestIdRef.current === idAtError) fetchLenders(f, pg, retryCount + 1)
+        }, 8_000)
+        if (!loadedFromCache) { setLenders([]); setTotalCount(0) }
+      } else {
+        setApiError(
+          isWakeUp
+            ? 'Server is starting up — please click Retry in a moment.'
+            : 'Unable to reach the server. Please check your connection and try again.'
+        )
+        if (!loadedFromCache) { setLenders([]); setTotalCount(0) }
       }
     } finally {
       if (thisRequestId === requestIdRef.current) {

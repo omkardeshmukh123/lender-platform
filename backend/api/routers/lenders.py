@@ -357,21 +357,6 @@ async def search_lenders(
                 ),
                 cnt AS (
                     SELECT COUNT(*)::int AS total FROM matched
-                ),
-                pc AS (
-                    SELECT lender_id, COUNT(*)::int AS policy_count
-                    FROM policies
-                    WHERE is_active = true AND approval_status = 'approved'
-                      AND lender_id IN (SELECT id FROM matched)
-                    GROUP BY lender_id
-                ),
-                mir AS (
-                    SELECT lender_id, MIN(interest_rate_min)::float AS min_interest_rate
-                    FROM policies_enriched
-                    WHERE is_active = true AND approval_status = 'approved'
-                      AND interest_rate_min IS NOT NULL
-                      AND lender_id IN (SELECT id FROM matched)
-                    GROUP BY lender_id
                 )
                 SELECT
                     l.id, l.company_name, l.company_type, l.rbi_category,
@@ -381,12 +366,21 @@ async def search_lenders(
                     l.quality_score, l.employee_count, l.established_year,
                     l.is_listed, l.phone, l.email, l.last_year_revenue,
                     (SELECT total FROM cnt) AS _total_count,
-                    COALESCE(pc.policy_count, 0) AS policy_count,
-                    mir.min_interest_rate
+                    (SELECT COUNT(*)::int
+                     FROM policies p
+                     WHERE p.lender_id = l.id
+                       AND p.is_active = true
+                       AND p.approval_status = 'approved'
+                    ) AS policy_count,
+                    (SELECT MIN(p.interest_rate_min)::float
+                     FROM policies p
+                     WHERE p.lender_id = l.id
+                       AND p.is_active = true
+                       AND p.approval_status = 'approved'
+                       AND p.interest_rate_min IS NOT NULL
+                    ) AS min_interest_rate
                 FROM lenders l
                 JOIN matched m ON m.id = l.id
-                LEFT JOIN pc  ON pc.lender_id  = l.id
-                LEFT JOIN mir ON mir.lender_id = l.id
                 {sort_sql}
                 LIMIT ${idx} OFFSET ${idx + 1}
                 """,
@@ -407,22 +401,20 @@ async def search_lenders(
                         l.primary_loan_segments, l.operating_states, l.website,
                         l.quality_score, l.employee_count, l.established_year,
                         l.is_listed, l.phone, l.email, l.last_year_revenue,
-                        COALESCE(pc.policy_count, 0) AS policy_count,
-                        mir.min_interest_rate
+                        (SELECT COUNT(*)::int
+                         FROM policies p
+                         WHERE p.lender_id = l.id
+                           AND p.is_active = true
+                           AND p.approval_status = 'approved'
+                        ) AS policy_count,
+                        (SELECT MIN(p.interest_rate_min)::float
+                         FROM policies p
+                         WHERE p.lender_id = l.id
+                           AND p.is_active = true
+                           AND p.approval_status = 'approved'
+                           AND p.interest_rate_min IS NOT NULL
+                        ) AS min_interest_rate
                     FROM lenders l
-                    LEFT JOIN (
-                        SELECT lender_id, COUNT(*)::int AS policy_count
-                        FROM policies
-                        WHERE is_active = true AND approval_status = 'approved'
-                        GROUP BY lender_id
-                    ) pc ON pc.lender_id = l.id
-                    LEFT JOIN (
-                        SELECT lender_id, MIN(interest_rate_min)::float AS min_interest_rate
-                        FROM policies_enriched
-                        WHERE is_active = true AND approval_status = 'approved'
-                          AND interest_rate_min IS NOT NULL
-                        GROUP BY lender_id
-                    ) mir ON mir.lender_id = l.id
                     WHERE l.approval_status = 'approved'
                       AND similarity(l.company_name, $1) > 0.25
                       AND l.id <> ALL($2::bigint[])
