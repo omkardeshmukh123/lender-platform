@@ -238,6 +238,14 @@ LOAN TYPE SYNONYMS — map to nearest VALID loan_type value:
 - flexi loan / flex loan / revolving credit line / dropline OD / flexi credit → Working Capital
 - HCV loan / LCV loan / commercial vehicle loan / transport vehicle / fleet vehicle → Vehicle Loan
 
+MULTI-STATE RULE: When the user mentions TWO OR MORE states/cities, put ALL resolved state names
+in filters.states (array), not filters.state (single string). Use filters.state only for a single state.
+Examples:
+- "Gold loan lenders in Maharashtra and Delhi"  → filter, {loan_type:["Gold Loan"], states:["Maharashtra","Delhi"]}
+- "NBFCs in Gujarat or Rajasthan"               → filter, {company_type:["NBFC"], states:["Gujarat","Rajasthan"]}
+- "SFBs in UP and Bihar"                        → filter, {company_type:["Small Finance Bank"], states:["Uttar Pradesh","Bihar"]}
+- "Home loan lenders in Mumbai and Chennai"     → filter, {loan_type:["Home Loan"], states:["Maharashtra","Tamil Nadu"]}
+
 CITY → STATE MAPPING — when user mentions a city, always convert to the correct state in filters.state:
 - Mumbai / Navi Mumbai / Thane / Nagpur / Pune / Nashik → Maharashtra
 - Delhi / New Delhi / Gurugram / Gurgaon / Noida / Faridabad / NCR → Delhi
@@ -265,6 +273,9 @@ CITY → STATE MAPPING — when user mentions a city, always convert to the corr
 - Shimla → Himachal Pradesh
 
 EXAMPLES:
+"Gold loan lenders in Maharashtra and Delhi"    → filter, {loan_type:["Gold Loan"], states:["Maharashtra","Delhi"]}
+"NBFCs in Gujarat or Rajasthan"                 → filter, {company_type:["NBFC"], states:["Gujarat","Rajasthan"]}
+"SFBs in UP and Bihar"                          → filter, {company_type:["Small Finance Bank"], states:["Uttar Pradesh","Bihar"]}
 "What NBFCs are in Gujarat?"                        → filter, {company_type:["NBFC"], state:"Gujarat"}
 "Show lenders in Mumbai"                            → filter, {state:"Maharashtra"}
 "SFBs operating in UP"                              → filter, {company_type:["Small Finance Bank"], state:"Uttar Pradesh"}
@@ -332,6 +343,7 @@ _INTENT_SCHEMA = {
                 "q":                   {"type": "STRING"},
                 "loan_type":           {"type": "ARRAY", "items": {"type": "STRING"}},
                 "state":               {"type": "STRING"},
+                "states":              {"type": "ARRAY", "items": {"type": "STRING"}},
                 "company_type":        {"type": "ARRAY", "items": {"type": "STRING"}},
                 "aum_category":        {"type": "ARRAY", "items": {"type": "STRING"}},
                 "aum_min":             {"type": "NUMBER"},

@@ -817,6 +817,44 @@ class TestSearchLendersCount:
 
 
 # ===========================================================================
+# Section 10a: _search_lenders multi-state filter (2 tests)
+# ===========================================================================
+
+class TestSearchLendersMultiState:
+
+    def _make_pool(self):
+        mock_conn = AsyncMock()
+        mock_conn.fetch = AsyncMock(return_value=[])
+        mock_conn.fetchval = AsyncMock(return_value=0)
+        mock_pool = AsyncMock()
+        mock_pool.acquire = MagicMock(return_value=AsyncMock(
+            __aenter__=AsyncMock(return_value=mock_conn),
+            __aexit__=AsyncMock(return_value=False),
+        ))
+        return mock_pool, mock_conn
+
+    def test_multi_state_filter_or_logic(self):
+        import asyncio
+        async def _run():
+            pool, conn = self._make_pool()
+            await _search_lenders(pool, {"states": ["Delhi", "Maharashtra"]})
+            sql = conn.fetch.call_args[0][0]
+            assert sql.count("ANY(operating_states)") == 2
+            assert "pan_india" in sql
+        asyncio.run(_run())
+
+    def test_single_state_backward_compat(self):
+        import asyncio
+        async def _run():
+            pool, conn = self._make_pool()
+            await _search_lenders(pool, {"state": "Gujarat"})
+            sql = conn.fetch.call_args[0][0]
+            assert "ANY(operating_states)" in sql
+            assert "pan_india" in sql
+        asyncio.run(_run())
+
+
+# ===========================================================================
 # Section 10: Prompt-engineering regression tests (P4/P8/P10/P5 bugs)
 # ===========================================================================
 

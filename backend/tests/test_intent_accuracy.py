@@ -155,3 +155,29 @@ class TestMultiFilter:
         assert _filters(p).get("pan_india") is not True, (
             f"pan_india should not be True for a state query: {_filters(p)}"
         )
+
+
+# ===========================================================================
+# Multi-state filter (states array)
+# ===========================================================================
+
+class TestMultiStateIntent:
+
+    def test_two_states_produces_states_array(self, ai_client):
+        r = _parse(ai_client, "Gold loan lenders in Maharashtra and Delhi")
+        f = _filters(r)
+        assert r["intent"] == "filter"
+        assert "states" in f, "Expected states array, got: " + str(f)
+        assert set(f["states"]) == {"Maharashtra", "Delhi"}
+
+    def test_two_states_or_phrasing(self, ai_client):
+        r = _parse(ai_client, "NBFCs in Gujarat or Rajasthan")
+        f = _filters(r)
+        assert r["intent"] == "filter"
+        assert set(f.get("states", [])) == {"Gujarat", "Rajasthan"}
+
+    def test_city_pair_resolves_to_states(self, ai_client):
+        r = _parse(ai_client, "Home loan lenders in Mumbai and Chennai")
+        f = _filters(r)
+        assert r["intent"] == "filter"
+        assert set(f.get("states", [])) == {"Maharashtra", "Tamil Nadu"}

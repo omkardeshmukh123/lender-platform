@@ -50,7 +50,7 @@ _QA_STOP = {
 }
 
 # Filters dropped when broadening a zero-result query (most restrictive first)
-_BROADENING_DROP_ORDER = ["state", "aum_category", "aum_min", "aum_max", "operating_intensity", "pan_india", "business_sector", "loan_type", "company_type"]
+_BROADENING_DROP_ORDER = ["state", "states", "aum_category", "aum_min", "aum_max", "operating_intensity", "pan_india", "business_sector", "loan_type", "company_type"]
 
 _SIMILARITY_TRIGGERS = frozenset({"similar to", "like ", "more like", "similar lenders", "lenders like", "lenders similar"})
 
@@ -415,8 +415,17 @@ async def _search_lenders(db: asyncpg.Pool, filters: dict) -> tuple[list[LenderR
         params.append(company_type)
         idx += 1
 
-    state = filters.get("state")
-    if state:
+    state  = filters.get("state")
+    states = filters.get("states") or []
+    if states:
+        # OR across all states: lender must operate in at least one
+        state_conds = " OR ".join(
+            f"${idx + i} = ANY(operating_states)" for i in range(len(states))
+        )
+        conditions.append(f"(pan_india = true OR {state_conds})")
+        params.extend(states)
+        idx += len(states)
+    elif state:
         conditions.append(f"(pan_india = true OR ${idx} = ANY(operating_states))")
         params.append(state)
         idx += 1
@@ -985,13 +994,22 @@ async def chat(
     # For state-filtered queries, inject an explicit context note so the AI
     # never confuses the HQ(headquartered) breakdown with operating coverage.
     _answer_note = ""
-    if intent == "filter" and applied_filters and applied_filters.get("state"):
-        _s = applied_filters["state"]
-        _answer_note = (
-            f"FILTER ACTIVE: state={_s!r} — ALL {total_count} matching lenders "
-            f"OPERATE IN {_s} (most are headquartered elsewhere). "
-            f"The HQ(headquartered) breakdown below is irrelevant to the count."
-        )
+    if intent == "filter" and applied_filters:
+        _s = applied_filters.get("state")
+        _ss = applied_filters.get("states") or []
+        if _s:
+            _answer_note = (
+                f"FILTER ACTIVE: state={_s!r} — ALL {total_count} matching lenders "
+                f"OPERATE IN {_s} (most are headquartered elsewhere). "
+                f"The HQ(headquartered) breakdown below is irrelevant to the count."
+            )
+        elif _ss:
+            _states_str = " or ".join(_ss)
+            _answer_note = (
+                f"FILTER ACTIVE: states={_ss!r} — ALL {total_count} matching lenders "
+                f"OPERATE IN {_states_str} (most are headquartered elsewhere). "
+                f"The HQ(headquartered) breakdown below is irrelevant to the count."
+            )
 
     try:
         answer = await asyncio.wait_for(
@@ -1263,14 +1281,23 @@ async def chat_stream(
     suggested_actions = _generate_suggestions(intent, lenders, applied_filters or {})
 
     _stream_note = ""
-    if intent == "filter" and applied_filters and applied_filters.get("state"):
-        _s = applied_filters["state"]
+    if intent == "filter" and applied_filters:
+        _s = applied_filters.get("state")
+        _ss = applied_filters.get("states") or []
         _stream_total = total_count if "total_count" in dir() else len(lenders)
-        _stream_note = (
-            f"FILTER ACTIVE: state={_s!r} — ALL {_stream_total} matching lenders "
-            f"OPERATE IN {_s} (most are headquartered elsewhere). "
-            f"The HQ(headquartered) breakdown below is irrelevant to the count."
-        )
+        if _s:
+            _stream_note = (
+                f"FILTER ACTIVE: state={_s!r} — ALL {_stream_total} matching lenders "
+                f"OPERATE IN {_s} (most are headquartered elsewhere). "
+                f"The HQ(headquartered) breakdown below is irrelevant to the count."
+            )
+        elif _ss:
+            _states_str = " or ".join(_ss)
+            _stream_note = (
+                f"FILTER ACTIVE: states={_ss!r} — ALL {_stream_total} matching lenders "
+                f"OPERATE IN {_states_str} (most are headquartered elsewhere). "
+                f"The HQ(headquartered) breakdown below is irrelevant to the count."
+            )
 
     async def event_gen():
         meta = {
