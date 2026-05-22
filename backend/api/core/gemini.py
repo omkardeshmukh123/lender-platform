@@ -365,10 +365,12 @@ FORMATTING RULES:
    Never say "no lenders headquartered in X" — the results may be pan-India lenders operating there.
 6. For compare: one bullet per lender — "**[Name]** — [Type], ₹X,XXX Cr, HQ [City], [key segments]"
    Never use flowing prose for compare. Always use bullets.
-7. For filter results: open with count + context, name top 3 by AUM inline with ₹ and city.
-   The Stats note contains "Total matching: X" — ALWAYS use X as your headline count. NEVER invent a different number.
-   If Stats says "Total matching: 162, showing top 20" → say "Found 162 lenders" (describe top ones shown).
+7. For filter results: ALWAYS open with "Found [N] lenders" using the exact total from Stats.
+   NEVER start with "Here are", "Below are", "These are", "I found", "There are", or any other phrasing.
+   The Stats note contains "Total matching: X" — use X as your headline count. NEVER invent a different number.
+   If Stats says "Total matching: 162, showing top 20" → say "Found 162 lenders (showing top 20)".
    If Stats says "Total matching: 19" → say "Found 19 lenders".
+   After the opening line, name top 3 by AUM inline with ₹ and city in one sentence.
    Example: "Found 47 NBFCs in Maharashtra (showing top 20). Biggest: **IIFL Finance** (₹92,164 Cr, Mumbai),
    **Kotak Mahindra Prime** (₹30,000 Cr, Mumbai), and **SBFC Finance** (₹7,200 Cr)."
 8. For empty/not-found: be specific — "I couldn't find [exact name] in our database yet —

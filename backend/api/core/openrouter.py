@@ -141,7 +141,7 @@ class OpenRouterChatClient:
             },
         )
         self._model = model or os.environ.get("OPENROUTER_MODEL", "deepseek/deepseek-chat")
-        self._retries = int(os.environ.get("OPENROUTER_CHAT_RETRIES", "2"))
+        self._retries = int(os.environ.get("OPENROUTER_CHAT_RETRIES", "3"))
         logger.info("OpenRouterChatClient initialized (model=%s, retries=%d)", self._model, self._retries)
 
     # ------------------------------------------------------------------
@@ -189,6 +189,16 @@ class OpenRouterChatClient:
             logger.warning("OpenRouter returned empty intent response")
             return {"intent": "qa", "filters": {}, "compare_names": [], "detail_names": []}
 
+        # Strip markdown code fences — some models wrap JSON in ```json…``` despite json_object mode
+        stripped = raw.strip()
+        if stripped.startswith("```"):
+            newline = stripped.find("\n")
+            if newline != -1:
+                stripped = stripped[newline + 1:]
+            if stripped.endswith("```"):
+                stripped = stripped[:-3]
+            raw = stripped.strip()
+
         try:
             data = json.loads(raw)
         except (json.JSONDecodeError, TypeError) as exc:
@@ -211,6 +221,7 @@ class OpenRouterChatClient:
         lenders: list[dict],
         history: list[dict],
         note: str = "",
+        total_count: int = 0,
     ) -> str:
         if intent == "greeting":
             return (
@@ -261,7 +272,7 @@ class OpenRouterChatClient:
                 )
             return "No results found. Try broadening your search — remove a filter or try a different state."
 
-        prompt = self._build_grounded_prompt(question, intent, lenders, note)
+        prompt = self._build_grounded_prompt(question, intent, lenders, note, total_count)
         messages = self._to_messages(history[-(6 * 2):])
         messages.append({"role": "user", "content": prompt})
 
@@ -278,7 +289,10 @@ class OpenRouterChatClient:
 
         try:
             response = _call_with_retry(_call, attempts=self._retries, delay=2.0, label="grounded_answer")
-            text = response.choices[0].message.content or ""
+            choice = response.choices[0]
+            if choice.finish_reason == "length":
+                logger.warning("OpenRouter grounded_answer hit max_tokens — response may be truncated")
+            text = choice.message.content or ""
             if not text:
                 logger.warning("OpenRouter returned empty answer response")
                 return "I couldn't generate an answer. Please try again."
@@ -298,6 +312,7 @@ class OpenRouterChatClient:
         lenders: list[dict],
         history: list[dict],
         note: str = "",
+        total_count: int = 0,
     ) -> Iterator[str]:
         if intent == "greeting":
             yield (
@@ -355,7 +370,7 @@ class OpenRouterChatClient:
                 yield "No results found. Try broadening your search — remove a filter or try a different state."
             return
 
-        prompt = self._build_grounded_prompt(question, intent, lenders, note)
+        prompt = self._build_grounded_prompt(question, intent, lenders, note, total_count)
         messages = self._to_messages(history[-(6 * 2):])
         messages.append({"role": "user", "content": prompt})
 
@@ -385,7 +400,7 @@ class OpenRouterChatClient:
     # ------------------------------------------------------------------
 
     def _build_grounded_prompt(
-        self, question: str, intent: str, lenders: list[dict], note: str
+        self, question: str, intent: str, lenders: list[dict], note: str, total_count: int = 0,
     ) -> str:
         top_names = [
             l.get("company_name") or l.get("name", "")
@@ -396,14 +411,16 @@ class OpenRouterChatClient:
 
         if intent == "filter":
             slim         = [_slim_record(l) for l in lenders]
-            total        = len(lenders)
+            shown        = len(lenders)
+            db_total     = total_count if total_count > 0 else shown
             type_counts  = Counter(l.get("company_type") for l in lenders if l.get("company_type"))
             state_counts = Counter(l.get("hq_state")     for l in lenders if l.get("hq_state"))
             top_types    = ", ".join(f"{t}({c})" for t, c in type_counts.most_common(4))
             top_states   = ", ".join(f"{s}({c})" for s, c in state_counts.most_common(4))
+            total_note   = f"Total matching: {db_total}, showing top {shown}" if db_total > shown else f"Total matching: {db_total}"
             prefix = (
                 f"{note + chr(10) if note else ''}"
-                f"Stats — Total: {total}, By type: {top_types}, By HQ state: {top_states}.{name_hint}\n\n"
+                f"Stats — {total_note}. By type: {top_types}, By HQ state: {top_states}.{name_hint}\n\n"
             )
             context = slim
         else:
