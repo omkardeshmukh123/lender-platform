@@ -181,3 +181,48 @@ class TestMultiStateIntent:
         f = _filters(r)
         assert r["intent"] == "filter"
         assert set(f.get("states", [])) == {"Maharashtra", "Tamil Nadu"}
+
+
+# ===========================================================================
+# Range queries — AUM and established_year
+# ===========================================================================
+
+class TestRangeQueryIntent:
+
+    def test_aum_range(self, ai_client):
+        r = _parse(ai_client, "NBFCs with AUM between 500 and 5000 crores")
+        f = _filters(r)
+        assert r["intent"] == "filter"
+        assert f.get("aum_min") == 500
+        assert f.get("aum_max") == 5000
+
+    def test_aum_above(self, ai_client):
+        r = _parse(ai_client, "Lenders with AUM above 10000 crores")
+        f = _filters(r)
+        assert r["intent"] == "filter"
+        assert f.get("aum_min") == 10000
+
+    def test_aum_below(self, ai_client):
+        r = _parse(ai_client, "Small lenders with AUM below 1000 crores")
+        f = _filters(r)
+        assert r["intent"] == "filter"
+        assert f.get("aum_max") == 1000
+
+    def test_established_after(self, ai_client):
+        r = _parse(ai_client, "Lenders established after 2010")
+        f = _filters(r)
+        assert r["intent"] == "filter"
+        assert f.get("established_year_min") == 2011
+
+    def test_established_before(self, ai_client):
+        r = _parse(ai_client, "NBFCs founded before 2000")
+        f = _filters(r)
+        assert r["intent"] == "filter"
+        assert f.get("established_year_max") == 1999
+
+    def test_established_between(self, ai_client):
+        r = _parse(ai_client, "Banks established between 1990 and 2005")
+        f = _filters(r)
+        assert r["intent"] == "filter"
+        assert f.get("established_year_min") == 1990
+        assert f.get("established_year_max") == 2005

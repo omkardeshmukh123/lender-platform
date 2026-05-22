@@ -50,7 +50,13 @@ _QA_STOP = {
 }
 
 # Filters dropped when broadening a zero-result query (most restrictive first)
-_BROADENING_DROP_ORDER = ["state", "states", "aum_category", "aum_min", "aum_max", "operating_intensity", "pan_india", "business_sector", "loan_type", "company_type"]
+_BROADENING_DROP_ORDER = [
+    "state", "states", "aum_category",
+    "aum_min", "aum_max",
+    "established_year_min", "established_year_max",
+    "operating_intensity", "pan_india", "business_sector",
+    "loan_type", "company_type",
+]
 
 _SIMILARITY_TRIGGERS = frozenset({"similar to", "like ", "more like", "similar lenders", "lenders like", "lenders similar"})
 
@@ -453,6 +459,16 @@ async def _search_lenders(db: asyncpg.Pool, filters: dict) -> tuple[list[LenderR
     if filters.get("aum_max") is not None:
         conditions.append(f"aum_crores <= ${idx}")
         params.append(float(filters["aum_max"]))
+        idx += 1
+
+    if filters.get("established_year_min") is not None:
+        conditions.append(f"established_year >= ${idx}")
+        params.append(int(filters["established_year_min"]))
+        idx += 1
+
+    if filters.get("established_year_max") is not None:
+        conditions.append(f"established_year <= ${idx}")
+        params.append(int(filters["established_year_max"]))
         idx += 1
 
     if filters.get("pan_india") is not None:

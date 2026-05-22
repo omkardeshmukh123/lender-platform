@@ -855,6 +855,62 @@ class TestSearchLendersMultiState:
 
 
 # ===========================================================================
+# Section 10b: _search_lenders range filters (4 tests)
+# ===========================================================================
+
+class TestSearchLendersRanges:
+
+    def _make_pool(self):
+        mock_conn = AsyncMock()
+        mock_conn.fetch = AsyncMock(return_value=[])
+        mock_conn.fetchval = AsyncMock(return_value=0)
+        mock_pool = AsyncMock()
+        mock_pool.acquire = MagicMock(return_value=AsyncMock(
+            __aenter__=AsyncMock(return_value=mock_conn),
+            __aexit__=AsyncMock(return_value=False),
+        ))
+        return mock_pool, mock_conn
+
+    def test_established_year_min(self):
+        import asyncio
+        async def _run():
+            pool, conn = self._make_pool()
+            await _search_lenders(pool, {"established_year_min": 2010})
+            sql = conn.fetch.call_args[0][0]
+            assert "established_year >=" in sql
+        asyncio.run(_run())
+
+    def test_established_year_max(self):
+        import asyncio
+        async def _run():
+            pool, conn = self._make_pool()
+            await _search_lenders(pool, {"established_year_max": 2000})
+            sql = conn.fetch.call_args[0][0]
+            assert "established_year <=" in sql
+        asyncio.run(_run())
+
+    def test_established_year_range(self):
+        import asyncio
+        async def _run():
+            pool, conn = self._make_pool()
+            await _search_lenders(pool, {"established_year_min": 1990, "established_year_max": 2005})
+            sql = conn.fetch.call_args[0][0]
+            assert "established_year >=" in sql
+            assert "established_year <=" in sql
+        asyncio.run(_run())
+
+    def test_aum_range_both_bounds(self):
+        import asyncio
+        async def _run():
+            pool, conn = self._make_pool()
+            await _search_lenders(pool, {"aum_min": 500, "aum_max": 5000})
+            sql = conn.fetch.call_args[0][0]
+            assert "aum_crores >=" in sql
+            assert "aum_crores <=" in sql
+        asyncio.run(_run())
+
+
+# ===========================================================================
 # Section 10: Prompt-engineering regression tests (P4/P8/P10/P5 bugs)
 # ===========================================================================
 

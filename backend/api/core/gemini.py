@@ -159,10 +159,37 @@ RULES:
 - NEVER classify a lending-related query as "out_of_scope". If it mentions any loan, lender, NBFC,
   bank, credit, or finance topic, use "filter", "qa", or "concept" instead.
 - aum_min / aum_max are in CRORES — use the number exactly as stated. "5000 crores" → aum_min:5000. NEVER multiply or convert.
+- established_year_min / established_year_max are 4-digit calendar years.
+  "lenders established after 2010"  → established_year_min:2011
+  "lenders founded before 2000"     → established_year_max:1999
+  "lenders started between 1990 and 2005" → established_year_min:1990, established_year_max:2005
+  "old lenders / legacy lenders"   → established_year_max:1990
+  "new lenders / recently established" → established_year_min:2015
 
 PRONOUN RESOLUTION: If the message contains vague references ("that one", "the first one",
 "it", "those", "them", "the second"), look at recent conversation history to resolve which
 lender is meant, then classify accordingly (e.g. resolve to lender_detail or compare).
+
+REFINEMENT QUERIES: When the user narrows or refines a previous search ("show only X from those",
+"narrow to Y", "filter to Z", "now show only", "from those results"), classify as "filter" and
+output ONLY the new constraint(s) the user just added. Do NOT repeat filters from the previous turn —
+the backend automatically merges your new filters with the previous state.
+Examples (previous context → user refinement → what to output):
+- Previous: Gold loan lenders in Maharashtra
+  User: "Show only NBFCs from those"
+  Output: filter, {company_type:["NBFC"]}           ← do NOT repeat state or loan_type
+
+- Previous: Show all home loan lenders
+  User: "Now show only ones in Delhi"
+  Output: filter, {state:"Delhi"}                   ← do NOT repeat loan_type
+
+- Previous: NBFCs in Maharashtra
+  User: "Show only large AUM"
+  Output: filter, {aum_category:["Large"]}          ← do NOT repeat company_type or state
+
+- Previous: Show all SFBs
+  User: "Filter to only gold loan"
+  Output: filter, {loan_type:["Gold Loan"]}         ← do NOT repeat company_type
 
 LENDER ABBREVIATION EXPANSION: Always expand to full registered names in compare_names/detail_names:
 - SBI → State Bank of India
@@ -326,8 +353,18 @@ EXAMPLES:
 "Home loan"                                         → filter, {loan_type:["Home Loan"]}
 "Lenders with AUM above 5000 crores"                → filter, {aum_min:5000}
 "NBFCs with AUM between 1000 and 10000 crores"      → filter, {company_type:["NBFC"], aum_min:1000, aum_max:10000}
+"NBFCs with AUM between 500 and 5000 crores"        → filter, {company_type:["NBFC"], aum_min:500, aum_max:5000}
+"Lenders with AUM below 1000 crores"                → filter, {aum_max:1000}
+"Lenders established after 2010"                    → filter, {established_year_min:2011}
+"NBFCs founded before 2000"                         → filter, {company_type:["NBFC"], established_year_max:1999}
+"Banks established between 1990 and 2005"           → filter, {company_type:["Private Bank","PSU Bank","Foreign Bank"], established_year_min:1990, established_year_max:2005}
+"Old NBFCs"                                         → filter, {company_type:["NBFC"], established_year_max:1990}
 "Hello" / "Thanks" / "What can you do?"             → greeting
 "Who won the cricket match?" / "Weather today"      → out_of_scope
+"Show only NBFCs from those" (after a filter result)   → filter, {company_type:["NBFC"]}
+"Now show only ones in Delhi" (after a filter result)  → filter, {state:"Delhi"}
+"Show only large AUM" (after a filter result)          → filter, {aum_category:["Large"]}
+"Filter to only gold loan" (after a filter result)     → filter, {loan_type:["Gold Loan"]}
 """
 
 _INTENT_SCHEMA = {
@@ -348,6 +385,8 @@ _INTENT_SCHEMA = {
                 "aum_category":        {"type": "ARRAY", "items": {"type": "STRING"}},
                 "aum_min":             {"type": "NUMBER"},
                 "aum_max":             {"type": "NUMBER"},
+                "established_year_min": {"type": "NUMBER"},
+                "established_year_max": {"type": "NUMBER"},
                 "pan_india":           {"type": "BOOLEAN"},
                 "is_listed":           {"type": "BOOLEAN"},
                 "operating_intensity": {"type": "ARRAY", "items": {"type": "STRING"}},
