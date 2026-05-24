@@ -1007,3 +1007,19 @@ class TestPromptEngineering:
         assert "Total matching: 20" in prompt
         assert "By HQ(headquartered):" in prompt
         assert "Maharashtra" in prompt  # HQ states will show Maharashtra
+
+
+class TestQuickClassifyAumPassthrough:
+    """AUM queries must reach the AI — _quick_classify must not intercept them."""
+
+    def test_aum_above_5000_crores_returns_none(self):
+        result = _quick_classify("lenders with AUM above 5000 crores")
+        assert result is None
+
+    def test_aum_min_query_returns_none(self):
+        result = _quick_classify("NBFCs with AUM above 10000 crores")
+        assert result is None
+
+    def test_aum_range_query_returns_none(self):
+        result = _quick_classify("NBFCs with AUM between 500 and 5000 crores")
+        assert result is None
