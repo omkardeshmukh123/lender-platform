@@ -62,6 +62,7 @@ class Config:
 
     # Chat — OpenRouter (priority) or Gemini fallback
     openrouter_api_key:       str   = _str("OPENROUTER_API_KEY", "")
+    openrouter_base_url:      str   = _str("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
     openrouter_model:         str   = _str("OPENROUTER_MODEL", "deepseek/deepseek-chat")
     gemini_api_key:           str   = _str("GEMINI_API_KEY", "")
     gemini_model:             str   = _str("GEMINI_MODEL", "gemini-2.5-flash")

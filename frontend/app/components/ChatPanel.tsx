@@ -798,7 +798,7 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
         {/* Messages — scrollable container, isolated from page scroll */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto p-4 space-y-4"
+          className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4"
           style={{ overscrollBehavior: 'contain' }}
         >
           {messages.length === 0 && !loading && (

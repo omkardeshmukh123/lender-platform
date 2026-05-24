@@ -132,8 +132,9 @@ class OpenRouterChatClient:
     def __init__(self, api_key: str, model: str = "") -> None:
         if not api_key:
             raise ValueError("OPENROUTER_API_KEY is required")
+        base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
         self._client = OpenAI(
-            base_url="https://openrouter.ai/api/v1",
+            base_url=base_url,
             api_key=api_key,
             default_headers={
                 "HTTP-Referer": "https://mitram360.com",
@@ -142,7 +143,7 @@ class OpenRouterChatClient:
         )
         self._model = model or os.environ.get("OPENROUTER_MODEL", "deepseek/deepseek-chat")
         self._retries = int(os.environ.get("OPENROUTER_CHAT_RETRIES", "3"))
-        logger.info("OpenRouterChatClient initialized (model=%s, retries=%d)", self._model, self._retries)
+        logger.info("OpenRouterChatClient initialized (base=%s, model=%s, retries=%d)", base_url, self._model, self._retries)
 
     # ------------------------------------------------------------------
     # Gemini history format → OpenAI message format
