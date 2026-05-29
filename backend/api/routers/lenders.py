@@ -348,6 +348,7 @@ async def search_lenders(
     try:
         async with db.acquire() as conn:
             # CTE-based query: separate cnt avoids COUNT(*) OVER() materialization
+            # pol_agg: single grouped join replaces 2N correlated subqueries
             rows = await conn.fetch(
                 f"""
                 WITH matched AS (
@@ -357,6 +358,21 @@ async def search_lenders(
                 ),
                 cnt AS (
                     SELECT COUNT(*)::int AS total FROM matched
+                ),
+                page_ids AS (
+                    SELECT m.id FROM matched m
+                    JOIN lenders l ON l.id = m.id
+                    {sort_sql}
+                    LIMIT ${idx} OFFSET ${idx + 1}
+                ),
+                pol_agg AS (
+                    SELECT p.lender_id,
+                           COUNT(*)::int           AS policy_count,
+                           MIN(p.interest_rate_min)::float AS min_interest_rate
+                    FROM policies p
+                    JOIN page_ids pi ON pi.id = p.lender_id
+                    WHERE p.is_active = true AND p.approval_status = 'approved'
+                    GROUP BY p.lender_id
                 )
                 SELECT
                     l.id, l.company_name, l.company_type, l.rbi_category,
@@ -366,23 +382,12 @@ async def search_lenders(
                     l.quality_score, l.employee_count, l.established_year,
                     l.is_listed, l.phone, l.email, l.last_year_revenue,
                     (SELECT total FROM cnt) AS _total_count,
-                    (SELECT COUNT(*)::int
-                     FROM policies p
-                     WHERE p.lender_id = l.id
-                       AND p.is_active = true
-                       AND p.approval_status = 'approved'
-                    ) AS policy_count,
-                    (SELECT MIN(p.interest_rate_min)::float
-                     FROM policies p
-                     WHERE p.lender_id = l.id
-                       AND p.is_active = true
-                       AND p.approval_status = 'approved'
-                       AND p.interest_rate_min IS NOT NULL
-                    ) AS min_interest_rate
+                    COALESCE(pol.policy_count, 0)  AS policy_count,
+                    pol.min_interest_rate
                 FROM lenders l
-                JOIN matched m ON m.id = l.id
+                JOIN page_ids pi ON pi.id = l.id
+                LEFT JOIN pol_agg pol ON pol.lender_id = l.id
                 {sort_sql}
-                LIMIT ${idx} OFFSET ${idx + 1}
                 """,
                 *params, limit, offset,
             )
@@ -394,6 +399,24 @@ async def search_lenders(
                 existing_ids = [r["id"] for r in rows]
                 fuzzy_rows = await conn.fetch(
                     """
+                    WITH fuzzy_page AS (
+                        SELECT l.id
+                        FROM lenders l
+                        WHERE l.approval_status = 'approved'
+                          AND similarity(l.company_name, $1) > 0.25
+                          AND l.id <> ALL($2::bigint[])
+                        ORDER BY similarity(l.company_name, $1) DESC
+                        LIMIT 10
+                    ),
+                    pol_agg AS (
+                        SELECT p.lender_id,
+                               COUNT(*)::int            AS policy_count,
+                               MIN(p.interest_rate_min)::float AS min_interest_rate
+                        FROM policies p
+                        JOIN fuzzy_page fp ON fp.id = p.lender_id
+                        WHERE p.is_active = true AND p.approval_status = 'approved'
+                        GROUP BY p.lender_id
+                    )
                     SELECT
                         l.id, l.company_name, l.company_type, l.rbi_category,
                         l.aum_crores, l.aum_category, l.hq_state, l.hq_location,
@@ -401,25 +424,12 @@ async def search_lenders(
                         l.primary_loan_segments, l.operating_states, l.website,
                         l.quality_score, l.employee_count, l.established_year,
                         l.is_listed, l.phone, l.email, l.last_year_revenue,
-                        (SELECT COUNT(*)::int
-                         FROM policies p
-                         WHERE p.lender_id = l.id
-                           AND p.is_active = true
-                           AND p.approval_status = 'approved'
-                        ) AS policy_count,
-                        (SELECT MIN(p.interest_rate_min)::float
-                         FROM policies p
-                         WHERE p.lender_id = l.id
-                           AND p.is_active = true
-                           AND p.approval_status = 'approved'
-                           AND p.interest_rate_min IS NOT NULL
-                        ) AS min_interest_rate
+                        COALESCE(pol.policy_count, 0)   AS policy_count,
+                        pol.min_interest_rate
                     FROM lenders l
-                    WHERE l.approval_status = 'approved'
-                      AND similarity(l.company_name, $1) > 0.25
-                      AND l.id <> ALL($2::bigint[])
+                    JOIN fuzzy_page fp ON fp.id = l.id
+                    LEFT JOIN pol_agg pol ON pol.lender_id = l.id
                     ORDER BY similarity(l.company_name, $1) DESC
-                    LIMIT 10
                     """,
                     q_clean, existing_ids,
                 )
