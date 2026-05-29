@@ -29,7 +29,7 @@ import { PhoneModal }      from '../components/PhoneModal'
 // ─────────────────────────────────────────────────────────────
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
-const PAGE_SIZE = 50
+const PAGE_SIZE = 24
 
 const LOAN_TYPES: string[] = [
   'MSME Loan', 'Personal Loan', 'Home Loan', 'Business Loan',
