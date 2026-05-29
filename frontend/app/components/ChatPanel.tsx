@@ -509,6 +509,14 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
+  // Lock body scroll on mobile when chat panel is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden'
+      return () => { document.body.style.overflow = '' }
+    }
+  }, [open])
+
   /** Scroll only within the chat panel — never touches the page scroll position */
   const scrollToBottom = useCallback((force = false, behavior: ScrollBehavior = 'smooth') => {
     const el = scrollContainerRef.current
@@ -798,8 +806,8 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
         {/* Messages — scrollable container, isolated from page scroll */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4"
-          style={{ overscrollBehavior: 'contain' }}
+          className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 touch-pan-y"
+          style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
         >
           {messages.length === 0 && !loading && (
             <div className="py-8 text-center">
