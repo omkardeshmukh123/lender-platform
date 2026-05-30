@@ -509,12 +509,13 @@ export function ChatPanel({ open, onClose, onFiltersApplied, apiUrl, user }: Cha
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  // Lock body scroll on mobile when chat panel is open
+  // Lock body scroll only on mobile (chat is full-screen overlay there)
+  // On desktop the panel is sticky — locking body scroll would break page scrolling
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden'
-      return () => { document.body.style.overflow = '' }
-    }
+    if (!open) return
+    if (!window.matchMedia('(max-width: 767px)').matches) return
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
   }, [open])
 
   /** Scroll only within the chat panel — never touches the page scroll position */
