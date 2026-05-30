@@ -564,6 +564,71 @@ async def get_public_stats(
     return result
 
 
+async def warm_default_search(pool, cache) -> None:
+    """Pre-populate Redis with the default (no-filter, page 1) lender search."""
+    cache_params = {
+        "q": None, "loan_type": [], "state": None, "company_type": [],
+        "aum_category": [], "aum_min": None, "aum_max": None,
+        "established_year_min": None, "established_year_max": None,
+        "pan_india": None, "is_listed": None,
+        "operating_intensity": [], "business_sector": [],
+        "has_policies": None, "has_revenue": None,
+        "revenue_min": None, "revenue_max": None,
+        "sort_by": "aum_crores", "sort_dir": "desc",
+        "page": 1, "limit": 20,
+    }
+    cache_key = make_key("lenders_search", cache_params)
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                WITH matched AS (
+                    SELECT l.id FROM lenders l WHERE l.approval_status = 'approved'
+                ),
+                cnt AS (SELECT COUNT(*)::int AS total FROM matched),
+                page_ids AS (
+                    SELECT m.id FROM matched m
+                    JOIN lenders l ON l.id = m.id
+                    ORDER BY l.aum_crores DESC NULLS LAST
+                    LIMIT 20 OFFSET 0
+                ),
+                pol_agg AS (
+                    SELECT p.lender_id,
+                           COUNT(*)::int                    AS policy_count,
+                           MIN(p.interest_rate_min)::float  AS min_interest_rate
+                    FROM policies p
+                    JOIN page_ids pi ON pi.id = p.lender_id
+                    WHERE p.is_active = true AND p.approval_status = 'approved'
+                    GROUP BY p.lender_id
+                )
+                SELECT
+                    l.id, l.company_name, l.company_type, l.rbi_category,
+                    l.aum_crores, l.aum_category, l.hq_state, l.hq_location,
+                    l.operating_intensity, l.business_sector, l.pan_india,
+                    l.primary_loan_segments, l.operating_states, l.website,
+                    l.quality_score, l.employee_count, l.established_year,
+                    l.is_listed, l.phone, l.email, l.last_year_revenue,
+                    (SELECT total FROM cnt) AS _total_count,
+                    COALESCE(pol.policy_count, 0) AS policy_count,
+                    pol.min_interest_rate
+                FROM lenders l
+                JOIN page_ids pi ON pi.id = l.id
+                LEFT JOIN pol_agg pol ON pol.lender_id = l.id
+                ORDER BY l.aum_crores DESC NULLS LAST
+                """,
+            )
+        total = rows[0]["_total_count"] if rows else 0
+        result = LenderSearchResponse(
+            total=total, page=1, limit=20,
+            results=[_row_to_summary(r) for r in _dedup_rows(list(rows))],
+            stubs=[],
+        )
+        await cache.set(cache_key, result.model_dump(), ttl=CacheTTL.SEARCH)
+        logger.info("Cache warm: lenders_search stored total=%d", total)
+    except Exception as exc:
+        logger.warning("Cache warm failed: %s", exc)
+
+
 @router.get("/{lender_id}", response_model=LenderDetail, summary="Lender detail")
 @limiter.limit("200/minute")
 async def get_lender(

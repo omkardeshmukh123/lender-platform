@@ -12,6 +12,7 @@ FastAPI application — Lender Platform public API.
 """
 
 from contextlib import asynccontextmanager
+import asyncio
 import os
 import sys
 import logging
@@ -54,7 +55,7 @@ from routers import leads as leads_router
 from routers import constants as constants_router
 from middleware.logging import StructuredLoggingMiddleware
 from middleware.security import SecurityHeadersMiddleware
-from core.cache import create_redis_cache
+from core.cache import create_redis_cache, NullCache
 from core.config import cfg
 from core.metrics import metrics
 from core.exceptions import register_exception_handlers
@@ -114,6 +115,19 @@ def _validate_startup_config() -> None:
     logger.info("Startup config validated OK")
 
 
+async def _cache_refresh_loop(pool: asyncpg.Pool, cache) -> None:
+    """Refresh the default lender search cache before its TTL expires."""
+    from routers.lenders import warm_default_search
+    from core.cache import CacheTTL
+    interval = int(CacheTTL.SEARCH * 0.8)   # 240s — refresh before the 300s TTL expires
+    while True:
+        await asyncio.sleep(interval)
+        try:
+            await warm_default_search(pool, cache)
+        except Exception as exc:
+            logger.warning("Cache refresh loop error: %s", exc)
+
+
 async def _create_pool() -> asyncpg.Pool:
     dsn = os.environ.get("DATABASE_URL")
     if not dsn:
@@ -137,6 +151,12 @@ async def lifespan(app: FastAPI):
     logger.info("DB pool created (min=%d max=%d)", cfg.db_pool_min, cfg.db_pool_max)
 
     app.state.cache = await create_redis_cache()
+
+    from routers.lenders import warm_default_search
+    asyncio.create_task(warm_default_search(app.state.db, app.state.cache))
+    if not isinstance(app.state.cache, NullCache):
+        asyncio.create_task(_cache_refresh_loop(app.state.db, app.state.cache))
+        logger.info("Cache refresh loop started (interval=240s)")
 
     yield
 
